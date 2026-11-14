@@ -61,6 +61,30 @@ export function saveProfile(profile: CrewProfile) {
   listeners.forEach((l) => l());
 }
 
+/** Everything this app keeps on the device besides the UI language. */
+const DEVICE_KEYS = [
+  KEY,
+  "cheeseos.session.v1",
+  "cheeseos.openrouter.v1",
+  "cheeseos.engine.v1",
+  "cheeseos.browser-model.v1",
+];
+
+/**
+ * Removes the crew profile, the saved session and the AI settings from this
+ * device. Listeners see `null`, so the app goes back to onboarding.
+ */
+export function deleteProfile() {
+  try {
+    DEVICE_KEYS.forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    // Storage blocked: the profile only lived in memory.
+  }
+  cachedRaw = null;
+  cachedProfile = null;
+  listeners.forEach((l) => l());
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   const onStorage = (e: StorageEvent) => e.key === KEY && listener();

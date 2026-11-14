@@ -47,6 +47,31 @@ export interface Messages {
     submitNew: string;
     submitEdit: string;
   };
+  nav: {
+    label: string;
+    now: string;
+    vitals: string;
+    log: string;
+    body: string;
+    profile: string;
+    settings: string;
+    statusLink: (status: string) => string;
+    privacyLocal: string;
+    privacyCloud: string;
+    privacyOff: string;
+    privacyLink: string;
+    criticalBanner: string;
+    criticalAction: string;
+    micShortcut: string;
+    undo: string;
+    undoLast: string;
+    undoHint: string;
+    undoResolved: (symptom: string) => string;
+    undoDismissed: (symptom: string, reports: number) => string;
+    undoDeleted: string;
+    undoCleared: (entries: number) => string;
+    undoClose: string;
+  };
   dashboard: {
     loadingScene: string;
     hello: (name: string) => string;
@@ -164,11 +189,11 @@ const pt: Messages = {
     rightLeg: "Perna dir.",
   },
   vitals: {
-    heartRate: { label: "Frequência cardíaca", range: "50–100" },
+    heartRate: { label: "Frequência cardíaca", range: "50–105" },
     spo2: { label: "Saturação O₂", range: "≥ 95" },
-    temperature: { label: "Temperatura", range: "36,0–37,5" },
-    respiration: { label: "Respiração", range: "12–20" },
-    systolic: { label: "Pressão arterial", range: "90–135" },
+    temperature: { label: "Temperatura", range: "35,0–37,7" },
+    respiration: { label: "Respiração", range: "8–21" },
+    systolic: { label: "Pressão arterial", range: "92–140" },
   },
   symptoms: {
     chest_pain: { label: "Dor torácica", advice: "Interromper a atividade, fazer ECG agora e acionar o médico de voo." },
@@ -234,6 +259,32 @@ const pt: Messages = {
     submitNew: "Abrir meu gêmeo digital",
     submitEdit: "Salvar dados",
   },
+  nav: {
+    label: "Navegação principal",
+    now: "Agora",
+    vitals: "Sinais",
+    log: "Diário",
+    body: "Corpo",
+    profile: "Tripulante",
+    settings: "Ajustes",
+    statusLink: (s) => `Estado geral: ${s}. Abrir o painel Agora`,
+    privacyLocal: "No aparelho",
+    privacyCloud: "IA na nuvem",
+    privacyOff: "IA desligada",
+    privacyLink: "Privacidade e motor de IA. Abrir ajustes",
+    criticalBanner: "Estado crítico. Interrompa a atividade e acione o médico de voo.",
+    criticalAction: "Ver orientação",
+    micShortcut: "Atalho: barra de espaço fora de campos de texto",
+    undo: "Desfazer",
+    undoLast: "Desfazer última correção",
+    undoHint: "Atalho: ⌘Z ou Ctrl+Z",
+    undoResolved: (s) => `Resolvido: ${s}. Registrado no diário.`,
+    undoDismissed: (s, n) =>
+      `Descartado: ${s}.${n ? ` Marcado em ${n} ${n === 1 ? "relato" : "relatos"}; os relatos continuam no diário.` : ""}`,
+    undoDeleted: "Relato excluído do diário.",
+    undoCleared: (n) => `Sessão limpa: ${n} ${n === 1 ? "entrada removida" : "entradas removidas"}.`,
+    undoClose: "Fechar aviso",
+  },
   dashboard: {
     loadingScene: "Montando o gêmeo digital…",
     hello: (name) => `Olá, ${name}`,
@@ -243,7 +294,7 @@ const pt: Messages = {
     sections: "Seções",
     overview: "Visão geral",
     vitalsNav: "Sinais vitais",
-    reports: "Relatos",
+    reports: "Novo relato",
     body: "Corpo",
     bodyRegion: "Corpo do tripulante",
     bodyHint: "Toque num ponto para ver a região. Arraste para girar.",
@@ -342,14 +393,18 @@ const pt: Messages = {
     vitals: (v) =>
       `Sinais vitais: FC ${v.hr} bpm, SpO₂ ${v.spo2}%, temperatura ${v.temp} °C, respiração ${v.rr} rpm, PA ${v.sys}/${v.dia} mmHg.`,
     overall: (s) => `Estado geral: ${s}.`,
-    instruction: "Dê o feedback imediato ao tripulante.",
+    instruction:
+      "Dê o feedback imediato ao tripulante em 2 ou 3 frases curtas, em texto simples, sem markdown. Não escale além do estado geral informado.",
   },
   prompt: `Você é o assistente médico de bordo de uma missão em Marte. O contato com a Terra tem até 22 minutos de atraso, então você orienta o tripulante na hora.
+Faixas de referência (valores dentro delas são normais, não comente como problema):
+- Temperatura 36,0–37,5 °C; febre só acima de 37,7 °C.
+- Frequência cardíaca 50–100 bpm; SpO₂ 95–100%; respiração 12–20 rpm; pressão arterial 90–135/60–85 mmHg.
 Regras:
-- Responda em português do Brasil, em no máximo duas frases curtas.
+- Responda em português do Brasil, em 2 ou 3 frases curtas, em texto simples: sem markdown, sem listas, sem negrito.
 - Diga o que fazer agora, de forma prática e calma.
 - Não dê diagnóstico definitivo e não invente medições.
-- Se o estado for crítico, mande interromper a atividade e acionar o médico de voo e a tripulação.`,
+- O "Estado geral" já foi calculado pelas regras de bordo. Não escale além dele: só mande interromper a atividade ou acionar o médico de voo se o estado for Crítico.`,
 };
 
 const en: Messages = {
@@ -374,11 +429,11 @@ const en: Messages = {
     rightLeg: "Right leg",
   },
   vitals: {
-    heartRate: { label: "Heart rate", range: "50–100" },
+    heartRate: { label: "Heart rate", range: "50–105" },
     spo2: { label: "O₂ saturation", range: "≥ 95" },
-    temperature: { label: "Temperature", range: "36.0–37.5" },
-    respiration: { label: "Respiration", range: "12–20" },
-    systolic: { label: "Blood pressure", range: "90–135" },
+    temperature: { label: "Temperature", range: "35.0–37.7" },
+    respiration: { label: "Respiration", range: "8–21" },
+    systolic: { label: "Blood pressure", range: "92–140" },
   },
   symptoms: {
     chest_pain: { label: "Chest pain", advice: "Stop the activity, run an ECG now and call the flight surgeon." },
@@ -444,6 +499,31 @@ const en: Messages = {
     submitNew: "Open my digital twin",
     submitEdit: "Save details",
   },
+  nav: {
+    label: "Main navigation",
+    now: "Now",
+    vitals: "Vitals",
+    log: "Log",
+    body: "Body",
+    profile: "Crew",
+    settings: "Settings",
+    statusLink: (s) => `Overall status: ${s}. Open the Now panel`,
+    privacyLocal: "On device",
+    privacyCloud: "Cloud AI",
+    privacyOff: "AI off",
+    privacyLink: "Privacy and AI engine. Open settings",
+    criticalBanner: "Critical status. Stop the activity and call the flight surgeon.",
+    criticalAction: "See guidance",
+    micShortcut: "Shortcut: space bar outside text fields",
+    undo: "Undo",
+    undoLast: "Undo last correction",
+    undoHint: "Shortcut: ⌘Z or Ctrl+Z",
+    undoResolved: (s) => `Resolved: ${s}. Added to the log.`,
+    undoDismissed: (s, n) => `Dismissed: ${s}.${n ? ` Tagged on ${n} ${n === 1 ? "report" : "reports"}; the reports stay in the log.` : ""}`,
+    undoDeleted: "Report deleted from the log.",
+    undoCleared: (n) => `Session cleared: ${n} ${n === 1 ? "entry" : "entries"} removed.`,
+    undoClose: "Dismiss notice",
+  },
   dashboard: {
     loadingScene: "Building the digital twin…",
     hello: (name) => `Hi, ${name}`,
@@ -453,7 +533,7 @@ const en: Messages = {
     sections: "Sections",
     overview: "Overview",
     vitalsNav: "Vital signs",
-    reports: "Reports",
+    reports: "New report",
     body: "Body",
     bodyRegion: "Crew member's body",
     bodyHint: "Tap a point to see the region. Drag to rotate.",
@@ -552,14 +632,18 @@ const en: Messages = {
     vitals: (v) =>
       `Vital signs: HR ${v.hr} bpm, SpO₂ ${v.spo2}%, temperature ${v.temp} °C, respiration ${v.rr} rpm, BP ${v.sys}/${v.dia} mmHg.`,
     overall: (s) => `Overall status: ${s}.`,
-    instruction: "Give the crew member immediate feedback.",
+    instruction:
+      "Give the crew member immediate feedback in 2 or 3 short sentences, plain text, no markdown. Do not escalate beyond the overall status given.",
   },
   prompt: `You are the onboard medical assistant of a Mars mission. Contact with Earth has up to a 22-minute delay, so you guide the crew member right away.
+Reference ranges (values inside them are normal; do not treat them as a problem):
+- Temperature 36.0–37.5 °C; fever only above 37.7 °C.
+- Heart rate 50–100 bpm; SpO₂ 95–100%; respiration 12–20 rpm; blood pressure 90–135/60–85 mmHg.
 Rules:
-- Answer in English, in at most two short sentences.
+- Answer in English, in 2 or 3 short sentences, plain text: no markdown, no lists, no bold.
 - Say what to do now, in a practical and calm way.
 - Do not give a definitive diagnosis and do not make up measurements.
-- If the status is critical, tell them to stop the activity and call the flight surgeon and the crew.`,
+- The "Overall status" was already computed by the onboard rules. Do not escalate beyond it: only tell them to stop the activity or call the flight surgeon if the status is Critical.`,
 };
 
 export const messages: Record<Locale, Messages> = { pt, en };

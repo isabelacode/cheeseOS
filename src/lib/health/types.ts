@@ -73,7 +73,10 @@ export interface TranscriptEntry {
   id: string;
   text: string;
   at: number;
-  source: "voice" | "typed";
+  /** "action" = a button press (e.g. marking a symptom resolved), text is empty. */
+  source: "voice" | "typed" | "action";
   findings: SymptomId[];
   resolved: SymptomId[];
+  /** Findings from this entry the crew member marked as misrecognized. */
+  dismissed?: SymptomId[];
 }

@@ -48,12 +48,21 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
 
   const ctxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const nodeRef = useRef<AudioWorkletNode | null>(null);
+  /** Bumped on every start/stop so late frames and pending starts are ignored. */
+  const sessionRef = useRef(0);
   const callbackRef = useRef(onUtterance);
   useEffect(() => {
     callbackRef.current = onUtterance;
   }, [onUtterance]);
 
   const stop = useCallback(() => {
+    sessionRef.current++;
+    if (nodeRef.current) {
+      nodeRef.current.port.onmessage = null;
+      nodeRef.current.disconnect();
+      nodeRef.current = null;
+    }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     ctxRef.current?.close();
     streamRef.current = null;
@@ -65,6 +74,7 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
 
   const start = useCallback(async () => {
     if (ctxRef.current) return;
+    const session = ++sessionRef.current;
     setState("requesting");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -76,6 +86,13 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
       const node = new AudioWorkletNode(ctx, "capture-processor");
       source.connect(node);
 
+      // Stopped while the permission prompt or worklet load was pending.
+      if (session !== sessionRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        ctx.close();
+        return;
+      }
+      nodeRef.current = node;
       streamRef.current = stream;
       ctxRef.current = ctx;
       setState("listening");
@@ -92,7 +109,7 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
 
       const flush = () => {
         const ms = (speechSamples / rate) * 1000;
-        if (ms >= MIN_SPEECH_MS) callbackRef.current(downsample(concat(speech), rate));
+        if (ms >= MIN_SPEECH_MS && session === sessionRef.current) callbackRef.current(downsample(concat(speech), rate));
         speech = [];
         speechSamples = 0;
         inSpeech = false;
@@ -101,6 +118,7 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
       };
 
       node.port.onmessage = (e: MessageEvent<Float32Array>) => {
+        if (session !== sessionRef.current) return;
         const frame = e.data;
         let sum = 0;
         for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
@@ -138,6 +156,7 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
         }
       };
     } catch (err) {
+      if (session !== sessionRef.current) return;
       const denied = err instanceof DOMException && err.name === "NotAllowedError";
       setState(denied ? "denied" : "error");
     }

@@ -1,5 +1,8 @@
-import { CrewApp } from "@/components/CrewApp";
+import { NowView } from "@/components/views/NowView";
 
-export default function Home() {
-  return <CrewApp />;
+// Rendered from device-local crew data; see the root layout.
+export const instant = false;
+
+export default function NowPage() {
+  return <NowView />;
 }
