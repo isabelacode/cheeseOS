@@ -8,6 +8,7 @@ import { bodyMessages } from "@/lib/i18n/pages/body";
 import { Card, SEVERITY_CHIP, SectionTitle, adviceOf, timeOf } from "@/components/health/ui";
 import { relativeTime, useNow } from "./useNow";
 import { FIXED_REGIONS } from "@/lib/health/symptoms";
+import { SpaceWhy } from "@/components/science/SpaceWhy";
 
 function regionsOf(id: SymptomId, findings: Finding[]): Region[] {
   return findings.find((f) => f.id === id)?.regions ?? FIXED_REGIONS[id] ?? [];
@@ -59,6 +60,7 @@ export function RegionDetail({ region }: { region: Region }) {
                 <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[f.severity]}`}>{t.severity[f.severity]}</span>
               </div>
               <p className="mt-1 text-[13px] leading-snug text-ink">{adviceOf(f, t)}</p>
+              <SpaceWhy finding={f} className="mt-1" />
               <p className="mt-2 text-xs text-ink-2">
                 <time dateTime={new Date(f.reportedAt).toISOString()} title={timeOf(f.reportedAt, locale)}>
                   {b.reported(now ? relativeTime(f.reportedAt, now, locale) : timeOf(f.reportedAt, locale))}

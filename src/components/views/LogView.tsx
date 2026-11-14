@@ -8,8 +8,10 @@ import { logMessages } from "@/lib/i18n/pages/log";
 import { Card, SectionTitle } from "@/components/health/ui";
 import { LogEntryItem } from "@/components/log/LogEntryItem";
 import { SymptomTimeline } from "@/components/log/SymptomTimeline";
-import { buildExport, dayKey, dayLabel, downloadText, groupByDay, symptomSpans, symptomsInLog, type SourceFilter } from "@/components/log/logData";
+import { buildExport, buildHtml, dayKey, dayLabel, downloadText, groupByDay, symptomSpans, symptomsInLog, type SourceFilter } from "@/components/log/logData";
 import type { SymptomId } from "@/lib/health/types";
+import { MISSIONS, checkinStreak, missionsToday, useRoutine } from "@/lib/routine/routine";
+import { FileText } from "lucide-react";
 
 
 export function LogView() {
@@ -63,10 +65,24 @@ export function LogView() {
     setConfirmId(null);
   }
 
-  function exportReport() {
+  const routine = useRoutine();
+  function reportArgs() {
     const at = Date.now();
-    const text = buildExport({ profile: s.profile, findings, entries, locale, t, l, now: at });
-    downloadText(text, `${l.file.fileName}-${dayKey(at)}.txt`);
+    const done = missionsToday(routine, at);
+    return {
+      profile: s.profile, findings, entries, locale, t, l, now: at,
+      status: s.status, safety: s.safety, vitals: s.vitals, trend: s.trend,
+      streak: checkinStreak(routine, at), missionsDone: MISSIONS.filter((m) => done[m]).length, missionsTotal: MISSIONS.length,
+    };
+  }
+  function exportReport() {
+    const a = reportArgs();
+    downloadText(buildExport(a), `${l.file.fileName}-${dayKey(a.now)}.txt`);
+    setExported(true);
+  }
+  function exportHtml() {
+    const a = reportArgs();
+    downloadText(buildHtml(a), `${l.file.fileName}-${dayKey(a.now)}.html`, "text/html;charset=utf-8");
     setExported(true);
   }
 
@@ -242,6 +258,14 @@ export function LogView() {
               className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-ink"
             >
               <Download className="size-4" aria-hidden /> {l.exportButton}
+            </button>
+            <button
+              type="button"
+              onClick={exportHtml}
+              title={l.exportHtmlHint}
+              className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent-soft px-4 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent hover:text-white"
+            >
+              <FileText className="size-4" aria-hidden /> {l.exportHtml}
             </button>
             <p className="mt-2 min-h-4 text-center text-xs text-ink-3" aria-live="polite">
               {exported ? l.exportDone : ""}

@@ -11,7 +11,14 @@ export interface SettingsMessages {
     title: string;
     intro: string;
     inUse: string;
-    noKeyFallback: string;
+    noKeyFallback: (model: string) => string;
+    noKeyLoading: string;
+    noKeyRules: string;
+    rulesOnly: string;
+    activeFallback: string;
+    allFailed: (models: string) => string;
+    allFailedHint: string;
+    fellBack: (failed: string, active: string) => string;
     browserFailedHint: string;
     browserLoadingHint: string;
     errorHints: Record<OrErrorCode, string>;
@@ -46,6 +53,7 @@ export interface SettingsMessages {
     deviceGpu: string;
     deviceCpu: string;
   };
+  demo: { title: string; label: string; hint: string; badge: string; badgeTitle: string };
   data: {
     title: string;
     intro: string;
@@ -71,7 +79,14 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       title: "Motor de IA",
       intro: "Escolha quem escreve a orientação depois de cada relato. As regras locais funcionam sempre, mesmo com a IA desligada.",
       inUse: "Em uso agora",
-      noKeyFallback: "Sem chave do OpenRouter salva: enquanto isso, a orientação usa o modelo no navegador.",
+      noKeyFallback: (m) => `Sem chave do OpenRouter salva: enquanto isso, a orientação usa o modelo no navegador (${m}).`,
+      noKeyLoading: "Sem chave do OpenRouter salva: a orientação usa só as regras locais até o modelo no navegador terminar de carregar.",
+      noKeyRules: "Sem chave do OpenRouter salva: a orientação está usando só as regras locais até um modelo carregar.",
+      rulesOnly: "A orientação está usando só as regras locais até um modelo carregar.",
+      activeFallback: "Em uso agora (alternativa automática)",
+      allFailed: (m) => `Nenhum modelo no navegador carregou neste aparelho (${m})`,
+      allFailedHint: "Use o OpenRouter ou recarregue a página para tentar de novo.",
+      fellBack: (f, a) => `${f} não carregou neste aparelho. Trocado automaticamente para ${a}.`,
       browserFailedHint: "Tente um modelo menor abaixo ou use o OpenRouter. Recarregar a página tenta de novo.",
       browserLoadingHint: "O download acontece uma vez; depois o modelo fica em cache e funciona sem internet.",
       errorHints: {
@@ -116,6 +131,13 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       deviceGpu: "na GPU",
       deviceCpu: "na CPU",
     },
+    demo: {
+      title: "Demonstração",
+      label: "Modo demo (sinais mais rápidos)",
+      hint: "Os sinais simulados pioram e voltam à faixa normal em cerca de 5 segundos, em vez de minutos. Útil para apresentações curtas; deixe desligado no uso normal.",
+      badge: "Demo",
+      badgeTitle: "Modo demo ligado: sinais simulados acelerados. Desligue em Ajustes.",
+    },
     data: {
       title: "Dados e privacidade",
       intro: "Tudo fica guardado só neste navegador.",
@@ -139,7 +161,14 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       title: "AI engine",
       intro: "Choose who writes the advice after each report. The local rules always work, even with AI off.",
       inUse: "In use now",
-      noKeyFallback: "No OpenRouter key saved: meanwhile, advice uses the in-browser model.",
+      noKeyFallback: (m) => `No OpenRouter key saved: meanwhile, advice uses the in-browser model (${m}).`,
+      noKeyLoading: "No OpenRouter key saved: advice uses local rules only until the in-browser model finishes loading.",
+      noKeyRules: "No OpenRouter key saved: advice is using local rules only until a model loads.",
+      rulesOnly: "Advice is using local rules only until a model loads.",
+      activeFallback: "In use now (automatic fallback)",
+      allFailed: (m) => `No in-browser model could load on this device (${m})`,
+      allFailedHint: "Use OpenRouter or reload the page to try again.",
+      fellBack: (f, a) => `${f} couldn't load on this device. Switched automatically to ${a}.`,
       browserFailedHint: "Try a smaller model below or use OpenRouter. Reloading the page tries again.",
       browserLoadingHint: "It downloads once; after that the model is cached and works offline.",
       errorHints: {
@@ -183,6 +212,13 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       },
       deviceGpu: "on GPU",
       deviceCpu: "on CPU",
+    },
+    demo: {
+      title: "Demonstration",
+      label: "Demo mode (faster vitals)",
+      hint: "Simulated vitals worsen and return to the normal range in about 5 seconds instead of minutes. Useful for short presentations; keep it off in normal use.",
+      badge: "Demo",
+      badgeTitle: "Demo mode on: simulated vitals are sped up. Turn it off in Settings.",
     },
     data: {
       title: "Data and privacy",

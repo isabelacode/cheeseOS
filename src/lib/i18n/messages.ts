@@ -71,6 +71,7 @@ export interface Messages {
     undoDeleted: string;
     undoCleared: (entries: number) => string;
     undoClose: string;
+    undoAlert: string;
   };
   dashboard: {
     loadingScene: string;
@@ -162,6 +163,10 @@ export interface Messages {
     activeSymptoms: string;
     vitals: (v: { hr: number; spo2: number; temp: string; rr: number; sys: number; dia: number }) => string;
     overall: (s: string) => string;
+    protocol: string;
+    hazards: (list: string) => string;
+    safety: string;
+    avoid: (list: string) => string;
     instruction: string;
   };
   prompt: string;
@@ -330,6 +335,7 @@ const pt: Messages = {
     undoDeleted: "Relato excluído do diário.",
     undoCleared: (n) => `Sessão limpa: ${n} ${n === 1 ? "entrada removida" : "entradas removidas"}.`,
     undoClose: "Fechar aviso",
+    undoAlert: "Alerta de segurança dispensado. Registrado no diário.",
   },
   dashboard: {
     loadingScene: "Montando o gêmeo digital…",
@@ -424,7 +430,7 @@ const pt: Messages = {
   },
   browserModels: {
     "onnx-community/Qwen2.5-0.5B-Instruct": "Mais leve e rápido, respostas simples",
-    "onnx-community/gemma-3-1b-it-ONNX": "Equilibrado, bom português",
+    "onnx-community/gemma-3-1b-it-ONNX": "Recomendado: segue melhor as instruções e escreve bem em português",
     "onnx-community/Qwen2.5-1.5B-Instruct": "Mais capaz, pede GPU e mais memória",
   },
   context: {
@@ -437,10 +443,14 @@ const pt: Messages = {
     speech: (t) => `Fala do tripulante: "${t}"`,
     activeSymptoms: "Sintomas ativos:",
     vitals: (v) =>
-      `Sinais vitais: FC ${v.hr} bpm, SpO₂ ${v.spo2}%, temperatura ${v.temp} °C, respiração ${v.rr} rpm, PA ${v.sys}/${v.dia} mmHg.`,
+      `Sinais vitais (SIMULADOS pelo gêmeo digital, não são medições): FC ${v.hr} bpm, SpO₂ ${v.spo2}%, temperatura ${v.temp} °C, respiração ${v.rr} rpm, PA ${v.sys}/${v.dia} mmHg.`,
     overall: (s) => `Estado geral: ${s}.`,
+    protocol: "Protocolo de bordo já mostrado ao tripulante (não repita, complemente):",
+    hazards: (l) => `Riscos NASA relacionados: ${l}.`,
+    safety: "Alertas de segurança já exibidos:",
+    avoid: (l) => `NUNCA sugira: ${l} (alergia declarada).`,
     instruction:
-      "Dê o feedback imediato ao tripulante em 2 ou 3 frases curtas, em texto simples, sem markdown. Não escale além do estado geral informado.",
+      "Escreva 2 ou 3 frases curtas, em texto simples. 1) Uma ação prática que complemente o protocolo (o que observar, como se posicionar, quando reavaliar). 2) Por que isso acontece no espaço, em linguagem simples. 3) Em que sinal de piora escalar. Não repita nem resuma a fala do tripulante. Não escale além do estado geral informado.",
   },
   prompt: `Você é o assistente médico de bordo de uma missão em Marte. O contato com a Terra tem até 20 minutos de atraso em cada sentido, então você orienta o tripulante na hora, sem depender do solo.
 Contexto do voo espacial (use para explicar causas prováveis, sem alarmar):
@@ -453,8 +463,12 @@ Faixas de referência (valores dentro delas são normais, não comente como prob
 - Frequência cardíaca 50–100 bpm; SpO₂ 95–100%; respiração 12–20 rpm; pressão arterial 90–135/60–85 mmHg.
 Regras:
 - Responda em português do Brasil, em 2 ou 3 frases curtas, em texto simples: sem markdown, sem listas, sem negrito.
+- Nunca repita, cite ou resuma o que o tripulante disse: ele já sabe o que sente. Comece direto pela ação.
+- O protocolo de bordo já está na tela: acrescente o que ele não diz (o que observar, quando reavaliar, causa provável no espaço).
 - Diga o que fazer agora, de forma prática e calma.
-- Não dê diagnóstico definitivo e não invente medições.
+- Não dê diagnóstico definitivo e não invente medições. Os sinais vitais são simulados: não os trate como medição real.
+- Nunca recomende medicamento citado nas alergias. Se não tiver certeza de um remédio, não cite nenhum.
+Exemplo de boa resposta: "Fique em repouso com a cabeça elevada e reavalie em 30 minutos. Em microgravidade os fluidos sobem para a cabeça e o CO₂ da cabine soma, por isso a dor é comum. Se surgir vômito, rigidez na nuca ou alteração da visão, registre e avise o médico de voo."
 - O "Estado geral" já foi calculado pelas regras de bordo. Não escale além dele: só mande interromper a atividade ou acionar o médico de voo se o estado for Crítico.`,
 };
 
@@ -620,6 +634,7 @@ const en: Messages = {
     undoDeleted: "Report deleted from the log.",
     undoCleared: (n) => `Session cleared: ${n} ${n === 1 ? "entry" : "entries"} removed.`,
     undoClose: "Dismiss notice",
+    undoAlert: "Safety alert dismissed. Logged in the journal.",
   },
   dashboard: {
     loadingScene: "Building the digital twin…",
@@ -714,7 +729,7 @@ const en: Messages = {
   },
   browserModels: {
     "onnx-community/Qwen2.5-0.5B-Instruct": "Lightest and fastest, simple answers",
-    "onnx-community/gemma-3-1b-it-ONNX": "Balanced, good multilingual output",
+    "onnx-community/gemma-3-1b-it-ONNX": "Recommended: follows instructions best, good multilingual output",
     "onnx-community/Qwen2.5-1.5B-Instruct": "Most capable, needs a GPU and more memory",
   },
   context: {
@@ -727,10 +742,14 @@ const en: Messages = {
     speech: (t) => `Crew member said: "${t}"`,
     activeSymptoms: "Active symptoms:",
     vitals: (v) =>
-      `Vital signs: HR ${v.hr} bpm, SpO₂ ${v.spo2}%, temperature ${v.temp} °C, respiration ${v.rr} rpm, BP ${v.sys}/${v.dia} mmHg.`,
+      `Vital signs (SIMULATED by the digital twin, not measurements): HR ${v.hr} bpm, SpO₂ ${v.spo2}%, temperature ${v.temp} °C, respiration ${v.rr} rpm, BP ${v.sys}/${v.dia} mmHg.`,
     overall: (s) => `Overall status: ${s}.`,
+    protocol: "Onboard protocol already shown to the crew member (do not repeat it, add to it):",
+    hazards: (l) => `Related NASA hazards: ${l}.`,
+    safety: "Safety alerts already shown:",
+    avoid: (l) => `NEVER suggest: ${l} (declared allergy).`,
     instruction:
-      "Give the crew member immediate feedback in 2 or 3 short sentences, plain text, no markdown. Do not escalate beyond the overall status given.",
+      "Write 2 or 3 short sentences, plain text. 1) One practical action that adds to the protocol (what to watch, how to position, when to reassess). 2) Why this happens in space, in plain words. 3) Which sign of worsening should be escalated. Do not repeat or summarize what the crew member said. Do not escalate beyond the overall status given.",
   },
   prompt: `You are the onboard medical assistant of a Mars mission. Contact with Earth has up to a 20-minute delay each way, so you guide the crew member right away, without relying on the ground.
 Spaceflight context (use it to explain likely causes, without alarming):
@@ -743,8 +762,12 @@ Reference ranges (values inside them are normal; do not treat them as a problem)
 - Heart rate 50–100 bpm; SpO₂ 95–100%; respiration 12–20 rpm; blood pressure 90–135/60–85 mmHg.
 Rules:
 - Answer in English, in 2 or 3 short sentences, plain text: no markdown, no lists, no bold.
+- Never repeat, quote or summarize what the crew member said: they know what they feel. Start straight with the action.
+- The onboard protocol is already on screen: add what it does not say (what to watch, when to reassess, likely cause in space).
 - Say what to do now, in a practical and calm way.
-- Do not give a definitive diagnosis and do not make up measurements.
+- Do not give a definitive diagnosis and do not make up measurements. Vital signs are simulated: do not treat them as real readings.
+- Never recommend a medication listed in the allergies. If unsure about a drug, name none.
+Example of a good answer: "Rest with your head raised and reassess in 30 minutes. In microgravity fluids shift to the head and cabin CO₂ adds to it, which is why this pain is common. If vomiting, a stiff neck or vision changes appear, log it and tell the flight surgeon."
 - The "Overall status" was already computed by the onboard rules. Do not escalate beyond it: only tell them to stop the activity or call the flight surgeon if the status is Critical.`,
 };
 

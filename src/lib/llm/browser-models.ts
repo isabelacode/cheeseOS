@@ -13,12 +13,19 @@ export interface BrowserModel {
 }
 
 export const BROWSER_MODELS: BrowserModel[] = [
-  { id: "onnx-community/Qwen2.5-0.5B-Instruct", label: "Qwen 2.5 0.5B", gpuMb: 460, cpuMb: 750 },
+  // Default: follows instructions better and writes better Portuguese than the 0.5B model.
   { id: "onnx-community/gemma-3-1b-it-ONNX", label: "Gemma 3 1B", gpuMb: 730, cpuMb: 820 },
+  { id: "onnx-community/Qwen2.5-0.5B-Instruct", label: "Qwen 2.5 0.5B", gpuMb: 460, cpuMb: 750 },
   { id: "onnx-community/Qwen2.5-1.5B-Instruct", label: "Qwen 2.5 1.5B", gpuMb: 1170, cpuMb: 1700 },
 ];
 
 export const DEFAULT_BROWSER_MODEL = BROWSER_MODELS[0];
+
+/** The chosen model, then every smaller one, largest first: the order tried when a load fails. */
+export function fallbackChain(chosen: BrowserModel): BrowserModel[] {
+  const smaller = BROWSER_MODELS.filter((m) => m.id !== chosen.id && m.gpuMb < chosen.gpuMb).sort((a, b) => b.gpuMb - a.gpuMb);
+  return [chosen, ...smaller];
+}
 
 const KEY = "cheeseos.browser-model.v1";
 

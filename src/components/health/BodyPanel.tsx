@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState, type ReactNode } from "react";
 import type { Region } from "@/lib/health/types";
+import { regionLabels } from "@/lib/health/regions";
 import { useCrewSession } from "@/lib/session/CrewSession";
 import { useT } from "@/lib/i18n";
 import { SEVERITY_CHIP } from "./ui";
@@ -14,27 +15,10 @@ function SceneLoading() {
 
 const TwinScene = dynamic(() => import("@/components/twin/TwinScene"), { ssr: false, loading: () => <SceneLoading /> });
 
-/** Region labels: one per region; whole-body symptoms keep a single tag on the torso. */
 export function useRegionLabels() {
   const { findings } = useCrewSession();
   const t = useT();
-  return useMemo(() => {
-    const out: Partial<Record<Region, string>> = {};
-    const count: Partial<Record<Region, number>> = {};
-    for (const f of findings) {
-      if (f.regions.length > 3) {
-        count.torso = (count.torso ?? 0) + 1;
-        out.torso ??= t.symptoms[f.id].label;
-        continue;
-      }
-      for (const r of f.regions) {
-        count[r] = (count[r] ?? 0) + 1;
-        out[r] ??= t.symptoms[f.id].label; // findings are sorted most severe first
-      }
-    }
-    for (const r of Object.keys(out) as Region[]) if ((count[r] ?? 0) > 1) out[r] = `${out[r]} +${count[r]! - 1}`;
-    return out;
-  }, [findings, t]);
+  return useMemo(() => regionLabels(findings, (f) => t.symptoms[f.id].label), [findings, t]);
 }
 
 /**

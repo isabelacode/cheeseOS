@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_BROWSER_MODEL, readBrowserModel, saveBrowserModel, browserModelById, type BrowserModel } from "@/lib/llm/browser-models";
+import { DEFAULT_BROWSER_MODEL, fallbackChain, readBrowserModel, saveBrowserModel, browserModelById, type BrowserModel } from "@/lib/llm/browser-models";
 import { OpenRouterError, openRouterFeedback, useOpenRouterSettings, type OpenRouterErrorCode } from "@/lib/llm/openrouter";
 import { messages, type Locale } from "@/lib/i18n";
 import type { AiRequest, AiResponse, ModelKey, ModelState } from "@/workers/protocol";
@@ -18,6 +18,8 @@ type Pending = (text: string) => void;
 export type EngineId = "openrouter" | "browser" | "off";
 
 const CHOICE_KEY = "cheeseos.engine.v1";
+/** After this the on-device answer is dropped and the local rules stand alone. */
+const BROWSER_TIMEOUT_MS = 30_000;
 
 function readChoice(): EngineId {
   try {
@@ -45,6 +47,10 @@ export function useLocalAi() {
   const [choice, setChoice] = useState<EngineId>("openrouter");
   const [error, setError] = useState<OpenRouterErrorCode | null>(null);
   const [browserModel, setBrowserModel] = useState<BrowserModel>(DEFAULT_BROWSER_MODEL);
+  /** Models that failed to load on this device during this session. */
+  const [failed, setFailed] = useState<string[]>([]);
+  /** The model last sent to the worker, so a load error can be pinned on it. */
+  const requestedRef = useRef<string | null>(null);
   // Saved choices are read on mount; nothing is downloaded before that.
   const [booted, setBooted] = useState(false);
 
@@ -60,6 +66,10 @@ export function useLocalAi() {
           setDevice(msg.device);
           break;
         case "status":
+          if (msg.model === "llm" && msg.state === "error" && requestedRef.current) {
+            const id = requestedRef.current;
+            setFailed((f) => (f.includes(id) ? f : [...f, id]));
+          }
           setModels((m) => ({
             ...m,
             [msg.model]: { ...m[msg.model], state: msg.state, error: msg.error, progress: msg.state === "ready" ? 1 : msg.state === "loading" ? 0 : m[msg.model].progress },
@@ -106,13 +116,23 @@ export function useLocalAi() {
   const hasKey = Boolean(openrouter.apiKey);
   const active: EngineId = choice === "off" ? "off" : choice === "openrouter" && hasKey ? "openrouter" : "browser";
 
+  // If the chosen model fails to load (no GPU, not enough memory), the next
+  // smaller one is tried automatically; null when every candidate failed.
+  const activeModel: BrowserModel | null = fallbackChain(browserModel).find((m) => !failed.includes(m.id)) ?? null;
+  const activeModelId = activeModel?.id ?? null;
+
   // The browser model is only downloaded while it is the active engine, and
   // released as soon as another engine (or "off") is picked.
-  const browserModelId = browserModel.id;
   useEffect(() => {
     if (!booted) return;
-    send(active === "browser" ? { type: "loadLlm", model: browserModelId } : { type: "unloadLlm" });
-  }, [booted, active, browserModelId, send]);
+    if (active === "browser" && activeModelId) {
+      requestedRef.current = activeModelId;
+      send({ type: "loadLlm", model: activeModelId });
+    } else if (active !== "browser") {
+      requestedRef.current = null;
+      send({ type: "unloadLlm" });
+    }
+  }, [booted, active, activeModelId, send]);
 
   /** Whisper is loaded on demand, when listening is first turned on. */
   const loadStt = useCallback(() => send({ type: "loadStt" }), [send]);
@@ -126,6 +146,8 @@ export function useLocalAi() {
   const chooseBrowserModel = useCallback((id: string) => {
     saveBrowserModel(id);
     setBrowserModel(browserModelById(id));
+    // Picking a model by hand gives every model a fresh try.
+    setFailed([]);
   }, []);
 
   const choose = useCallback((id: EngineId) => {
@@ -156,12 +178,18 @@ export function useLocalAi() {
         }
       }
       if (active === "off") return { text: "", engine: "off", model: "" };
-      if (models.llm.state !== "ready") return { text: "", engine: "browser", model: browserModel.label };
-      const text = await request((id) => ({ type: "feedback", id, context, locale }));
-      return { text, engine: "browser", model: browserModel.label };
+      if (models.llm.state !== "ready" || !activeModel) return { text: "", engine: "browser", model: activeModel?.label ?? browserModel.label };
+      // The rules already answered; a slow device must not leave the card "refining" forever.
+      const text = await Promise.race([
+        request((id) => ({ type: "feedback", id, context, locale })),
+        new Promise<string>((resolve) => setTimeout(() => resolve(""), BROWSER_TIMEOUT_MS)),
+      ]);
+      return { text, engine: "browser", model: activeModel.label };
     },
-    [active, openrouter, models.llm.state, request, browserModel.label],
+    [active, openrouter, models.llm.state, request, browserModel.label, activeModel],
   );
 
-  return { device, models, openrouter, hasKey, choice, active, error, browserModel, choose, chooseBrowserModel, load, loadStt, transcribe, feedback };
+  /** The browser model actually in use (may be a smaller fallback); null when none could load. */
+  const fellBack = activeModel !== null && activeModel.id !== browserModel.id;
+  return { device, models, openrouter, hasKey, choice, active, error, browserModel, activeModel, fellBack, failedModels: failed, choose, chooseBrowserModel, load, loadStt, transcribe, feedback };
 }

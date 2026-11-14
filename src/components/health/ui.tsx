@@ -10,6 +10,7 @@ import { formatNumber, INTL_LOCALE, useLocale, useT, type Locale, type Messages 
 import { nowMessages } from "@/lib/i18n/pages/now";
 import { soundsMoreUrgent } from "@/lib/text/urgency";
 import { SafeMarkdown } from "@/components/now/SafeMarkdown";
+import { SpaceWhy } from "@/components/science/SpaceWhy";
 import type { Feedback } from "@/lib/session/CrewSession";
 import { LIVE_WINDOW as HISTORY } from "@/lib/session/CrewSession";
 
@@ -95,6 +96,7 @@ export function StatusCard({
   onUndo,
   canUndo = false,
   vitals,
+  recovering = false,
 }: {
   status: Status;
   feedback: Feedback;
@@ -107,6 +109,8 @@ export function StatusCard({
   canUndo?: boolean;
   /** Current vitals; lets the card name a vital that holds the status up. */
   vitals?: Vitals;
+  /** Simulated vitals are easing back after a symptom was marked "gone". */
+  recovering?: boolean;
 }) {
   const style = STATUS_STYLE[status];
   const t = useT();
@@ -151,10 +155,17 @@ export function StatusCard({
               )}
             </p>
           )}
+          {recovering && <p className="mt-1.5 max-w-[68ch] text-[13px] leading-relaxed text-ok">{n.recovering}</p>}
           <p className="mt-1.5 text-xs text-ink-3">{t.dashboard.source(t.dashboard.rulesEngine)}</p>
         </div>
       </div>
 
+      {!feedback.pending && !aiText && feedback.dropped && (
+        <p className="mt-4 flex items-start gap-2 rounded-2xl bg-sunken px-3.5 py-2.5 text-[13px] text-ink-2" aria-live="polite">
+          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-ink-3" aria-hidden />
+          {n.aiDropped[feedback.dropped]}
+        </p>
+      )}
       {(feedback.pending || aiText) && (
         <div className="mt-4 rounded-2xl bg-sunken px-3.5 py-3" aria-live="polite">
           <p className="flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-ink-2">
@@ -193,6 +204,7 @@ export function StatusCard({
                   <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[f.severity]}`}>{t.severity[f.severity]}</span>
                 </div>
                 <p className="mt-1 text-[13px] leading-snug text-ink-2">{adviceOf(f, t)}</p>
+                <SpaceWhy finding={f} className="mt-1.5" />
                 {hasActions && (
                   <div className="mt-auto flex flex-wrap gap-1.5 pt-2.5">
                     {onResolve && (
@@ -269,7 +281,7 @@ export function VitalCard({ spec: s, vitals, history }: { spec: VitalSpec; vital
           <Icon className="size-[18px]" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold">{copy.label}</p>
+          <p className="text-[13px] leading-tight font-semibold">{copy.label}</p>
           <p className="tabular text-xs text-ink-3">{t.dashboard.range(copy.range)}</p>
         </div>
       </div>

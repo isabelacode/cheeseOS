@@ -29,7 +29,11 @@ export function LogEntryItem(props: {
         <div className="min-w-0 flex-1">
           {action ? (
             <p className="text-sm text-ink-2">
-              {[...e.resolved.map((id) => l.markedResolved(label(id))), ...(e.dismissed ?? []).map((id) => l.markedDismissed(label(id)))].join(" · ")}
+              {[
+                ...e.resolved.map((id) => l.markedResolved(label(id))),
+                ...(e.dismissed ?? []).map((id) => l.markedDismissed(label(id))),
+                ...(e.alert ? [l.markedAlert(e.alert)] : []),
+              ].join(" · ")}
             </p>
           ) : (
             <p className="text-[15px] leading-snug text-ink">“{e.text}”</p>

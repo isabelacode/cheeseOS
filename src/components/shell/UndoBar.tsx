@@ -18,6 +18,8 @@ export function undoMessage(a: UndoAction, t: Messages) {
       return t.nav.undoDeleted;
     case "clear":
       return t.nav.undoCleared(a.count);
+    case "alert":
+      return t.nav.undoAlert;
   }
 }
 

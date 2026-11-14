@@ -14,6 +14,7 @@ import {
   Mic,
   MicOff,
   NotebookText,
+  Orbit,
   PersonStanding,
   PowerOff,
   Settings2,
@@ -24,6 +25,12 @@ import {
 import { BrandMark } from "@/components/BrandMark";
 import { useCrewSession } from "@/lib/session/CrewSession";
 import { UndoBar } from "./UndoBar";
+import { ReminderCenter } from "@/components/routine/ReminderCenter";
+import { adviceOf } from "@/lib/health/advice";
+import { alertCopy } from "@/lib/i18n/pages/safety";
+import { scienceMessages } from "@/lib/science/nasa";
+import { useLocale } from "@/lib/i18n";
+import { settingsMessages } from "@/lib/i18n/pages/settings";
 import { useT, type Messages } from "@/lib/i18n";
 import type { Status } from "@/lib/health/types";
 
@@ -74,6 +81,7 @@ function RailLink({ href, label, Icon, active }: { href: string; label: string; 
 
 function Rail() {
   const t = useT();
+  const locale = useLocale();
   const pathname = usePathname();
   return (
     <nav aria-label={t.nav.label} className="sticky top-6 hidden h-[calc(100vh-48px)] w-[76px] shrink-0 flex-col items-center sm:flex">
@@ -89,6 +97,9 @@ function Rail() {
         ))}
       </ul>
       <ul className="flex w-full flex-col gap-1">
+        <li>
+          <RailLink href="/ciencia" label={scienceMessages[locale].navLabel} Icon={Orbit} active={isActive(pathname, "/ciencia")} />
+        </li>
         {UTILITY.map(({ href, key, Icon }) => (
           <li key={href}>
             <RailLink href={href} label={t.nav[key]} Icon={Icon} active={isActive(pathname, href)} />
@@ -111,7 +122,7 @@ function TabBar() {
     >
       <ul className="grid grid-cols-5">
         {items.map(({ href, key, Icon }) => {
-          const active = isActive(pathname, href) || (href === "/ajustes" && isActive(pathname, "/perfil"));
+          const active = isActive(pathname, href) || (href === "/ajustes" && (isActive(pathname, "/perfil") || isActive(pathname, "/ciencia")));
           return (
             <li key={href}>
               <Link
@@ -134,7 +145,8 @@ function TabBar() {
 
 function TopBar() {
   const t = useT();
-  const { status, ai, mic, live, toggleMic } = useCrewSession();
+  const { status, ai, mic, live, toggleMic, demo } = useCrewSession();
+  const demoCopy = settingsMessages[useLocale()].demo;
   const pill = STATUS_PILL[status];
   const privacy =
     ai.active === "openrouter"
@@ -165,22 +177,33 @@ function TopBar() {
           <privacy.Icon className="size-3.5" aria-hidden />
           <span className="hidden min-[400px]:inline">{privacy.label}</span>
         </Link>
+        {demo && (
+          <Link
+            href="/ajustes#demo"
+            title={demoCopy.badgeTitle}
+            aria-label={demoCopy.badgeTitle}
+            className="rounded-full bg-mild-soft px-2.5 py-1 text-[11px] font-bold tracking-wide text-mild uppercase"
+          >
+            {demoCopy.badge}
+          </Link>
+        )}
       </div>
       <button
         type="button"
         onClick={toggleMic}
         disabled={mic.state === "requesting"}
         aria-pressed={live}
+        aria-label={live ? t.dashboard.micOn : t.dashboard.micOff}
         title={t.nav.micShortcut}
         aria-keyshortcuts="Space"
-        className={`flex shrink-0 items-center gap-2 rounded-full py-1.5 pr-4 pl-1.5 text-sm font-semibold shadow-card transition-colors duration-200 disabled:opacity-60 ${
+        className={`flex shrink-0 items-center gap-2 rounded-full py-1.5 pr-1.5 pl-1.5 text-sm sm:pr-4 font-semibold shadow-card transition-colors duration-200 disabled:opacity-60 ${
           live ? "bg-accent text-white hover:bg-accent-ink" : "bg-surface text-ink hover:bg-sunken"
         }`}
       >
         <span className={`grid size-8 place-items-center rounded-full ${live ? "mic-live bg-white/20" : "bg-accent-soft text-accent-ink"}`}>
           {live ? <Mic className="size-4" aria-hidden /> : <MicOff className="size-4" aria-hidden />}
         </span>
-        {live ? t.dashboard.micOn : t.dashboard.micOff}
+        <span className="sr-only sm:not-sr-only">{live ? t.dashboard.micOn : t.dashboard.micOff}</span>
       </button>
     </div>
   );
@@ -188,13 +211,25 @@ function TopBar() {
 
 function CriticalBanner() {
   const t = useT();
-  const { status } = useCrewSession();
+  const locale = useLocale();
+  const { status, findings, safety } = useCrewSession();
   const pathname = usePathname();
   if (status !== "critical") return null;
+  // The specific protocol from the local rules (never the AI): a severe reaction first, then the worst finding.
+  const reaction = safety.find((a) => a.kind === "reaction" && a.level === 3);
+  const top = findings.find((f) => f.severity >= 3 && f.redFlag) ?? findings.find((f) => f.severity >= 3);
+  const reason = reaction
+    ? `${alertCopy(reaction, t, locale).head}. ${alertCopy(reaction, t, locale).body}`
+    : top
+      ? `${t.symptoms[top.id].label}: ${adviceOf(top, t)}`
+      : null;
   return (
     <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-crit px-4 py-3 text-sm font-semibold text-white">
       <ShieldAlert className="size-5 shrink-0" aria-hidden />
-      <p className="min-w-0 flex-1">{t.nav.criticalBanner}</p>
+      <div className="min-w-0 flex-1">
+        <p>{t.nav.criticalBanner}</p>
+        {reason && <p className="mt-0.5 font-normal text-white/95">{reason}</p>}
+      </div>
       {pathname !== "/" && (
         <Link href="/" className="rounded-full bg-white/15 px-3 py-1 hover:bg-white/25">
           {t.nav.criticalAction}
@@ -239,6 +274,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <TabBar />
       <UndoBar />
+      <ReminderCenter />
     </div>
   );
 }

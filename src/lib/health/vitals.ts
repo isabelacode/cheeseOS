@@ -42,28 +42,102 @@ const EFFECTS: Record<string, Delta> = {
   sore_throat: { temperature: 0.3 },
 };
 
-export function targetVitals(findings: Finding[], base: Vitals = BASELINE): Vitals {
+/**
+ * Simulated core temperature for a reported fever, by severity. A fever is
+ * always above the attention threshold (37.7 °C): saying "estou com febre"
+ * must never leave the twin at a normal temperature.
+ */
+const FEVER_TEMP: Record<number, number> = { 1: 37.9, 2: 38.4, 3: 39.2 };
+
+/** A symptom marked "gone": its effect on the simulated vitals fades instead of vanishing. */
+export interface Recovery {
+  finding: Finding;
+  resolvedAt: number;
+}
+
+/** Fade-out time constant per vital (ms). Temperature comes down slowest, like a real fever. */
+const RECOVERY_TAU: Record<keyof Vitals, number> = {
+  heartRate: 40_000,
+  spo2: 50_000,
+  temperature: 90_000,
+  respiration: 40_000,
+  systolic: 60_000,
+  diastolic: 60_000,
+};
+
+/** After this, a recovery no longer moves the vitals and can be dropped. */
+export const RECOVERY_SPAN = 12 * 60_000;
+
+function effectOf(f: Finding, base: Vitals): Delta {
+  const fx: Delta = { ...(EFFECTS[f.id] ?? {}) };
+  const scale = f.severity / 2;
+  for (const key of Object.keys(fx) as (keyof Vitals)[]) fx[key] = (fx[key] ?? 0) * scale;
+  if (f.id === "fever") fx.temperature = (FEVER_TEMP[f.severity] ?? FEVER_TEMP[2]) - base.temperature;
+  return fx;
+}
+
+/** Demo mode: how much faster the simulated vitals move (normal range in about 5 s). */
+export const DEMO_SPEED = { ease: 0.55, recoveryScale: 1 / 40 } as const;
+
+export function targetVitals(
+  findings: Finding[],
+  base: Vitals = BASELINE,
+  recovering: Recovery[] = [],
+  now = Date.now(),
+  /** Multiplies the fade-out time constants; demo mode passes DEMO_SPEED.recoveryScale. */
+  recoveryScale = 1,
+): Vitals {
   const t = { ...base };
-  for (const f of findings) {
-    const fx = EFFECTS[f.id];
-    if (!fx) continue;
-    const scale = f.severity / 2;
+  const active = new Set(findings.map((f) => f.id));
+  let feverTemp = 0;
+  const add = (f: Finding, weight: (k: keyof Vitals) => number) => {
+    const fx = effectOf(f, base);
     for (const key of Object.keys(fx) as (keyof Vitals)[]) {
-      t[key] += (fx[key] ?? 0) * scale;
+      const d = (fx[key] ?? 0) * weight(key);
+      // Fevers do not stack: the highest one sets the temperature.
+      if (key === "temperature" && f.id === "fever") feverTemp = Math.max(feverTemp, d);
+      else t[key] += d;
     }
+  };
+  for (const f of findings) add(f, () => 1);
+  for (const r of recovering) {
+    if (active.has(r.finding.id)) continue; // reported again: the active finding wins
+    const dt = Math.max(0, now - r.resolvedAt);
+    add(r.finding, (k) => Math.exp(-dt / (RECOVERY_TAU[k] * recoveryScale)));
   }
+  t.temperature += feverTemp;
   t.spo2 = Math.min(100, t.spo2);
   return t;
 }
 
+/**
+ * Right after a report: rising temperature jumps to the target (a reported
+ * fever shows at once) and the other vitals cover half the way, so the twin
+ * reacts in the same second instead of drifting for a minute.
+ */
+export function kickVitals(current: Vitals, target: Vitals, fast = false): Vitals {
+  // Demo mode jumps straight to the target.
+  const half = (k: keyof Vitals) => current[k] + (target[k] - current[k]) * (fast ? 1 : 0.5);
+  return {
+    heartRate: half("heartRate"),
+    spo2: Math.min(100, half("spo2")),
+    temperature: target.temperature > current.temperature ? target.temperature : current.temperature,
+    respiration: half("respiration"),
+    systolic: half("systolic"),
+    diastolic: half("diastolic"),
+  };
+}
+
 /** One simulation tick: ease toward the target with a bit of physiological noise. */
-export function stepVitals(current: Vitals, target: Vitals): Vitals {
+export function stepVitals(current: Vitals, target: Vitals, fast = false): Vitals {
+  // Demo mode: every vital covers ~55% of the gap per second (in range within ~5 s).
   const ease = (a: number, b: number, k: number, noise: number) =>
-    a + (b - a) * k + (Math.random() - 0.5) * noise;
+    a + (b - a) * (fast ? Math.max(k, DEMO_SPEED.ease) : k) + (Math.random() - 0.5) * noise;
   return {
     heartRate: ease(current.heartRate, target.heartRate, 0.12, 1.6),
     spo2: Math.min(100, ease(current.spo2, target.spo2, 0.1, 0.25)),
-    temperature: ease(current.temperature, target.temperature, 0.05, 0.02),
+    // Rising fever follows the target closely; cooling is set by the recovery fade.
+    temperature: ease(current.temperature, target.temperature, target.temperature > current.temperature ? 0.25 : 0.08, 0.02),
     respiration: ease(current.respiration, target.respiration, 0.1, 0.5),
     systolic: ease(current.systolic, target.systolic, 0.08, 1.2),
     diastolic: ease(current.diastolic, target.diastolic, 0.08, 0.8),

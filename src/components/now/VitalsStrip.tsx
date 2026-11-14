@@ -43,7 +43,7 @@ export function VitalsStrip({ vitals }: { vitals: Vitals }) {
               >
                 <span className="flex items-center gap-1.5 text-xs text-ink-2">
                   <Icon className={`size-3.5 shrink-0 ${sev >= 2 ? "text-warn" : "text-ink-3"}`} aria-hidden />
-                  <span className="truncate">{copy.label}</span>
+                  <span className="leading-tight">{copy.label}</span>
                 </span>
                 <span className="flex items-baseline gap-1">
                   <span className={`tabular text-lg leading-none font-bold ${sev >= 3 ? "text-crit" : sev >= 2 ? "text-warn" : ""}`}>

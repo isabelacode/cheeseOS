@@ -17,9 +17,12 @@ export function EngineStatusPanel({ ai }: { ai: Ai }) {
   const t = useT();
   const e = t.engine;
   const s = settingsMessages[useLocale()].ai;
-  const { active, choice, hasKey, models, browserModel, openrouter, error } = ai;
+  const { active, choice, hasKey, models, browserModel, activeModel, fellBack, openrouter, error } = ai;
   const llm = models.llm;
   const Icon = ENGINE_ICON[active];
+  const current = activeModel ?? browserModel;
+  /** True only while a browser model is loaded and answering. */
+  const browserServing = active === "browser" && activeModel !== null && llm.state === "ready";
 
   let text: string;
   let hint: string | null = null;
@@ -33,20 +36,29 @@ export function EngineStatusPanel({ ai }: { ai: Ai }) {
     }
   } else if (active === "off") {
     text = e.offStatus;
+  } else if (!activeModel) {
+    // Every candidate failed: say so, and say what advice runs on instead.
+    tone = "error";
+    const tried = BROWSER_MODELS.filter((m) => ai.failedModels.includes(m.id)).map((m) => m.label);
+    text = tried.length > 1 ? s.allFailed(tried.join(", ")) : e.browserFailed(browserModel.label);
+    hint = `${s.rulesOnly} ${tried.length > 1 ? s.allFailedHint : s.browserFailedHint}`;
   } else if (llm.state === "ready") {
-    text = e.browserReady(browserModel.label);
+    text = e.browserReady(current.label);
   } else if (llm.state === "loading") {
     tone = "busy";
-    text = e.browserLoading(browserModel.label, Math.round(llm.progress * 100));
-    hint = s.browserLoadingHint;
-  } else if (llm.state === "error") {
+    text = e.browserLoading(current.label, Math.round(llm.progress * 100));
+    hint = `${s.rulesOnly} ${s.browserLoadingHint}`;
+  } else if (llm.state === "error" && !fellBack) {
     tone = "error";
-    text = e.browserFailed(browserModel.label);
-    hint = s.browserFailedHint;
+    text = e.browserFailed(current.label);
+    hint = `${s.rulesOnly} ${s.browserFailedHint}`;
   } else {
+    // Idle, or between a failed load and the fallback starting.
     tone = "busy";
-    text = e.browserWaiting(browserModel.label);
+    text = e.browserWaiting(current.label);
+    hint = s.rulesOnly;
   }
+  const noKeyText = browserServing ? s.noKeyFallback(current.label) : active === "browser" && activeModel && llm.state !== "error" ? s.noKeyLoading : s.noKeyRules;
 
   return (
     <div className={`rounded-2xl px-4 py-3 ${tone === "error" ? "bg-crit-soft" : "bg-sunken"}`} role="status" aria-live="polite">
@@ -66,8 +78,11 @@ export function EngineStatusPanel({ ai }: { ai: Ai }) {
           <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${Math.round(llm.progress * 100)}%` }} />
         </div>
       )}
+      {active === "browser" && fellBack && activeModel && (
+        <p className="mt-1 text-[13px] font-semibold text-warn">{s.fellBack(browserModel.label, activeModel.label)}</p>
+      )}
       {hint && <p className="mt-1 text-[13px] text-ink-2">{hint}</p>}
-      {choice === "openrouter" && !hasKey && <p className="mt-1 text-[13px] text-ink-2">{s.noKeyFallback}</p>}
+      {choice === "openrouter" && !hasKey && <p className="mt-1 text-[13px] text-ink-2">{noKeyText}</p>}
       <p className={`mt-1.5 text-xs font-semibold ${active === "openrouter" ? "text-warn" : "text-accent-ink"}`}>
         {active === "openrouter" ? e.cloudBadge : e.localBadge}
       </p>
@@ -149,6 +164,8 @@ export function BrowserModelList({ ai }: { ai: Ai }) {
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">{m.label}</span>
             <span className="block text-xs text-ink-2">{t.browserModels[m.id]}</span>
+            {ai.failedModels.includes(m.id) && <span className="mt-0.5 block text-xs font-semibold text-crit">{e.browserFailed(m.label)}</span>}
+            {ai.fellBack && ai.activeModel?.id === m.id && <span className="mt-0.5 block text-xs font-semibold text-ok">{s.activeFallback}</span>}
           </span>
           <span className="tabular text-xs font-semibold text-ink-2">{formatSize(ai.device === "wasm" ? m.cpuMb : m.gpuMb, locale)}</span>
         </label>

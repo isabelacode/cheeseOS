@@ -142,7 +142,8 @@ async function feedback(id: string, context: string, locale: Locale) {
       { role: "system", content: messages[locale].prompt },
       { role: "user", content: context },
     ],
-    { max_new_tokens: 90, do_sample: false },
+    // Greedy decoding with a repetition penalty: small models otherwise loop or echo the report.
+    { max_new_tokens: 120, do_sample: false, repetition_penalty: 1.15 },
   );
   const first = Array.isArray(out) ? out[0] : out;
   const generated = (first as { generated_text: unknown }).generated_text;

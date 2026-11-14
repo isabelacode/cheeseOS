@@ -1,5 +1,6 @@
 "use client";
 
+import { setMission } from "@/lib/routine/routine";
 import { Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Info } from "lucide-react";
@@ -16,6 +17,8 @@ type Window = "minute" | "hour";
 const SERIES_COLOR = { primary: "#1462ff", diastolic: "#0f766e" };
 
 export function VitalsView() {
+  // Opening this screen completes today's "review vital signs" mission.
+  useEffect(() => setMission("vitals", true), []);
   return (
     <Suspense fallback={<VitalsSkeleton />}>
       <VitalsContent />
@@ -318,7 +321,7 @@ function VitalRow({ vital, vitals, active, onSelect }: { vital: VitalKey; vitals
           <Icon className="size-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-semibold">{t.vitals[vital].label}</span>
+          <span className="block text-[13px] leading-tight font-semibold">{t.vitals[vital].label}</span>
           <span className={`mt-0.5 inline-block rounded-md px-1.5 py-px text-[11px] font-semibold ${SEVERITY_CHIP[status.sev]}`}>{status.text}</span>
         </span>
         <span className="tabular shrink-0 text-right">

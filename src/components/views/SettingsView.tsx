@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import { ChevronRight, Download, Eraser, Mic, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { useRef, useState, useSyncExternalStore } from "react";
+import { BellRing, ChevronRight, Download, Eraser, Gauge, Mic, Orbit, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { setDemoMode, useDemoMode } from "@/lib/demo";
+import { REMINDER_IDS, setNotify, setReminder, useRoutine } from "@/lib/routine/routine";
+import { routineMessages } from "@/lib/i18n/pages/routine";
+import { scienceMessages } from "@/lib/science/nasa";
 import { BrowserModelList, EngineRadioGroup, EngineStatusPanel, OpenRouterForm } from "@/components/ai/AiControls";
 import { ConfirmAction } from "@/components/settings/ConfirmAction";
 import { Card, SectionTitle } from "@/components/health/ui";
@@ -20,9 +24,12 @@ export function SettingsView() {
         <p className="mt-1 text-[15px] text-ink-2">{s.intro}</p>
       </header>
       <ProfileLink />
+      <ScienceLink />
       <AiSection />
+      <RemindersSection />
       <LanguageSection />
       <VoiceSection />
+      <DemoSection />
       <DataSection />
     </div>
   );
@@ -41,12 +48,113 @@ function ProfileLink() {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold">{s.profileLink}</span>
-        <span className="block truncate text-[13px] text-ink-2">
+        <span className="block text-[13px] break-words text-ink-2">
           {profile.name} · {s.profileLinkHint}
         </span>
       </span>
       <ChevronRight className="size-5 shrink-0 text-ink-2" aria-hidden />
     </Link>
+  );
+}
+
+function ScienceLink() {
+  const c = scienceMessages[useLocale()];
+  return (
+    <Link href="/ciencia" className="flex min-h-16 items-center gap-3 rounded-3xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken sm:px-5">
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-ink">
+        <Orbit className="size-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-semibold">{c.title}</span>
+        <span className="block text-[13px] text-ink-2">{c.subtitle}</span>
+      </span>
+      <ChevronRight className="size-5 shrink-0 text-ink-2" aria-hidden />
+    </Link>
+  );
+}
+
+/** Browser notification permission, read without effects (it is not observable, so re-read on each render). */
+function useNotificationPermission() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => (typeof Notification === "undefined" ? "unsupported" : Notification.permission),
+    () => "default",
+  );
+}
+
+function RemindersSection() {
+  const r = routineMessages[useLocale()];
+  const routine = useRoutine();
+  const permission = useNotificationPermission();
+  const [, rerender] = useState(0);
+
+  async function toggleNotify(on: boolean) {
+    if (on && typeof Notification !== "undefined" && Notification.permission === "default") {
+      await Notification.requestPermission().catch(() => "denied");
+      rerender((n) => n + 1);
+    }
+    setNotify(on);
+  }
+
+  return (
+    <Card aria-labelledby="reminders">
+      <SectionTitle>
+        <span id="reminders" className="flex items-center gap-1.5">
+          {r.settings.title}
+        </span>
+      </SectionTitle>
+      <p className="-mt-1 mb-3 max-w-[64ch] text-[13px] text-ink-2">{r.settings.intro}</p>
+      <ul className="grid gap-2">
+        {REMINDER_IDS.map((id) => {
+          const rem = routine.reminders.find((x) => x.id === id)!;
+          const label = r.reminders[id].label;
+          return (
+            <li key={id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-sunken px-3.5 py-2.5">
+              <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={rem.enabled}
+                  onChange={(e) => setReminder(id, { enabled: e.target.checked })}
+                  aria-label={r.settings.enable(label)}
+                  className="size-4 shrink-0 accent-accent"
+                />
+                <span className="min-w-0">
+                  {label}
+                  <span className="block text-xs font-normal text-ink-3">{r.reminders[id].body}</span>
+                </span>
+              </label>
+              <input
+                type="time"
+                value={rem.time}
+                disabled={!rem.enabled}
+                onChange={(e) => e.target.value && setReminder(id, { time: e.target.value })}
+                aria-label={r.settings.time(label)}
+                className="tabular min-h-11 rounded-full border border-line bg-surface px-3 text-sm outline-none focus:border-accent disabled:opacity-50"
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-3 rounded-2xl border border-line px-3.5 py-3">
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={routine.notify && permission === "granted"}
+            disabled={permission === "denied" || permission === "unsupported"}
+            onChange={(e) => toggleNotify(e.target.checked)}
+            className="size-4 shrink-0 accent-accent"
+          />
+          <BellRing className="size-4 shrink-0 text-accent-ink" aria-hidden />
+          <span>
+            {r.settings.notify}
+            <span className="block text-xs font-normal text-ink-3">
+              {permission === "denied" ? r.settings.notifyDenied : permission === "unsupported" ? r.settings.notifyUnsupported : r.settings.notifyHint}
+            </span>
+          </span>
+        </label>
+      </div>
+      <p className="mt-2 text-xs text-ink-3">{r.settings.openOnly}</p>
+    </Card>
   );
 }
 
@@ -163,6 +271,28 @@ function VoiceSection() {
           {mic.state === "denied" ? s.mic.denied : s.mic.error}
         </p>
       )}
+    </Card>
+  );
+}
+
+function DemoSection() {
+  const s = settingsMessages[useLocale()].demo;
+  const demo = useDemoMode();
+  return (
+    <Card aria-labelledby="demo">
+      <SectionTitle>
+        <span id="demo">{s.title}</span>
+      </SectionTitle>
+      <label className="flex min-h-11 cursor-pointer items-start gap-3">
+        <input type="checkbox" role="switch" checked={demo} onChange={(e) => setDemoMode(e.target.checked)} className="mt-1 size-4 shrink-0 accent-accent" />
+        <span className="min-w-0">
+          <span className="flex items-center gap-1.5 text-sm font-semibold">
+            <Gauge className="size-4 text-accent-ink" aria-hidden />
+            {s.label}
+          </span>
+          <span className="mt-0.5 block max-w-[64ch] text-[13px] text-ink-2">{s.hint}</span>
+        </span>
+      </label>
     </Card>
   );
 }

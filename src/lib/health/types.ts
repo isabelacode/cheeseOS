@@ -120,4 +120,7 @@ export interface TranscriptEntry {
   resolved: SymptomId[];
   /** Findings from this entry the crew member marked as misrecognized. */
   dismissed?: SymptomId[];
+  /** Action: a safety alert the crew member dismissed (its key, and its headline as shown). */
+  alertKey?: string;
+  alert?: string;
 }

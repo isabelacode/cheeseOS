@@ -54,7 +54,7 @@ export function VoiceCard(props: {
       <SectionTitle>{t.dashboard.reports}</SectionTitle>
       <div className="flex items-center gap-3 rounded-2xl bg-sunken px-3.5 py-2.5">
         <span className={`size-2 shrink-0 rounded-full ${live ? (speaking ? "bg-accent" : "bg-ok") : "bg-ink-3/40"}`} aria-hidden />
-        <p className="min-w-0 flex-1 truncate text-sm text-ink-2" aria-live="polite">
+        <p className="min-w-0 flex-1 text-sm leading-snug text-ink-2" aria-live="polite">
           {stateText}
         </p>
         <div className="flex h-5 items-end gap-0.5" aria-hidden>
@@ -138,6 +138,7 @@ export function VoiceCard(props: {
                       {[
                         ...e.resolved.map((id) => n.actionResolved(t.symptoms[id].label)),
                         ...(e.dismissed ?? []).map((id) => n.actionDismissed(t.symptoms[id].label)),
+                        ...(e.alert ? [n.actionAlert(e.alert)] : []),
                       ].join(" · ")}
                     </p>
                   ) : (

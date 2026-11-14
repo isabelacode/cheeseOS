@@ -68,6 +68,8 @@ const DEVICE_KEYS = [
   "cheeseos.openrouter.v1",
   "cheeseos.engine.v1",
   "cheeseos.browser-model.v1",
+  "cheeseos.routine.v1",
+  "cheeseos.demo.v1",
 ];
 
 /**
