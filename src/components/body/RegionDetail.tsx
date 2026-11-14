@@ -7,31 +7,7 @@ import { useLocale, useT } from "@/lib/i18n";
 import { bodyMessages } from "@/lib/i18n/pages/body";
 import { Card, SEVERITY_CHIP, SectionTitle, adviceOf, timeOf } from "@/components/health/ui";
 import { relativeTime, useNow } from "./useNow";
-
-/**
- * Regions of symptoms whose location never depends on the phrase (mirrors the
- * rules in lib/health/symptoms.ts). Limb symptoms (arm/leg pain, numbness) are
- * left out: their side is only known while the finding is active.
- */
-const FIXED_REGIONS: Partial<Record<SymptomId, Region[]>> = {
-  chest_pain: ["torso"],
-  dyspnea: ["torso"],
-  fainting: ["head"],
-  bleeding: ["head"],
-  palpitations: ["torso"],
-  dizziness: ["head"],
-  vision: ["head"],
-  fever: ["head", "torso"],
-  nausea: ["abdomen"],
-  abdominal_pain: ["abdomen"],
-  headache: ["head"],
-  congestion: ["head"],
-  cough: ["torso"],
-  back_pain: ["torso"],
-  muscle_pain: ["leftArm", "rightArm", "leftLeg", "rightLeg"],
-  fatigue: ["head", "torso", "abdomen", "leftArm", "rightArm", "leftLeg", "rightLeg"],
-  anxiety: ["head"],
-};
+import { FIXED_REGIONS } from "@/lib/health/symptoms";
 
 function regionsOf(id: SymptomId, findings: Finding[]): Region[] {
   return findings.find((f) => f.id === id)?.regions ?? FIXED_REGIONS[id] ?? [];

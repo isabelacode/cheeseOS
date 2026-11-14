@@ -29,6 +29,17 @@ const EFFECTS: Record<string, Delta> = {
   fatigue: { heartRate: -4 },
   nausea: { heartRate: 6 },
   abdominal_pain: { heartRate: 10, systolic: 6 },
+  epigastric_pain: { heartRate: 10, systolic: 6 },
+  ruq_pain: { heartRate: 12, systolic: 6 },
+  luq_pain: { heartRate: 12, systolic: 6 },
+  periumbilical_pain: { heartRate: 10, systolic: 6 },
+  rlq_pain: { heartRate: 14, systolic: 8, temperature: 0.4 },
+  llq_pain: { heartRate: 12, systolic: 6 },
+  flank_pain: { heartRate: 16, systolic: 12, respiration: 3 },
+  migraine: { heartRate: 6, systolic: 6 },
+  cluster_headache: { heartRate: 12, systolic: 10 },
+  thunderclap_headache: { heartRate: 16, systolic: 26, diastolic: 12 },
+  sore_throat: { temperature: 0.3 },
 };
 
 export function targetVitals(findings: Finding[], base: Vitals = BASELINE): Vitals {

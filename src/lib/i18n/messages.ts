@@ -1,4 +1,4 @@
-import type { Region, Severity, Status, SymptomId } from "@/lib/health/types";
+import type { RedFlag, Region, Severity, Status, SymptomId } from "@/lib/health/types";
 import type { Locale } from "./locale";
 
 type VitalKey = "heartRate" | "spo2" | "temperature" | "respiration" | "systolic";
@@ -16,7 +16,7 @@ export interface Messages {
   regions: Record<Region, string>;
   vitals: Record<VitalKey, { label: string; range: string }>;
   symptoms: Record<SymptomId, { label: string; advice: string }>;
-  radiatingAdvice: string;
+  redFlags: Record<RedFlag, string>;
   onboarding: {
     titleNew: string;
     titleEdit: string;
@@ -201,23 +201,69 @@ const pt: Messages = {
     fainting: { label: "Pré-síncope", advice: "Fixar-se em posição segura, elevar as pernas e chamar outro tripulante." },
     bleeding: { label: "Sangramento", advice: "Compressão direta e kit de primeiros socorros; reportar o local exato." },
     palpitations: { label: "Palpitações", advice: "Repouso por 10 min e registrar ECG; evitar cafeína." },
-    dizziness: { label: "Tontura", advice: "Ancorar-se a um apoio e evitar movimentos bruscos de cabeça." },
-    vision: { label: "Alteração visual", advice: "Registrar o episódio; agendar exame de fundo de olho (risco de SANS)." },
+    dizziness: { label: "Tontura", advice: "Ancorar-se a um apoio e evitar movimentos bruscos de cabeça; comum nas transições de gravidade. Se vier com desmaio, checar pressão." },
+    vision: { label: "Alteração visual", advice: "Registrar o episódio: cerca de 70% dos astronautas têm sinais de SANS (fluido pressionando os olhos). Testar visão de perto e agendar fundo de olho." },
     fever: { label: "Febre", advice: "Medir temperatura, hidratar e isolar se houver outros sintomas." },
-    numbness: { label: "Dormência", advice: "Testar força e sensibilidade; checar ajuste do traje e pontos de pressão." },
+    numbness: { label: "Dormência", advice: "Testar força e sensibilidade; checar ajuste do traje e pontos de pressão. Após EVA, suspeitar de doença descompressiva." },
     nausea: { label: "Náusea", advice: "Antiemético do kit e movimentos de cabeça lentos; hidratar em goles." },
+    space_motion_sickness: { label: "Enjoo espacial", advice: "Comum nos primeiros dias e nas transições de gravidade: fixar a cabeça, olhar um ponto fixo, antiemético do kit e hidratar em goles." },
     abdominal_pain: { label: "Dor abdominal", advice: "Localizar a dor (quadrante) e monitorar evolução por 30 min." },
+    epigastric_pain: { label: "Dor epigástrica", advice: "Boca do estômago: estômago, esôfago ou pâncreas; antiácido do kit. Se vier com suor frio ou falta de ar, fazer ECG (infarto pode doer aqui)." },
+    ruq_pain: { label: "Dor no quadrante superior direito", advice: "Região do fígado e vesícula: observar piora após comer, febre ou pele amarelada e avisar o médico de voo." },
+    luq_pain: { label: "Dor no quadrante superior esquerdo", advice: "Região do baço, estômago e pâncreas: checar trauma recente e palpar com cuidado; registrar e monitorar." },
+    periumbilical_pain: { label: "Dor ao redor do umbigo", advice: "Intestino delgado; pode ser o início de uma apendicite. Reavaliar em 1 h se a dor migrar para o lado direito embaixo." },
+    rlq_pain: { label: "Dor no quadrante inferior direito", advice: "Região do apêndice: testar dor ao soltar a pressão, medir a temperatura e avisar o médico de voo." },
+    llq_pain: { label: "Dor no quadrante inferior esquerdo", advice: "Região do cólon sigmoide (diverticulite, intestino preso): medir a temperatura e registrar o hábito intestinal." },
+    suprapubic_pain: { label: "Dor no baixo ventre", advice: "Bexiga ou útero: checar ardência ao urinar, retenção urinária e hidratar." },
+    flank_pain: { label: "Dor no flanco (rins)", advice: "Dor em cólica nas costas laterais: risco de cálculo renal (perda óssea em microgravidade). Hidratar e checar sangue na urina." },
     headache: { label: "Dor de cabeça", advice: "Hidratar, reduzir a luz e checar o CO₂ do módulo." },
+    migraine: { label: "Enxaqueca", advice: "Dor pulsátil de um lado, piora com luz e barulho: repouso no escuro, analgésico do kit cedo e hidratar." },
+    tension_headache: { label: "Cefaleia tensional", advice: "Aperto em faixa dos dois lados: alongar pescoço e ombros, pausa de telas e rever sono e postura." },
+    cluster_headache: { label: "Cefaleia em salvas", advice: "Dor intensa em volta de um olho com lacrimejamento: oxigênio a 100% por 15 min e avisar o médico de voo." },
+    sinus_headache: { label: "Cefaleia sinusal", advice: "Dor na testa e nas maçãs do rosto com congestão: lavagem nasal, vapor e checar umidade da cabine." },
+    thunderclap_headache: { label: "Cefaleia súbita intensa", advice: "Dor de cabeça explosiva e repentina: interromper tudo e acionar o médico de voo imediatamente (risco de hemorragia)." },
+    retro_orbital_pain: { label: "Dor retro-orbital", advice: "Dor atrás dos olhos: checar febre (arboviroses), pressão ocular e visão; evitar telas e registrar o episódio." },
+    stiff_neck: { label: "Rigidez de nuca", advice: "Testar se o queixo encosta no peito; com febre ou dor de cabeça, acionar o médico de voo." },
+    ear_pain: { label: "Dor de ouvido", advice: "Checar mudanças de pressão da cabine e sinais de otite; manobra de Valsalva suave e analgésico do kit." },
+    sore_throat: { label: "Dor de garganta", advice: "Gargarejo com água morna e sal, hidratar e medir a temperatura; checar umidade e filtros da cabine." },
     congestion: { label: "Congestão facial", advice: "Efeito comum do deslocamento de fluidos; exercício leve ajuda." },
     cough: { label: "Tosse", advice: "Checar filtros de ar e umidade da cabine." },
-    back_pain: { label: "Dor nas costas", advice: "Alongamento em posição fetal; comum pelo alongamento da coluna em microgravidade." },
+    back_pain: { label: "Dor nas costas", advice: "Alongamento em posição fetal; a coluna alonga até 3% em microgravidade. Dor após impacto: avaliar fratura (perda óssea)." },
     arm_pain: { label: "Dor no braço", advice: "Avaliar se houve esforço; gelo e repouso do membro." },
     leg_pain: { label: "Dor na perna", advice: "Checar inchaço; se unilateral e quente, avaliar trombose." },
-    muscle_pain: { label: "Dor muscular", advice: "Normal após treino resistido; hidratação e alongamento." },
-    fatigue: { label: "Fadiga", advice: "Rever o ciclo de sono e fazer uma pausa de 20 min." },
+    joint_pain: { label: "Dor nas articulações", advice: "Checar inchaço, calor e vermelhidão; repouso da articulação. Durante ou após EVA: suspeitar de doença descompressiva. Várias juntas com febre: avaliar arbovirose." },
+    hand_pain: { label: "Dor na mão", advice: "Checar esforço repetitivo e ajuste das luvas; repouso, gelo e testar força de preensão." },
+    finger_pain: { label: "Dor nos dedos da mão", advice: "Pontas dos dedos ou unhas doloridas: comum pela pressão das luvas de EVA. Checar ajuste da luva e se a unha está descolando." },
+    hand_numbness: { label: "Dormência na mão", advice: "Polegar ao anelar: nervo mediano (túnel do carpo); mínimo: nervo ulnar. Afrouxar a luva e testar força. Súbita e de um lado só, avaliar AVC." },
+    foot_pain: { label: "Dor no pé", advice: "Checar calçado e pontos de pressão dos apoios de pé; massagear a sola e alongar." },
+    heel_pain: { label: "Dor no calcanhar", advice: "Pior nos primeiros passos: fascite plantar. Alongar a panturrilha e a sola, gelo por 15 min." },
+    toe_pain: { label: "Dor nos dedos do pé", advice: "Dedão inchado, quente e vermelho: possível gota. Checar unha encravada e atrito dos apoios de pé." },
+    foot_numbness: { label: "Dormência no pé", advice: "Checar circulação (cor, temperatura, pulso no pé) e compressão do calçado; nos dois pés, avaliar neuropatia." },
+    foot_swelling: { label: "Inchaço no pé/tornozelo", advice: "Nos dois pés: retenção de líquido (coração, rins). Em um só e quente: avaliar trombose. Elevar as pernas e medir a circunferência." },
+    cold_extremities: { label: "Extremidades frias/roxas", advice: "Aquecer e checar circulação e enchimento capilar; dedos brancos e depois roxos no frio sugerem Raynaud. Checar temperatura do traje." },
+    muscle_pain: { label: "Dor muscular", advice: "Normal após o treino resistido (meta de 1,5 h/dia); hidratar e alongar. Fraqueza crescente: registrar para comparar com a linha de base." },
+    fatigue: { label: "Fadiga", advice: "Rever o ciclo de sono (16 nasceres do sol por dia desregulam o relógio biológico): horário fixo, luz LED clara de dia e pausa de 20 min." },
     anxiety: { label: "Ansiedade", advice: "Respiração 4-7-8 por 2 min; conversar com a equipe de suporte psicológico." },
+    disorientation: { label: "Desorientação espacial", advice: "Ancorar-se e usar referências visuais (piso, teto); não operar controles nem sair da nave até passar." },
+    confusion: { label: "Confusão mental", advice: "Checar SpO₂, O₂ e CO₂ da cabine e fazer um teste cognitivo curto; não executar tarefas críticas sozinho." },
+    insomnia: { label: "Insônia", advice: "Manter horário fixo, escurecer o compartimento e usar a luz LED do ciclo dia-noite; evitar cafeína nas 6 h antes de dormir." },
+    low_mood: { label: "Humor baixo", advice: "Escrever no diário, falar com alguém da tripulação ou com o suporte psicológico, cuidar das plantas ou olhar pela janela." },
+    skin_rash: { label: "Erupção na pele", advice: "Fotografar e registrar; não coçar. Imunidade alterada pode reativar herpes: bolhas em faixa de um lado só sugerem herpes-zóster." },
   },
-  radiatingAdvice: "Dor torácica irradiando para o braço esquerdo: protocolo cardíaco imediato.",
+  redFlags: {
+    cardiac: "Dor torácica irradiando para o braço ou ombro esquerdo: protocolo cardíaco imediato.",
+    thunderclap: "Cefaleia súbita e explosiva: acionar o médico de voo agora e monitorar consciência e pupilas.",
+    meningitis: "Dor de cabeça com febre e rigidez de nuca: suspeita de meningite. Isolar e acionar o médico de voo agora.",
+    appendicitis: "Dor no lado direito inferior com febre ou náusea: suspeita de apendicite. Jejum e médico de voo agora.",
+    peritonitis: "Barriga rígida ou dor ao soltar a pressão: irritação do peritônio. Jejum, repouso e médico de voo imediatamente.",
+    arbovirus: "Febre com dor atrás dos olhos ou nas articulações: avaliar arbovirose (dengue, chikungunya). Hidratar e evitar anti-inflamatórios e aspirina.",
+    decompression: "Sintomas durante ou após EVA ou mudança de pressão: suspeita de doença descompressiva. Encerrar a EVA, voltar à nave, oxigênio a 100% e preparar recompressão.",
+    hypoxia: "Confusão com dor de cabeça, falta de ar ou alteração visual: possível hipóxia ou CO₂ alto. Máscara de oxigênio, checar SpO₂ e o ar da cabine agora.",
+    radiation: "Náusea ou mal-estar após evento solar ou alarme de radiação: ir ao abrigo blindado, ler o dosímetro e registrar a dose.",
+    fracture: "Dor após queda ou impacto: os ossos perdem 1% a 1,5% de densidade por mês no espaço. Imobilizar e avaliar fratura antes de usar o membro.",
+    crisis: "Pensamentos de se machucar: você não está sozinho. Chame agora alguém da tripulação e o suporte psicológico, e não fique sozinho.",
+    dvt: "Pé ou tornozelo inchado de um lado só, quente ou com dor na panturrilha: suspeita de trombose. Não massagear e acionar o médico de voo.",
+  },
   onboarding: {
     titleNew: "Vamos montar o seu gêmeo digital",
     titleEdit: "Atualizar dados do tripulante",
@@ -396,7 +442,12 @@ const pt: Messages = {
     instruction:
       "Dê o feedback imediato ao tripulante em 2 ou 3 frases curtas, em texto simples, sem markdown. Não escale além do estado geral informado.",
   },
-  prompt: `Você é o assistente médico de bordo de uma missão em Marte. O contato com a Terra tem até 22 minutos de atraso, então você orienta o tripulante na hora.
+  prompt: `Você é o assistente médico de bordo de uma missão em Marte. O contato com a Terra tem até 20 minutos de atraso em cada sentido, então você orienta o tripulante na hora, sem depender do solo.
+Contexto do voo espacial (use para explicar causas prováveis, sem alarmar):
+- Fluidos sobem para a cabeça: congestão, dor de cabeça e alterações visuais (SANS afeta cerca de 70% dos astronautas). CO₂ alto também causa dor de cabeça.
+- Ossos perdem 1% a 1,5% ao mês: mais risco de fratura em quedas e de cálculo renal. Músculos e aptidão caem 10% a 12%.
+- Enjoo e desorientação são comuns nas transições de gravidade. Após EVA, dor articular, coceira ou formigamento sugerem doença descompressiva.
+- Imunidade alterada reativa vírus latentes (herpes, zóster). Sono é afetado por 16 nasceres do sol por dia. Isolamento afeta o humor.
 Faixas de referência (valores dentro delas são normais, não comente como problema):
 - Temperatura 36,0–37,5 °C; febre só acima de 37,7 °C.
 - Frequência cardíaca 50–100 bpm; SpO₂ 95–100%; respiração 12–20 rpm; pressão arterial 90–135/60–85 mmHg.
@@ -441,23 +492,69 @@ const en: Messages = {
     fainting: { label: "Pre-syncope", advice: "Secure yourself in a safe position, raise your legs and call another crew member." },
     bleeding: { label: "Bleeding", advice: "Apply direct pressure and use the first-aid kit; report the exact location." },
     palpitations: { label: "Palpitations", advice: "Rest for 10 min and record an ECG; avoid caffeine." },
-    dizziness: { label: "Dizziness", advice: "Hold on to a support and avoid sudden head movements." },
-    vision: { label: "Vision change", advice: "Log the episode; schedule a fundus exam (SANS risk)." },
+    dizziness: { label: "Dizziness", advice: "Hold on to a support and avoid sudden head movements; common during gravity transitions. With fainting, check blood pressure." },
+    vision: { label: "Vision change", advice: "Log the episode: about 70% of astronauts show signs of SANS (fluid pressing on the eyes). Test near vision and schedule a fundus exam." },
     fever: { label: "Fever", advice: "Take your temperature, hydrate and isolate if other symptoms appear." },
-    numbness: { label: "Numbness", advice: "Test strength and sensation; check suit fit and pressure points." },
+    numbness: { label: "Numbness", advice: "Test strength and sensation; check suit fit and pressure points. After an EVA, suspect decompression sickness." },
     nausea: { label: "Nausea", advice: "Take the kit's antiemetic and move your head slowly; sip water." },
+    space_motion_sickness: { label: "Space motion sickness", advice: "Common in the first days and during gravity transitions: keep the head still, look at a fixed point, take the kit's antiemetic and sip water." },
     abdominal_pain: { label: "Abdominal pain", advice: "Locate the pain (quadrant) and monitor it for 30 min." },
+    epigastric_pain: { label: "Epigastric pain", advice: "Pit of the stomach: stomach, oesophagus or pancreas; take the kit's antacid. With cold sweat or breathlessness, run an ECG (a heart attack can hurt here)." },
+    ruq_pain: { label: "Right upper quadrant pain", advice: "Liver and gallbladder area: watch for pain after meals, fever or yellow skin and notify the flight surgeon." },
+    luq_pain: { label: "Left upper quadrant pain", advice: "Spleen, stomach and pancreas area: check for recent trauma, palpate gently, log and monitor." },
+    periumbilical_pain: { label: "Pain around the navel", advice: "Small intestine; can be early appendicitis. Reassess in 1 h if the pain moves to the lower right." },
+    rlq_pain: { label: "Right lower quadrant pain", advice: "Appendix area: test for pain on release, take your temperature and notify the flight surgeon." },
+    llq_pain: { label: "Left lower quadrant pain", advice: "Sigmoid colon area (diverticulitis, constipation): take your temperature and log bowel habits." },
+    suprapubic_pain: { label: "Lower belly pain", advice: "Bladder or uterus: check for burning on urination or urinary retention, and hydrate." },
+    flank_pain: { label: "Flank pain (kidneys)", advice: "Colicky pain in the side of the back: kidney stone risk (bone loss in microgravity). Hydrate and check for blood in urine." },
     headache: { label: "Headache", advice: "Hydrate, dim the lights and check the module's CO₂." },
+    migraine: { label: "Migraine", advice: "Throbbing one-sided pain, worse with light and noise: rest in the dark, take the kit's analgesic early and hydrate." },
+    tension_headache: { label: "Tension headache", advice: "Band-like pressure on both sides: stretch neck and shoulders, take a screen break and review sleep and posture." },
+    cluster_headache: { label: "Cluster headache", advice: "Severe pain around one eye with tearing: 100% oxygen for 15 min and notify the flight surgeon." },
+    sinus_headache: { label: "Sinus headache", advice: "Forehead and cheek pain with congestion: nasal rinse, steam and check cabin humidity." },
+    thunderclap_headache: { label: "Sudden severe headache", advice: "Explosive, sudden headache: stop everything and call the flight surgeon immediately (bleeding risk)." },
+    retro_orbital_pain: { label: "Retro-orbital pain", advice: "Pain behind the eyes: check for fever (arboviruses), eye pressure and vision; avoid screens and log the episode." },
+    stiff_neck: { label: "Stiff neck", advice: "Check whether the chin touches the chest; with fever or headache, call the flight surgeon." },
+    ear_pain: { label: "Ear pain", advice: "Check cabin pressure changes and signs of infection; gentle Valsalva and the kit's analgesic." },
+    sore_throat: { label: "Sore throat", advice: "Gargle warm salt water, hydrate and take your temperature; check cabin humidity and filters." },
     congestion: { label: "Facial congestion", advice: "Common effect of fluid shift; light exercise helps." },
     cough: { label: "Cough", advice: "Check the cabin air filters and humidity." },
-    back_pain: { label: "Back pain", advice: "Stretch in a fetal position; common as the spine lengthens in microgravity." },
+    back_pain: { label: "Back pain", advice: "Stretch in a fetal position; the spine lengthens up to 3% in microgravity. Pain after an impact: assess for a fracture (bone loss)." },
     arm_pain: { label: "Arm pain", advice: "Check for overexertion; ice and rest the limb." },
     leg_pain: { label: "Leg pain", advice: "Check for swelling; if one-sided and warm, assess for thrombosis." },
-    muscle_pain: { label: "Muscle pain", advice: "Normal after resistance training; hydrate and stretch." },
-    fatigue: { label: "Fatigue", advice: "Review the sleep cycle and take a 20-min break." },
+    joint_pain: { label: "Joint pain", advice: "Check for swelling, warmth and redness; rest the joint. During or after an EVA: suspect decompression sickness. Several joints with fever: assess for an arbovirus." },
+    hand_pain: { label: "Hand pain", advice: "Check for repetitive strain and glove fit; rest, ice and test grip strength." },
+    finger_pain: { label: "Finger pain", advice: "Sore fingertips or nails: common from EVA glove pressure. Check glove fit and whether a nail is lifting." },
+    hand_numbness: { label: "Hand numbness", advice: "Thumb to ring finger: median nerve (carpal tunnel); little finger: ulnar nerve. Loosen the glove and test strength. Sudden and one-sided: assess for stroke." },
+    foot_pain: { label: "Foot pain", advice: "Check footwear and pressure points from the foot restraints; massage the sole and stretch." },
+    heel_pain: { label: "Heel pain", advice: "Worse on the first steps: plantar fasciitis. Stretch the calf and sole, ice for 15 min." },
+    toe_pain: { label: "Toe pain", advice: "Swollen, hot, red big toe: possible gout. Check for an ingrown nail and rubbing from the foot restraints." },
+    foot_numbness: { label: "Foot numbness", advice: "Check circulation (colour, temperature, foot pulse) and shoe pressure; in both feet, assess for neuropathy." },
+    foot_swelling: { label: "Foot/ankle swelling", advice: "Both feet: fluid retention (heart, kidneys). One foot and warm: assess for thrombosis. Raise the legs and measure the circumference." },
+    cold_extremities: { label: "Cold/blue extremities", advice: "Warm up and check circulation and capillary refill; fingers turning white then blue in the cold suggest Raynaud's. Check suit temperature." },
+    muscle_pain: { label: "Muscle pain", advice: "Normal after resistance training (1.5 h/day target); hydrate and stretch. Growing weakness: log it to compare with the baseline." },
+    fatigue: { label: "Fatigue", advice: "Review the sleep cycle (16 sunrises a day throw off the body clock): fixed schedule, bright LED light by day and a 20-min break." },
     anxiety: { label: "Anxiety", advice: "Do 4-7-8 breathing for 2 min; talk to the psychological support team." },
+    disorientation: { label: "Spatial disorientation", advice: "Hold on and use visual references (floor, ceiling); don't operate controls or leave the vehicle until it passes." },
+    confusion: { label: "Mental confusion", advice: "Check SpO₂ and cabin O₂ and CO₂ and take a short cognitive test; don't do critical tasks alone." },
+    insomnia: { label: "Insomnia", advice: "Keep a fixed schedule, darken the crew quarters and use the day-night LED cycle; no caffeine in the 6 h before sleep." },
+    low_mood: { label: "Low mood", advice: "Write in the journal, talk to a crewmate or the psychological support team, tend the plants or look out the window." },
+    skin_rash: { label: "Skin rash", advice: "Photograph and log it; don't scratch. Altered immunity can reactivate herpes: blisters in a band on one side suggest shingles." },
   },
-  radiatingAdvice: "Chest pain radiating to the left arm: start the cardiac protocol now.",
+  redFlags: {
+    cardiac: "Chest pain radiating to the left arm or shoulder: start the cardiac protocol now.",
+    thunderclap: "Sudden, explosive headache: call the flight surgeon now and monitor consciousness and pupils.",
+    meningitis: "Headache with fever and a stiff neck: suspected meningitis. Isolate and call the flight surgeon now.",
+    appendicitis: "Lower right pain with fever or nausea: suspected appendicitis. Nothing by mouth; call the flight surgeon now.",
+    peritonitis: "Rigid belly or pain on release: peritoneal irritation. Nothing by mouth, rest and call the flight surgeon immediately.",
+    arbovirus: "Fever with pain behind the eyes or in the joints: assess for an arbovirus (dengue, chikungunya). Hydrate and avoid NSAIDs and aspirin.",
+    decompression: "Symptoms during or after an EVA or a pressure change: suspected decompression sickness. End the EVA, return to the vehicle, give 100% oxygen and prepare for recompression.",
+    hypoxia: "Confusion with headache, breathlessness or vision change: possible hypoxia or high CO₂. Put on an oxygen mask and check SpO₂ and cabin air now.",
+    radiation: "Nausea or malaise after a solar event or radiation alarm: go to the shielded shelter, read the dosimeter and log the dose.",
+    fracture: "Pain after a fall or impact: bones lose 1–1.5% of density a month in space. Immobilise and assess for a fracture before using the limb.",
+    crisis: "Thoughts of hurting yourself: you are not alone. Call a crewmate and the psychological support team now, and don't stay alone.",
+    dvt: "One swollen foot or ankle that is warm or with calf pain: suspected thrombosis. Don't massage it; call the flight surgeon.",
+  },
   onboarding: {
     titleNew: "Let's build your digital twin",
     titleEdit: "Update crew member details",
@@ -635,7 +732,12 @@ const en: Messages = {
     instruction:
       "Give the crew member immediate feedback in 2 or 3 short sentences, plain text, no markdown. Do not escalate beyond the overall status given.",
   },
-  prompt: `You are the onboard medical assistant of a Mars mission. Contact with Earth has up to a 22-minute delay, so you guide the crew member right away.
+  prompt: `You are the onboard medical assistant of a Mars mission. Contact with Earth has up to a 20-minute delay each way, so you guide the crew member right away, without relying on the ground.
+Spaceflight context (use it to explain likely causes, without alarming):
+- Fluids shift to the head: congestion, headache and vision changes (SANS affects about 70% of astronauts). High CO₂ also causes headaches.
+- Bones lose 1–1.5% a month: higher risk of fractures in falls and of kidney stones. Muscle and fitness drop 10–12%.
+- Nausea and disorientation are common in gravity transitions. After an EVA, joint pain, itching or tingling suggest decompression sickness.
+- Altered immunity reactivates latent viruses (herpes, shingles). Sleep is disrupted by 16 sunrises a day. Isolation affects mood.
 Reference ranges (values inside them are normal; do not treat them as a problem):
 - Temperature 36.0–37.5 °C; fever only above 37.7 °C.
 - Heart rate 50–100 bpm; SpO₂ 95–100%; respiration 12–20 rpm; blood pressure 90–135/60–85 mmHg.

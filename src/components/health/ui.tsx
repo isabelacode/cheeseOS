@@ -3,6 +3,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { Activity, AlertTriangle, Check, CheckCircle2, Gauge, HeartPulse, Loader2, ShieldAlert, Sparkles, Thermometer, Undo2, Wind, X, type LucideIcon } from "lucide-react";
 import { VITAL_SPECS, type VitalSpec } from "@/lib/health/vitals";
+import { adviceOf } from "@/lib/health/advice";
 import type { Finding, Severity, Status, SymptomId, Vitals } from "@/lib/health/types";
 import { formatNumber, INTL_LOCALE, useLocale, useT, type Locale, type Messages } from "@/lib/i18n";
 
@@ -55,9 +56,7 @@ export function timeOf(ms: number, locale: Locale) {
   return new Date(ms).toLocaleTimeString(INTL_LOCALE[locale], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-export function adviceOf(f: Finding, t: Messages) {
-  return f.redFlag ? t.radiatingAdvice : t.symptoms[f.id].advice;
-}
+export { adviceOf };
 
 export function quickAdvice(findings: Finding[], t: Messages): string {
   if (!findings.length) return t.dashboard.noSymptoms;

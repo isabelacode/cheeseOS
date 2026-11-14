@@ -28,19 +28,57 @@ export const SYMPTOM_IDS = [
   "fever",
   "numbness",
   "nausea",
+  "space_motion_sickness",
   "abdominal_pain",
+  "epigastric_pain",
+  "ruq_pain",
+  "luq_pain",
+  "periumbilical_pain",
+  "rlq_pain",
+  "llq_pain",
+  "suprapubic_pain",
+  "flank_pain",
   "headache",
+  "migraine",
+  "tension_headache",
+  "cluster_headache",
+  "sinus_headache",
+  "thunderclap_headache",
+  "retro_orbital_pain",
+  "stiff_neck",
+  "ear_pain",
+  "sore_throat",
   "congestion",
   "cough",
   "back_pain",
   "arm_pain",
   "leg_pain",
+  "joint_pain",
+  "hand_pain",
+  "finger_pain",
+  "hand_numbness",
+  "foot_pain",
+  "heel_pain",
+  "toe_pain",
+  "foot_numbness",
+  "foot_swelling",
+  "cold_extremities",
   "muscle_pain",
   "fatigue",
   "anxiety",
+  "disorientation",
+  "confusion",
+  "insomnia",
+  "low_mood",
+  "skin_rash",
 ] as const;
 
 export type SymptomId = (typeof SYMPTOM_IDS)[number];
+
+/** Combined patterns that call for a specific protocol instead of the symptom's own advice. */
+export const RED_FLAGS = ["cardiac", "thunderclap", "meningitis", "appendicitis", "peritonitis", "arbovirus", "dvt", "decompression", "hypoxia", "radiation", "fracture", "crisis"] as const;
+
+export type RedFlag = (typeof RED_FLAGS)[number];
 
 /** 0 = nominal, 1 = mild, 2 = attention, 3 = critical */
 export type Severity = 0 | 1 | 2 | 3;
@@ -52,8 +90,11 @@ export interface Finding {
   id: SymptomId;
   regions: Region[];
   severity: Severity;
-  /** Chest pain radiating to the left arm: use the cardiac protocol advice. */
-  redFlag?: boolean;
+  /**
+   * A combination that needs a specific protocol (e.g. chest pain radiating to
+   * the left arm). `true` comes from older saved sessions and means "cardiac".
+   */
+  redFlag?: RedFlag | true;
   /** Epoch ms when it was last reported. */
   reportedAt: number;
   /** The phrase that triggered it. */

@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { extractSymptoms, mergeFindings } from "@/lib/health/symptoms";
+import { adviceOf } from "@/lib/health/advice";
 import { BASELINE, overallSeverity, regionSeverity, statusOf, stepVitals, targetVitals } from "@/lib/health/vitals";
 import type { Finding, Region, Severity, Status, SymptomId, TranscriptEntry, Vitals } from "@/lib/health/types";
 import { useLocalAi } from "@/hooks/useLocalAi";
@@ -79,7 +80,9 @@ function buildContext(locale: Locale, profile: CrewProfile, text: string, findin
   const t = messages[locale];
   const c = t.context;
   const list = findings.length
-    ? findings.map((f) => `- ${t.symptoms[f.id].label} (${t.severity[f.severity].toLowerCase()})`).join("\n")
+    ? findings
+        .map((f) => `- ${t.symptoms[f.id].label} (${t.severity[f.severity].toLowerCase()})${f.redFlag ? `: ${adviceOf(f, t)}` : ""}`)
+        .join("\n")
     : `- ${c.none}`;
   return [
     profileContext(profile, locale),
