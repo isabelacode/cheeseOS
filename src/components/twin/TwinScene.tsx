@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { Suspense, useCallback, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import type { Region, Severity } from "@/lib/health/types";
 import { REGIONS, REGION_LABEL } from "@/lib/health/types";
-import { HOTSPOT, HumanBody } from "./HumanBody";
+import { CrewModel, HOTSPOT } from "./CrewModel";
 
 export interface TwinSceneProps {
   severity: Record<Region, Severity>;
@@ -18,7 +18,7 @@ export interface TwinSceneProps {
   respiration: number;
 }
 
-const BODY_OFFSET = new THREE.Vector3(0, -0.92, 0);
+const BODY_OFFSET = new THREE.Vector3(0, -0.9, 0);
 
 /**
  * Projects each region's anchor to screen space every frame and moves the
@@ -63,7 +63,16 @@ export default function TwinScene(props: TwinSceneProps) {
         <directionalLight position={[2.5, 4, 3]} intensity={1.7} castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[-3, 2, -2]} intensity={0.6} color="#dbe6ff" />
         <group position={BODY_OFFSET.toArray()}>
-          <HumanBody {...props} />
+          <Suspense fallback={null}>
+            <CrewModel
+              severity={props.severity}
+              selected={selected}
+              hovered={hovered}
+              onSelect={onSelect}
+              onHover={onHover}
+              respiration={props.respiration}
+            />
+          </Suspense>
           <ContactShadows position={[0, -0.02, 0]} opacity={0.28} scale={4} blur={2.6} far={2} />
         </group>
         <OrbitControls
