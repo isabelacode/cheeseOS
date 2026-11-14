@@ -17,10 +17,7 @@ env.allowLocalModels = true;
 env.localModelPath = "/models/";
 env.allowRemoteModels = true;
 
-const MODELS: Record<ModelKey, string> = {
-  stt: "onnx-community/whisper-base",
-  llm: "onnx-community/Qwen2.5-0.5B-Instruct",
-};
+const STT_MODEL = "onnx-community/whisper-base";
 
 const post = (msg: AiResponse) => self.postMessage(msg);
 
@@ -28,6 +25,7 @@ let device: "webgpu" | "wasm" = "wasm";
 let deviceReady = false;
 let stt: AutomaticSpeechRecognitionPipeline | null = null;
 let llm: TextGenerationPipeline | null = null;
+let llmId: string | null = null;
 
 async function detectDevice() {
   const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
@@ -66,7 +64,7 @@ async function loadStt() {
   await ensureDevice();
   post({ type: "status", model: "stt", state: "loading" });
   try {
-    stt = (await pipeline("automatic-speech-recognition", MODELS.stt, {
+    stt = (await pipeline("automatic-speech-recognition", STT_MODEL, {
       device,
       dtype: device === "webgpu" ? { encoder_model: "fp32", decoder_model_merged: "q4" } : "q8",
       progress_callback: progress("stt"),
@@ -78,18 +76,25 @@ async function loadStt() {
 }
 
 /** Used when the visitor has no OpenRouter key or picks on-device processing. */
-async function loadLlm() {
-  if (llm) return;
+async function loadLlm(model: string) {
+  if (llm && llmId === model) return;
   await ensureDevice();
+  if (llm) {
+    // Free the previous model's GPU/WASM memory before loading another one.
+    await llm.dispose().catch(() => {});
+    llm = null;
+  }
+  llmId = model;
   post({ type: "status", model: "llm", state: "loading" });
   try {
-    llm = (await pipeline("text-generation", MODELS.llm, {
+    llm = (await pipeline("text-generation", model, {
       device,
       dtype: device === "webgpu" ? "q4f16" : "q4",
       progress_callback: progress("llm"),
     })) as TextGenerationPipeline;
     post({ type: "status", model: "llm", state: "ready" });
   } catch (e) {
+    llmId = null;
     post({ type: "status", model: "llm", state: "error", error: String(e) });
   }
 }
@@ -137,7 +142,7 @@ let queue: Promise<void> = Promise.resolve();
 async function handle(msg: AiRequest) {
   try {
     if (msg.type === "loadStt") await loadStt();
-    else if (msg.type === "loadLlm") await loadLlm();
+    else if (msg.type === "loadLlm") await loadLlm(msg.model);
     else if (msg.type === "transcribe") await transcribe(msg.id, msg.audio);
     else if (msg.type === "feedback") await feedback(msg.id, msg.context);
   } catch (e) {

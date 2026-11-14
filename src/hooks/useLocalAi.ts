@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DEFAULT_BROWSER_MODEL, readBrowserModel, saveBrowserModel, browserModelById, type BrowserModel } from "@/lib/llm/browser-models";
 import { OpenRouterError, openRouterFeedback, useOpenRouterSettings } from "@/lib/llm/openrouter";
 import type { AiRequest, AiResponse, ModelKey, ModelState } from "@/workers/protocol";
 
@@ -45,6 +46,9 @@ export function useLocalAi() {
   const openrouter = useOpenRouterSettings();
   const [choice, setChoice] = useState<EngineId>("openrouter");
   const [error, setError] = useState<string | null>(null);
+  const [browserModel, setBrowserModel] = useState<BrowserModel>(DEFAULT_BROWSER_MODEL);
+  // Saved choices are read on mount; nothing is downloaded before that.
+  const [booted, setBooted] = useState(false);
 
   useEffect(() => {
     const worker = new Worker(new URL("../workers/ai.worker.ts", import.meta.url), { type: "module" });
@@ -60,7 +64,7 @@ export function useLocalAi() {
         case "status":
           setModels((m) => ({
             ...m,
-            [msg.model]: { ...m[msg.model], state: msg.state, error: msg.error, progress: msg.state === "ready" ? 1 : m[msg.model].progress },
+            [msg.model]: { ...m[msg.model], state: msg.state, error: msg.error, progress: msg.state === "ready" ? 1 : msg.state === "loading" ? 0 : m[msg.model].progress },
           }));
           break;
         case "progress":
@@ -105,15 +109,22 @@ export function useLocalAi() {
   const active: EngineId = choice === "openrouter" && hasKey ? "openrouter" : "browser";
 
   // The browser model is only downloaded once it is actually the active engine.
-  const llmState = models.llm.state;
+  const browserModelId = browserModel.id;
   useEffect(() => {
-    if (active === "browser" && llmState === "idle") send({ type: "loadLlm" });
-  }, [active, llmState, send]);
+    if (booted && active === "browser") send({ type: "loadLlm", model: browserModelId });
+  }, [booted, active, browserModelId, send]);
 
   const load = useCallback(() => {
     send({ type: "loadStt" });
     setChoice(readChoice());
+    setBrowserModel(readBrowserModel());
+    setBooted(true);
   }, [send]);
+
+  const chooseBrowserModel = useCallback((id: string) => {
+    saveBrowserModel(id);
+    setBrowserModel(browserModelById(id));
+  }, []);
 
   const choose = useCallback((id: EngineId) => {
     setChoice(id);
@@ -144,10 +155,10 @@ export function useLocalAi() {
       }
       if (models.llm.state !== "ready") return { text: "", engine: "" };
       const text = await request((id) => ({ type: "feedback", id, context }));
-      return { text, engine: "Navegador · Qwen 2.5 0.5B" };
+      return { text, engine: `Navegador · ${browserModel.label}` };
     },
-    [active, openrouter, models.llm.state, request],
+    [active, openrouter, models.llm.state, request, browserModel.label],
   );
 
-  return { device, models, openrouter, hasKey, choice, active, error, choose, load, transcribe, feedback };
+  return { device, models, openrouter, hasKey, choice, active, error, browserModel, choose, chooseBrowserModel, load, transcribe, feedback };
 }

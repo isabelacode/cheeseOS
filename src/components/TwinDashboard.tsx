@@ -9,7 +9,6 @@ import {
   Cloud,
   Cpu,
   Gauge,
-  KeyRound,
   HeartPulse,
   LayoutGrid,
   Loader2,
@@ -19,6 +18,7 @@ import {
   PersonStanding,
   UserRoundPen,
   Send,
+  SlidersHorizontal,
   ShieldAlert,
   Thermometer,
   Wind,
@@ -39,6 +39,7 @@ import {
 import type { Finding, Region, Severity, Status, TranscriptEntry, Vitals } from "@/lib/health/types";
 import { REGION_LABEL } from "@/lib/health/types";
 import { ENGINE_LABEL, useLocalAi, type EngineId, type ModelInfo } from "@/hooks/useLocalAi";
+import { BROWSER_MODELS, formatSize, type BrowserModel } from "@/lib/llm/browser-models";
 import { DEFAULT_OPENROUTER_MODEL, saveOpenRouterSettings, type OpenRouterSettings } from "@/lib/llm/openrouter";
 import { useVoiceListener, type MicState } from "@/hooks/useVoiceListener";
 import { firstName, profileContext, type CrewProfile } from "@/lib/crew/profile";
@@ -143,7 +144,8 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
   const [hovered, setHovered] = useState<Region | null>(null);
   const [transcribing, setTranscribing] = useState(0);
   const [draft, setDraft] = useState("");
-  const [keyOpen, setKeyOpen] = useState(false);
+  // undefined = closed; otherwise which section the dialog was opened for.
+  const [settingsFocus, setSettingsFocus] = useState<EngineId | null | undefined>(undefined);
   const vitals = stream.current;
 
   const findingsRef = useRef(findings);
@@ -244,17 +246,23 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
             <p className="text-sm text-ink-2">
               {[profile.role, profile.mission, `${profile.age} anos`, profile.bloodType].filter(Boolean).join(" · ")}
             </p>
-            <EngineStatus device={ai.device} stt={ai.models.stt} llm={ai.models.llm} active={ai.active} model={ai.openrouter.model} error={ai.error} />
+            <EngineStatus device={ai.device} stt={ai.models.stt} llm={ai.models.llm} active={ai.active} model={ai.openrouter.model} browserLabel={ai.browserModel.label} error={ai.error} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
-          <EnginePicker active={ai.active} hasKey={ai.hasKey} onChoose={ai.choose} onEditKey={() => setKeyOpen(true)} />
-          <OpenRouterDialog
-            open={keyOpen}
+          <EnginePicker active={ai.active} hasKey={ai.hasKey} onChoose={ai.choose} onSettings={setSettingsFocus} />
+          <AiSettingsDialog
+            open={settingsFocus !== undefined}
+            focus={settingsFocus ?? null}
             settings={ai.openrouter}
-            onClose={() => setKeyOpen(false)}
-            onSaved={(hasKey) => {
-              setKeyOpen(false);
-              ai.choose(hasKey ? "openrouter" : "browser");
+            browserModel={ai.browserModel}
+            device={ai.device}
+            onClose={() => setSettingsFocus(undefined)}
+            onSaved={(next) => {
+              ai.chooseBrowserModel(next.browserModel);
+              // Opened from the OpenRouter button: switch to it once a key exists.
+              if (settingsFocus === "openrouter" && next.hasKey) ai.choose("openrouter");
+              else if (!next.hasKey && ai.choice === "openrouter") ai.choose("browser");
+              setSettingsFocus(undefined);
             }}
           />
           <button
@@ -407,6 +415,7 @@ function EngineStatus({
   llm,
   active,
   model,
+  browserLabel,
   error,
 }: {
   device: "webgpu" | "wasm" | null;
@@ -414,6 +423,7 @@ function EngineStatus({
   llm: ModelInfo;
   active: EngineId;
   model: string;
+  browserLabel: string;
   error: string | null;
 }) {
   const sttText =
@@ -422,12 +432,12 @@ function EngineStatus({
   const llmText = remote
     ? `OpenRouter · ${model}`
     : llm.state === "ready"
-      ? "Qwen 0.5B no navegador"
+      ? `${browserLabel} no navegador`
       : llm.state === "loading"
-        ? `Qwen 0.5B ${Math.round(llm.progress * 100)}%`
+        ? `Baixando ${browserLabel} · ${Math.round(llm.progress * 100)}%`
         : llm.state === "error"
-          ? "IA do navegador indisponível"
-          : "Qwen 0.5B aguardando";
+          ? `${browserLabel} não carregou neste aparelho`
+          : `${browserLabel} aguardando`;
   return (
     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
       <span className="flex items-center gap-1.5">
@@ -455,12 +465,12 @@ function EnginePicker({
   active,
   hasKey,
   onChoose,
-  onEditKey,
+  onSettings,
 }: {
   active: EngineId;
   hasKey: boolean;
   onChoose: (id: EngineId) => void;
-  onEditKey: () => void;
+  onSettings: (focus: EngineId | null) => void;
 }) {
   const options: { id: EngineId; Icon: LucideIcon; hint: string }[] = [
     { id: "openrouter", Icon: Cloud, hint: hasKey ? "Modelos na nuvem com a sua chave" : "Informe sua chave do OpenRouter" },
@@ -478,7 +488,7 @@ function EnginePicker({
               role="radio"
               aria-checked={on}
               title={hint}
-              onClick={() => (id === "openrouter" && !hasKey ? onEditKey() : onChoose(id))}
+              onClick={() => (id === "openrouter" && !hasKey ? onSettings("openrouter") : onChoose(id))}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${
                 on ? "bg-accent text-white" : "text-ink-2 hover:bg-sunken hover:text-ink"
               }`}
@@ -491,27 +501,33 @@ function EnginePicker({
       </div>
       <button
         type="button"
-        onClick={onEditKey}
-        title={hasKey ? "Trocar chave do OpenRouter" : "Adicionar chave do OpenRouter"}
-        aria-label={hasKey ? "Trocar chave do OpenRouter" : "Adicionar chave do OpenRouter"}
+        onClick={() => onSettings(null)}
+        title="Configurar IA"
+        aria-label="Configurar IA"
         className="grid size-7 place-items-center rounded-full text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
       >
-        <KeyRound className="size-3.5" aria-hidden />
+        <SlidersHorizontal className="size-3.5" aria-hidden />
       </button>
     </div>
   );
 }
 
-function OpenRouterDialog({
+function AiSettingsDialog({
   open,
+  focus,
   settings,
+  browserModel,
+  device,
   onClose,
   onSaved,
 }: {
   open: boolean;
+  focus: EngineId | null;
   settings: OpenRouterSettings;
+  browserModel: BrowserModel;
+  device: "webgpu" | "wasm" | null;
   onClose: () => void;
-  onSaved: (hasKey: boolean) => void;
+  onSaved: (next: { browserModel: string; hasKey: boolean }) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -521,65 +537,89 @@ function OpenRouterDialog({
     if (!open && d.open) d.close();
   }, [open]);
 
+  const input = "rounded-xl border border-line bg-sunken px-3 py-2.5 font-mono text-sm font-normal";
   return (
     <dialog
       ref={ref}
       onClose={onClose}
-      aria-labelledby="or-title"
-      className="m-auto w-[min(440px,calc(100vw-32px))] rounded-2xl bg-surface p-0 text-ink shadow-card backdrop:bg-ink/30"
+      aria-labelledby="ai-title"
+      className="m-auto max-h-[calc(100vh-32px)] w-[min(480px,calc(100vw-32px))] rounded-2xl bg-surface p-0 text-ink shadow-card backdrop:bg-ink/30"
     >
       {open && (
         <form
-          className="flex flex-col gap-4 p-6"
+          className="flex flex-col gap-5 p-6"
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
             const apiKey = String(f.get("apiKey") ?? "").trim();
             saveOpenRouterSettings({ apiKey, model: String(f.get("model") ?? "") });
-            onSaved(Boolean(apiKey));
+            onSaved({ browserModel: String(f.get("browserModel") ?? browserModel.id), hasKey: Boolean(apiKey) });
           }}
         >
-          <div>
-            <h2 id="or-title" className="text-lg font-bold">
-              Usar o OpenRouter
-            </h2>
-            <p className="mt-1 text-sm text-ink-2">
-              Cole sua chave para gerar a orientação com modelos maiores. Ela fica salva só neste navegador e vai direto para o OpenRouter. Os relatos
-              e o perfil saem do aparelho quando esta opção está ativa.
+          <h2 id="ai-title" className="text-lg font-bold">
+            Configurar IA
+          </h2>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
+              <Cpu className="size-4 text-accent" aria-hidden /> Modelo no navegador
+            </legend>
+            <p className="text-[13px] text-ink-2">
+              Roda neste aparelho, sem enviar nada. Baixa uma vez e fica em cache.
+              {device === "wasm" && " Sem GPU disponível: os modelos maiores ficam lentos."}
             </p>
-          </div>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            Chave da API
-            <input
-              name="apiKey"
-              type="password"
-              autoComplete="off"
-              spellCheck={false}
-              defaultValue={settings.apiKey}
-              placeholder="sk-or-v1-…"
-              className="rounded-xl border border-line bg-sunken px-3 py-2.5 font-mono text-sm font-normal"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            Modelo
-            <input
-              name="model"
-              spellCheck={false}
-              defaultValue={settings.model}
-              placeholder={DEFAULT_OPENROUTER_MODEL}
-              className="rounded-xl border border-line bg-sunken px-3 py-2.5 font-mono text-sm font-normal"
-            />
-          </label>
-          <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent-ink hover:underline">
-            Criar uma chave no OpenRouter
-          </a>
+            {BROWSER_MODELS.map((m) => (
+              <label
+                key={m.id}
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-3 py-2.5 transition-colors has-checked:border-accent has-checked:bg-accent-soft"
+              >
+                <input type="radio" name="browserModel" value={m.id} defaultChecked={m.id === browserModel.id} className="accent-accent" />
+                <span className="flex-1">
+                  <span className="block text-sm font-semibold">{m.label}</span>
+                  <span className="block text-xs text-ink-2">{m.note}</span>
+                </span>
+                <span className="text-xs font-semibold text-ink-3 tabular-nums">{formatSize(device === "wasm" ? m.cpuMb : m.gpuMb)}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-3">
+            <legend className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
+              <Cloud className="size-4 text-accent" aria-hidden /> OpenRouter
+            </legend>
+            <p className="text-[13px] text-ink-2">
+              Modelos maiores na nuvem com a sua chave. Ela fica salva só neste navegador e vai direto para o OpenRouter. Com esta opção ativa, os
+              relatos e o perfil saem do aparelho.
+            </p>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">
+              Chave da API
+              <input
+                name="apiKey"
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                autoFocus={focus === "openrouter"}
+                defaultValue={settings.apiKey}
+                placeholder="sk-or-v1-…"
+                className={input}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">
+              Modelo
+              <input name="model" spellCheck={false} defaultValue={settings.model} placeholder={DEFAULT_OPENROUTER_MODEL} className={input} />
+            </label>
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent-ink hover:underline">
+              Criar uma chave no OpenRouter
+            </a>
+          </fieldset>
+
           <div className="flex flex-wrap justify-end gap-2">
             {settings.apiKey && (
               <button
                 type="button"
                 onClick={() => {
                   saveOpenRouterSettings({ apiKey: "", model: settings.model });
-                  onSaved(false);
+                  onSaved({ browserModel: browserModel.id, hasKey: false });
                 }}
                 className="mr-auto rounded-full px-4 py-2 text-sm font-semibold text-crit hover:bg-crit-soft"
               >
