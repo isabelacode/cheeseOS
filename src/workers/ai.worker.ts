@@ -77,7 +77,7 @@ async function loadStt() {
   }
 }
 
-/** Only used when no Ollama server is reachable on the habitat network. */
+/** Used when the visitor has no OpenRouter key or picks on-device processing. */
 async function loadLlm() {
   if (llm) return;
   await ensureDevice();

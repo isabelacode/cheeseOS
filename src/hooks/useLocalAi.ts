@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { OpenRouterError, openRouterFeedback, useOpenRouterSettings } from "@/lib/llm/openrouter";
 import type { AiRequest, AiResponse, ModelKey, ModelState } from "@/workers/protocol";
 
 export interface ModelInfo {
@@ -11,13 +12,28 @@ export interface ModelInfo {
 
 type Pending = (text: string) => void;
 
-export interface OllamaInfo {
-  state: "checking" | "ready" | "unavailable";
-  model: string;
-  reason?: string;
+export type EngineId = "openrouter" | "browser";
+
+export const ENGINE_LABEL: Record<EngineId, string> = {
+  openrouter: "OpenRouter",
+  browser: "Navegador",
+};
+
+const CHOICE_KEY = "cheeseos.engine.v1";
+
+function readChoice(): EngineId {
+  try {
+    return window.localStorage.getItem(CHOICE_KEY) === "browser" ? "browser" : "openrouter";
+  } catch {
+    return "openrouter";
+  }
 }
 
-/** Owns the on-device AI worker (Whisper + small LLM). */
+/**
+ * Speech-to-text always runs on device (Whisper in a worker). The feedback LLM
+ * is the visitor's choice: OpenRouter with their own key (cloud) or a small model
+ * running in the browser. Without a key, the browser model is used.
+ */
 export function useLocalAi() {
   const workerRef = useRef<Worker | null>(null);
   const pending = useRef(new Map<string, Pending>());
@@ -26,6 +42,9 @@ export function useLocalAi() {
     stt: { state: "idle", progress: 0 },
     llm: { state: "idle", progress: 0 },
   });
+  const openrouter = useOpenRouterSettings();
+  const [choice, setChoice] = useState<EngineId>("openrouter");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const worker = new Worker(new URL("../workers/ai.worker.ts", import.meta.url), { type: "module" });
@@ -72,27 +91,6 @@ export function useLocalAi() {
     workerRef.current?.postMessage(req, transfer);
   }, []);
 
-  const [ollama, setOllama] = useState<OllamaInfo>({ state: "checking", model: "" });
-
-  /** Re-checks the habitat Ollama server; falls back to the in-browser LLM. */
-  const checkOllama = useCallback(async () => {
-    setOllama((o) => ({ ...o, state: "checking" }));
-    try {
-      const res = await fetch("/api/ollama", { cache: "no-store" });
-      const data = (await res.json()) as { available: boolean; model: string; reason?: string };
-      setOllama({ state: data.available ? "ready" : "unavailable", model: data.model, reason: data.reason });
-      return data.available;
-    } catch {
-      setOllama({ state: "unavailable", model: "", reason: "offline" });
-      return false;
-    }
-  }, []);
-
-  const load = useCallback(async () => {
-    send({ type: "loadStt" });
-    if (!(await checkOllama())) send({ type: "loadLlm" });
-  }, [send, checkOllama]);
-
   const request = useCallback(
     (build: (id: string) => AiRequest, transfer: Transferable[] = []) =>
       new Promise<string>((resolve) => {
@@ -103,40 +101,53 @@ export function useLocalAi() {
     [send],
   );
 
+  const hasKey = Boolean(openrouter.apiKey);
+  const active: EngineId = choice === "openrouter" && hasKey ? "openrouter" : "browser";
+
+  // The browser model is only downloaded once it is actually the active engine.
+  const llmState = models.llm.state;
+  useEffect(() => {
+    if (active === "browser" && llmState === "idle") send({ type: "loadLlm" });
+  }, [active, llmState, send]);
+
+  const load = useCallback(() => {
+    send({ type: "loadStt" });
+    setChoice(readChoice());
+  }, [send]);
+
+  const choose = useCallback((id: EngineId) => {
+    setChoice(id);
+    setError(null);
+    try {
+      window.localStorage.setItem(CHOICE_KEY, id);
+    } catch {
+      /* per-session only */
+    }
+  }, []);
+
   const transcribe = useCallback(
     (audio: Float32Array) => request((id) => ({ type: "transcribe", id, audio }), [audio.buffer]),
     [request],
   );
 
-  const browserFeedback = useCallback(
-    (context: string) => request((id) => ({ type: "feedback", id, context })),
-    [request],
-  );
-
   const feedback = useCallback(
     async (context: string): Promise<{ text: string; engine: string }> => {
-      if (ollama.state === "ready") {
+      if (active === "openrouter") {
         try {
-          const res = await fetch("/api/ollama", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ context }),
-          });
-          if (res.ok) {
-            const data = (await res.json()) as { text: string; model: string };
-            return { text: data.text, engine: `Ollama · ${data.model}` };
-          }
-        } catch {
-          /* fall through to the in-browser model */
+          const text = await openRouterFeedback(openrouter, context);
+          setError(null);
+          return { text, engine: `OpenRouter · ${openrouter.model}` };
+        } catch (e) {
+          setError(e instanceof OpenRouterError ? e.message : "Sem resposta do OpenRouter.");
+          return { text: "", engine: "" };
         }
-        setOllama((o) => ({ ...o, state: "unavailable", reason: "offline" }));
-        send({ type: "loadLlm" });
       }
       if (models.llm.state !== "ready") return { text: "", engine: "" };
-      return { text: await browserFeedback(context), engine: "Qwen 2.5 0.5B · navegador" };
+      const text = await request((id) => ({ type: "feedback", id, context }));
+      return { text, engine: "Navegador · Qwen 2.5 0.5B" };
     },
-    [ollama.state, models.llm.state, browserFeedback, send],
+    [active, openrouter, models.llm.state, request],
   );
 
-  return { device, models, ollama, load, checkOllama, transcribe, feedback };
+  return { device, models, openrouter, hasKey, choice, active, error, choose, load, transcribe, feedback };
 }

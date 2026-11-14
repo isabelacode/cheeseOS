@@ -6,8 +6,10 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
+  Cloud,
   Cpu,
   Gauge,
+  KeyRound,
   HeartPulse,
   LayoutGrid,
   Loader2,
@@ -16,9 +18,7 @@ import {
   MicOff,
   PersonStanding,
   UserRoundPen,
-  RefreshCw,
   Send,
-  Server,
   ShieldAlert,
   Thermometer,
   Wind,
@@ -38,7 +38,8 @@ import {
 } from "@/lib/health/vitals";
 import type { Finding, Region, Severity, Status, TranscriptEntry, Vitals } from "@/lib/health/types";
 import { REGION_LABEL } from "@/lib/health/types";
-import { useLocalAi, type ModelInfo, type OllamaInfo } from "@/hooks/useLocalAi";
+import { ENGINE_LABEL, useLocalAi, type EngineId, type ModelInfo } from "@/hooks/useLocalAi";
+import { DEFAULT_OPENROUTER_MODEL, saveOpenRouterSettings, type OpenRouterSettings } from "@/lib/llm/openrouter";
 import { useVoiceListener, type MicState } from "@/hooks/useVoiceListener";
 import { firstName, profileContext, type CrewProfile } from "@/lib/crew/profile";
 
@@ -142,6 +143,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
   const [hovered, setHovered] = useState<Region | null>(null);
   const [transcribing, setTranscribing] = useState(0);
   const [draft, setDraft] = useState("");
+  const [keyOpen, setKeyOpen] = useState(false);
   const vitals = stream.current;
 
   const findingsRef = useRef(findings);
@@ -242,8 +244,19 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
             <p className="text-sm text-ink-2">
               {[profile.role, profile.mission, `${profile.age} anos`, profile.bloodType].filter(Boolean).join(" · ")}
             </p>
-            <EngineStatus device={ai.device} stt={ai.models.stt} llm={ai.models.llm} ollama={ai.ollama} onRetry={ai.checkOllama} />
+            <EngineStatus device={ai.device} stt={ai.models.stt} llm={ai.models.llm} active={ai.active} model={ai.openrouter.model} error={ai.error} />
           </div>
+          <div className="flex flex-wrap items-center gap-3">
+          <EnginePicker active={ai.active} hasKey={ai.hasKey} onChoose={ai.choose} onEditKey={() => setKeyOpen(true)} />
+          <OpenRouterDialog
+            open={keyOpen}
+            settings={ai.openrouter}
+            onClose={() => setKeyOpen(false)}
+            onSaved={(hasKey) => {
+              setKeyOpen(false);
+              ai.choose(hasKey ? "openrouter" : "browser");
+            }}
+          />
           <button
             type="button"
             onClick={live ? mic.stop : mic.start}
@@ -258,6 +271,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
             </span>
             {live ? "Escuta ligada" : "Ligar escuta contínua"}
           </button>
+          </div>
         </header>
 
         <main className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-6">
@@ -304,6 +318,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
                 onSelect={setSelected}
                 onHover={setHovered}
                 respiration={vitals.respiration}
+                femininity={profile.sex === "feminino" ? 1 : profile.sex === "masculino" ? 0 : 0.5}
               />
             </div>
 
@@ -390,32 +405,29 @@ function EngineStatus({
   device,
   stt,
   llm,
-  ollama,
-  onRetry,
+  active,
+  model,
+  error,
 }: {
   device: "webgpu" | "wasm" | null;
   stt: ModelInfo;
   llm: ModelInfo;
-  ollama: OllamaInfo;
-  onRetry: () => void;
+  active: EngineId;
+  model: string;
+  error: string | null;
 }) {
   const sttText =
     stt.state === "ready" ? "pronto" : stt.state === "loading" ? `${Math.round(stt.progress * 100)}%` : stt.state === "error" ? "falhou" : "aguardando";
-  let llmText: string;
-  let LlmIcon: LucideIcon = Server;
-  if (ollama.state === "ready") llmText = `Ollama · ${ollama.model}`;
-  else if (ollama.state === "checking") llmText = "procurando Ollama…";
-  else {
-    LlmIcon = Cpu;
-    llmText =
-      llm.state === "ready"
-        ? "Qwen 0.5B no navegador"
-        : llm.state === "loading"
-          ? `Qwen 0.5B ${Math.round(llm.progress * 100)}%`
-          : llm.state === "error"
-            ? "IA local indisponível"
-            : "Ollama não encontrado";
-  }
+  const remote = active === "openrouter";
+  const llmText = remote
+    ? `OpenRouter · ${model}`
+    : llm.state === "ready"
+      ? "Qwen 0.5B no navegador"
+      : llm.state === "loading"
+        ? `Qwen 0.5B ${Math.round(llm.progress * 100)}%`
+        : llm.state === "error"
+          ? "IA do navegador indisponível"
+          : "Qwen 0.5B aguardando";
   return (
     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
       <span className="flex items-center gap-1.5">
@@ -423,15 +435,167 @@ function EngineStatus({
         {device && <span className="text-ink-3">· {device === "webgpu" ? "GPU" : "CPU"}</span>}
       </span>
       <span className="flex items-center gap-1.5">
-        <LlmIcon className="size-3.5" aria-hidden /> {llmText}
-        {ollama.state === "unavailable" && (
-          <button type="button" onClick={onRetry} className="rounded p-0.5 hover:bg-surface" aria-label="Procurar Ollama de novo">
-            <RefreshCw className="size-3" aria-hidden />
-          </button>
-        )}
+        {remote ? <Cloud className="size-3.5" aria-hidden /> : <Cpu className="size-3.5" aria-hidden />}
+        {llmText}
       </span>
-      <span className="font-semibold text-accent">Processamento 100% local</span>
+      {error ? (
+        <span role="status" className="flex items-center gap-1 font-semibold text-crit">
+          <AlertTriangle className="size-3.5" aria-hidden /> {error}
+        </span>
+      ) : (
+        <span className={`font-semibold ${remote ? "text-warn" : "text-accent"}`}>
+          {remote ? "Voz no aparelho · IA na nuvem" : "Processamento 100% no aparelho"}
+        </span>
+      )}
     </p>
+  );
+}
+
+function EnginePicker({
+  active,
+  hasKey,
+  onChoose,
+  onEditKey,
+}: {
+  active: EngineId;
+  hasKey: boolean;
+  onChoose: (id: EngineId) => void;
+  onEditKey: () => void;
+}) {
+  const options: { id: EngineId; Icon: LucideIcon; hint: string }[] = [
+    { id: "openrouter", Icon: Cloud, hint: hasKey ? "Modelos na nuvem com a sua chave" : "Informe sua chave do OpenRouter" },
+    { id: "browser", Icon: Cpu, hint: "Modelo pequeno rodando neste aparelho" },
+  ];
+  return (
+    <div className="flex items-center gap-1 rounded-full bg-surface p-1 shadow-card">
+      <div role="radiogroup" aria-label="IA da orientação" className="flex">
+        {options.map(({ id, Icon, hint }) => {
+          const on = active === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              title={hint}
+              onClick={() => (id === "openrouter" && !hasKey ? onEditKey() : onChoose(id))}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${
+                on ? "bg-accent text-white" : "text-ink-2 hover:bg-sunken hover:text-ink"
+              }`}
+            >
+              <Icon className="size-3.5" aria-hidden />
+              {ENGINE_LABEL[id]}
+            </button>
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={onEditKey}
+        title={hasKey ? "Trocar chave do OpenRouter" : "Adicionar chave do OpenRouter"}
+        aria-label={hasKey ? "Trocar chave do OpenRouter" : "Adicionar chave do OpenRouter"}
+        className="grid size-7 place-items-center rounded-full text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
+      >
+        <KeyRound className="size-3.5" aria-hidden />
+      </button>
+    </div>
+  );
+}
+
+function OpenRouterDialog({
+  open,
+  settings,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  settings: OpenRouterSettings;
+  onClose: () => void;
+  onSaved: (hasKey: boolean) => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
+
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      aria-labelledby="or-title"
+      className="m-auto w-[min(440px,calc(100vw-32px))] rounded-2xl bg-surface p-0 text-ink shadow-card backdrop:bg-ink/30"
+    >
+      {open && (
+        <form
+          className="flex flex-col gap-4 p-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            const apiKey = String(f.get("apiKey") ?? "").trim();
+            saveOpenRouterSettings({ apiKey, model: String(f.get("model") ?? "") });
+            onSaved(Boolean(apiKey));
+          }}
+        >
+          <div>
+            <h2 id="or-title" className="text-lg font-bold">
+              Usar o OpenRouter
+            </h2>
+            <p className="mt-1 text-sm text-ink-2">
+              Cole sua chave para gerar a orientação com modelos maiores. Ela fica salva só neste navegador e vai direto para o OpenRouter. Os relatos
+              e o perfil saem do aparelho quando esta opção está ativa.
+            </p>
+          </div>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">
+            Chave da API
+            <input
+              name="apiKey"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              defaultValue={settings.apiKey}
+              placeholder="sk-or-v1-…"
+              className="rounded-xl border border-line bg-sunken px-3 py-2.5 font-mono text-sm font-normal"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">
+            Modelo
+            <input
+              name="model"
+              spellCheck={false}
+              defaultValue={settings.model}
+              placeholder={DEFAULT_OPENROUTER_MODEL}
+              className="rounded-xl border border-line bg-sunken px-3 py-2.5 font-mono text-sm font-normal"
+            />
+          </label>
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent-ink hover:underline">
+            Criar uma chave no OpenRouter
+          </a>
+          <div className="flex flex-wrap justify-end gap-2">
+            {settings.apiKey && (
+              <button
+                type="button"
+                onClick={() => {
+                  saveOpenRouterSettings({ apiKey: "", model: settings.model });
+                  onSaved(false);
+                }}
+                className="mr-auto rounded-full px-4 py-2 text-sm font-semibold text-crit hover:bg-crit-soft"
+              >
+                Remover chave
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="rounded-full px-4 py-2 text-sm font-semibold text-ink-2 hover:bg-sunken">
+              Cancelar
+            </button>
+            <button type="submit" className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white hover:bg-accent-ink">
+              Salvar
+            </button>
+          </div>
+        </form>
+      )}
+    </dialog>
   );
 }
 
