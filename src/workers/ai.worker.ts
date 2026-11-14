@@ -101,6 +101,15 @@ async function loadLlm(model: string) {
   }
 }
 
+/** Frees the model's GPU/WASM memory when the crew turns the browser AI off. */
+async function unloadLlm() {
+  if (!llm) return;
+  await llm.dispose().catch(() => {});
+  llm = null;
+  llmId = null;
+  post({ type: "status", model: "llm", state: "idle" });
+}
+
 /** Whisper's usual inventions on silence or noise. */
 const HALLUCINATIONS = [
   /legendas? pela comunidade/i,
@@ -150,6 +159,7 @@ async function handle(msg: AiRequest) {
   try {
     if (msg.type === "loadStt") await loadStt();
     else if (msg.type === "loadLlm") await loadLlm(msg.model);
+    else if (msg.type === "unloadLlm") await unloadLlm();
     else if (msg.type === "transcribe") await transcribe(msg.id, msg.audio, msg.locale);
     else if (msg.type === "feedback") await feedback(msg.id, msg.context, msg.locale);
   } catch (e) {

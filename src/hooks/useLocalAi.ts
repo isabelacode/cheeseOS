@@ -14,13 +14,15 @@ export interface ModelInfo {
 
 type Pending = (text: string) => void;
 
-export type EngineId = "openrouter" | "browser";
+/** "off" = no model at all: the instant rule-based advice only. */
+export type EngineId = "openrouter" | "browser" | "off";
 
 const CHOICE_KEY = "cheeseos.engine.v1";
 
 function readChoice(): EngineId {
   try {
-    return window.localStorage.getItem(CHOICE_KEY) === "browser" ? "browser" : "openrouter";
+    const v = window.localStorage.getItem(CHOICE_KEY);
+    return v === "browser" || v === "off" ? v : "openrouter";
   } catch {
     return "openrouter";
   }
@@ -102,20 +104,24 @@ export function useLocalAi() {
   );
 
   const hasKey = Boolean(openrouter.apiKey);
-  const active: EngineId = choice === "openrouter" && hasKey ? "openrouter" : "browser";
+  const active: EngineId = choice === "off" ? "off" : choice === "openrouter" && hasKey ? "openrouter" : "browser";
 
-  // The browser model is only downloaded once it is actually the active engine.
+  // The browser model is only downloaded while it is the active engine, and
+  // released as soon as another engine (or "off") is picked.
   const browserModelId = browserModel.id;
   useEffect(() => {
-    if (booted && active === "browser") send({ type: "loadLlm", model: browserModelId });
+    if (!booted) return;
+    send(active === "browser" ? { type: "loadLlm", model: browserModelId } : { type: "unloadLlm" });
   }, [booted, active, browserModelId, send]);
 
+  /** Whisper is loaded on demand, when listening is first turned on. */
+  const loadStt = useCallback(() => send({ type: "loadStt" }), [send]);
+
   const load = useCallback(() => {
-    send({ type: "loadStt" });
     setChoice(readChoice());
     setBrowserModel(readBrowserModel());
     setBooted(true);
-  }, [send]);
+  }, []);
 
   const chooseBrowserModel = useCallback((id: string) => {
     saveBrowserModel(id);
@@ -149,6 +155,7 @@ export function useLocalAi() {
           return { text: "", engine: "openrouter", model: openrouter.model };
         }
       }
+      if (active === "off") return { text: "", engine: "off", model: "" };
       if (models.llm.state !== "ready") return { text: "", engine: "browser", model: browserModel.label };
       const text = await request((id) => ({ type: "feedback", id, context, locale }));
       return { text, engine: "browser", model: browserModel.label };
@@ -156,5 +163,5 @@ export function useLocalAi() {
     [active, openrouter, models.llm.state, request, browserModel.label],
   );
 
-  return { device, models, openrouter, hasKey, choice, active, error, browserModel, choose, chooseBrowserModel, load, transcribe, feedback };
+  return { device, models, openrouter, hasKey, choice, active, error, browserModel, choose, chooseBrowserModel, load, loadStt, transcribe, feedback };
 }

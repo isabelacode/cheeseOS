@@ -6,6 +6,7 @@ export type ModelState = "idle" | "loading" | "ready" | "error";
 export type AiRequest =
   | { type: "loadStt" }
   | { type: "loadLlm"; model: string }
+  | { type: "unloadLlm" }
   | { type: "transcribe"; id: string; audio: Float32Array; locale: Locale }
   | { type: "feedback"; id: string; context: string; locale: Locale };
 

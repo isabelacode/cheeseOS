@@ -102,6 +102,10 @@ export interface Messages {
     browserLoading: (model: string, pct: number) => string;
     browserFailed: (model: string) => string;
     browserWaiting: (model: string) => string;
+    sttOnDemand: string;
+    offLabel: string;
+    offHint: string;
+    offStatus: string;
     cloudBadge: string;
     localBadge: string;
     pickerLabel: string;
@@ -290,6 +294,10 @@ const pt: Messages = {
     browserLoading: (m, pct) => `Baixando ${m} · ${pct}%`,
     browserFailed: (m) => `${m} não carregou neste aparelho`,
     browserWaiting: (m) => `${m} aguardando`,
+    sttOnDemand: "carrega ao ligar a escuta",
+    offLabel: "Desligada",
+    offHint: "Sem modelo de IA: só as regras locais, sem gastar processamento",
+    offStatus: "IA desligada · só regras locais",
     cloudBadge: "Voz no aparelho · IA na nuvem",
     localBadge: "Processamento 100% no aparelho",
     pickerLabel: "IA da orientação",
@@ -496,6 +504,10 @@ const en: Messages = {
     browserLoading: (m, pct) => `Downloading ${m} · ${pct}%`,
     browserFailed: (m) => `${m} couldn't load on this device`,
     browserWaiting: (m) => `${m} waiting`,
+    sttOnDemand: "loads when listening starts",
+    offLabel: "Off",
+    offHint: "No AI model: local rules only, no compute used",
+    offStatus: "AI off · local rules only",
     cloudBadge: "Voice on device · AI in the cloud",
     localBadge: "100% on-device processing",
     pickerLabel: "Guidance AI",

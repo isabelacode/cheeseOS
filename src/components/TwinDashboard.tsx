@@ -16,6 +16,7 @@ import {
   Mic,
   MicOff,
   PersonStanding,
+  PowerOff,
   UserRoundPen,
   Send,
   SlidersHorizontal,
@@ -231,7 +232,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
 
   const mic = useVoiceListener(onUtterance);
 
-  // Warm the on-device models right away so the first report is fast.
+  // Restore the saved AI choices; models load only when they are needed.
   const loadAi = ai.load;
   useEffect(() => {
     loadAi();
@@ -287,7 +288,11 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
           />
           <button
             type="button"
-            onClick={live ? mic.stop : mic.start}
+            onClick={() => {
+              if (live) return mic.stop();
+              ai.loadStt();
+              mic.start();
+            }}
             disabled={mic.state === "requesting"}
             aria-pressed={live}
             className={`flex items-center gap-2.5 rounded-full py-2 pr-5 pl-2 text-sm font-semibold shadow-card transition-colors duration-200 disabled:opacity-60 ${
@@ -449,10 +454,12 @@ function EngineStatus({
 }) {
   const e = useT().engine;
   const sttText =
-    stt.state === "ready" ? e.sttReady : stt.state === "loading" ? `${Math.round(stt.progress * 100)}%` : stt.state === "error" ? e.sttFailed : e.waiting;
+    stt.state === "ready" ? e.sttReady : stt.state === "loading" ? `${Math.round(stt.progress * 100)}%` : stt.state === "error" ? e.sttFailed : e.sttOnDemand;
   const remote = active === "openrouter";
   const llmText = remote
     ? `OpenRouter · ${model}`
+    : active === "off"
+      ? e.offStatus
     : llm.state === "ready"
       ? e.browserReady(browserLabel)
       : llm.state === "loading"
@@ -467,7 +474,7 @@ function EngineStatus({
         {device && <span className="text-ink-3">· {device === "webgpu" ? "GPU" : "CPU"}</span>}
       </span>
       <span className="flex items-center gap-1.5">
-        {remote ? <Cloud className="size-3.5" aria-hidden /> : <Cpu className="size-3.5" aria-hidden />}
+        {remote ? <Cloud className="size-3.5" aria-hidden /> : active === "off" ? <PowerOff className="size-3.5" aria-hidden /> : <Cpu className="size-3.5" aria-hidden />}
         {llmText}
       </span>
       {error ? (
@@ -498,6 +505,7 @@ function EnginePicker({
   const options: { id: EngineId; label: string; Icon: LucideIcon; hint: string }[] = [
     { id: "openrouter", label: "OpenRouter", Icon: Cloud, hint: hasKey ? e.openrouterHint : e.openrouterNoKey },
     { id: "browser", label: e.browserLabel, Icon: Cpu, hint: e.browserHint },
+    { id: "off", label: e.offLabel, Icon: PowerOff, hint: e.offHint },
   ];
   return (
     <div className="flex items-center gap-1 rounded-full bg-surface p-1 shadow-card">
