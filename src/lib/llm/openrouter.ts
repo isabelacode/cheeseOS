@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { MEDICAL_SYSTEM_PROMPT, cleanModelText } from "@/lib/health/prompt";
+import { cleanModelText } from "@/lib/health/prompt";
 
 /**
  * Bring-your-own-key OpenRouter access. The key lives only in this browser's
@@ -66,17 +66,18 @@ export function saveOpenRouterSettings(next: OpenRouterSettings) {
   listeners.forEach((l) => l());
 }
 
+export type OpenRouterErrorCode = "auth" | "credits" | "model" | "rate" | "network" | "other";
+
 export class OpenRouterError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
+  constructor(readonly code: OpenRouterErrorCode) {
+    super(`OpenRouter error: ${code}`);
   }
 }
 
-export async function openRouterFeedback(settings: OpenRouterSettings, context: string): Promise<string> {
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+export async function openRouterFeedback(settings: OpenRouterSettings, systemPrompt: string, context: string): Promise<string> {
+  let res: Response;
+  try {
+    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${settings.apiKey}`,
@@ -89,23 +90,17 @@ export async function openRouterFeedback(settings: OpenRouterSettings, context: 
       temperature: 0.2,
       max_tokens: 200,
       messages: [
-        { role: "system", content: MEDICAL_SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "user", content: context },
       ],
     }),
   });
+  } catch {
+    throw new OpenRouterError("network");
+  }
   if (!res.ok) {
-    const msg =
-      res.status === 401
-        ? "Chave do OpenRouter inválida."
-        : res.status === 402
-          ? "Sem créditos no OpenRouter."
-          : res.status === 404 || res.status === 400
-            ? "Modelo não encontrado no OpenRouter."
-            : res.status === 429
-              ? "Limite de uso do OpenRouter atingido."
-              : `OpenRouter respondeu ${res.status}.`;
-    throw new OpenRouterError(msg, res.status);
+    const s = res.status;
+    throw new OpenRouterError(s === 401 ? "auth" : s === 402 ? "credits" : s === 400 || s === 404 ? "model" : s === 429 ? "rate" : "other");
   }
   const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   return cleanModelText(data.choices?.[0]?.message?.content ?? "");

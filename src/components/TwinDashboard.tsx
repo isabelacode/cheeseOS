@@ -27,7 +27,6 @@ import {
 import { extractSymptoms, mergeFindings } from "@/lib/health/symptoms";
 import {
   BASELINE,
-  STATUS_COPY,
   VITAL_SPECS,
   overallSeverity,
   regionSeverity,
@@ -37,28 +36,26 @@ import {
   type VitalSpec,
 } from "@/lib/health/vitals";
 import type { Finding, Region, Severity, Status, TranscriptEntry, Vitals } from "@/lib/health/types";
-import { REGION_LABEL } from "@/lib/health/types";
-import { ENGINE_LABEL, useLocalAi, type EngineId, type ModelInfo } from "@/hooks/useLocalAi";
+import { useLocalAi, type EngineId, type ModelInfo } from "@/hooks/useLocalAi";
 import { BROWSER_MODELS, formatSize, type BrowserModel } from "@/lib/llm/browser-models";
 import { DEFAULT_OPENROUTER_MODEL, saveOpenRouterSettings, type OpenRouterSettings } from "@/lib/llm/openrouter";
 import { useVoiceListener, type MicState } from "@/hooks/useVoiceListener";
 import { firstName, profileContext, type CrewProfile } from "@/lib/crew/profile";
+import { formatNumber, INTL_LOCALE, messages, useLocale, useT, type Locale, type Messages } from "@/lib/i18n";
+import type { OpenRouterErrorCode } from "@/lib/llm/openrouter";
+import { LanguageToggle } from "./LanguageToggle";
 
 const TwinScene = dynamic(() => import("./twin/TwinScene"), {
   ssr: false,
-  loading: () => <div className="grid h-full place-items-center text-sm text-ink-3">Montando o gêmeo digital…</div>,
+  loading: () => <SceneLoading />,
 });
 
 const HISTORY = 60;
 
-const EXAMPLES = [
-  "Estou com dor de cabeça e um pouco de enjoo.",
-  "Sinto um aperto forte no peito e falta de ar.",
-  "Meu braço esquerdo está formigando.",
-  "A dor de cabeça passou, estou bem.",
-];
-
-const SEVERITY_WORD: Record<Severity, string> = { 0: "Normal", 1: "Leve", 2: "Atenção", 3: "Crítico" };
+function SceneLoading() {
+  const t = useT();
+  return <div className="grid h-full place-items-center text-sm text-ink-3">{t.dashboard.loadingScene}</div>;
+}
 
 const SEVERITY_CHIP: Record<Severity, string> = {
   0: "text-ok bg-ok-soft",
@@ -95,36 +92,50 @@ const CHART_RANGE: Partial<Record<keyof Vitals, [number, number]>> = {
 
 const spec = (key: keyof Vitals) => VITAL_SPECS.find((s) => s.key === key)!;
 
-function formatVital(s: VitalSpec, v: Vitals) {
-  return s.format ? s.format(v) : v[s.key].toFixed(s.digits).replace(".", ",");
+function formatVital(s: VitalSpec, v: Vitals, locale: Locale) {
+  return s.format ? s.format(v) : formatNumber(v[s.key], s.digits, locale);
 }
 
-function timeOf(ms: number) {
-  return new Date(ms).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+function timeOf(ms: number, locale: Locale) {
+  return new Date(ms).toLocaleTimeString(INTL_LOCALE[locale], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-function buildContext(profile: CrewProfile, text: string, findings: Finding[], v: Vitals, status: Status) {
+function adviceOf(f: Finding, t: Messages) {
+  return f.redFlag ? t.radiatingAdvice : t.symptoms[f.id].advice;
+}
+
+function buildContext(locale: Locale, profile: CrewProfile, text: string, findings: Finding[], v: Vitals, status: Status) {
+  const t = messages[locale];
+  const c = t.context;
   const list = findings.length
-    ? findings.map((f) => `- ${f.label} (${SEVERITY_WORD[f.severity].toLowerCase()})`).join("\n")
-    : "- nenhum";
+    ? findings.map((f) => `- ${t.symptoms[f.id].label} (${t.severity[f.severity].toLowerCase()})`).join("\n")
+    : `- ${c.none}`;
   return [
-    profileContext(profile),
-    `Fala do tripulante: "${text}"`,
-    `Sintomas ativos:\n${list}`,
-    `Sinais vitais: FC ${Math.round(v.heartRate)} bpm, SpO₂ ${Math.round(v.spo2)}%, temperatura ${v.temperature.toFixed(1)} °C, respiração ${Math.round(v.respiration)} rpm, PA ${Math.round(v.systolic)}/${Math.round(v.diastolic)} mmHg.`,
-    `Estado geral: ${STATUS_COPY[status].label}.`,
-    "Dê o feedback imediato ao tripulante.",
+    profileContext(profile, locale),
+    c.speech(text),
+    `${c.activeSymptoms}\n${list}`,
+    c.vitals({
+      hr: Math.round(v.heartRate),
+      spo2: Math.round(v.spo2),
+      temp: formatNumber(v.temperature, 1, locale),
+      rr: Math.round(v.respiration),
+      sys: Math.round(v.systolic),
+      dia: Math.round(v.diastolic),
+    }),
+    c.overall(t.status[status].label),
+    c.instruction,
   ].join("\n");
 }
 
-function quickAdvice(findings: Finding[]): string {
-  if (!findings.length) return "Nenhum sintoma ativo. Continue contando como você está se sentindo.";
-  return `${findings[0].label}: ${findings[0].advice}`;
+function quickAdvice(findings: Finding[], t: Messages): string {
+  if (!findings.length) return t.dashboard.noSymptoms;
+  return `${t.symptoms[findings[0].id].label}: ${adviceOf(findings[0], t)}`;
 }
 
+/** text null = the instant rule-based advice, rendered in the current language. */
 interface Feedback {
-  text: string;
-  engine: string;
+  text: string | null;
+  engine: string | null;
   pending: boolean;
 }
 
@@ -135,11 +146,14 @@ interface Stream {
 
 export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile; onEditProfile: () => void }) {
   const ai = useLocalAi();
+  const locale = useLocale();
+  const t = useT();
+  const d = t.dashboard;
   const baseline = useMemo<Vitals>(() => ({ ...BASELINE, heartRate: profile.restingHeartRate }), [profile.restingHeartRate]);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [stream, setStream] = useState<Stream>(() => ({ current: baseline, history: Array<Vitals>(HISTORY).fill(baseline) }));
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
-  const [feedback, setFeedback] = useState<Feedback>({ text: quickAdvice([]), engine: "Regras locais", pending: false });
+  const [feedback, setFeedback] = useState<Feedback>({ text: null, engine: null, pending: false });
   const [selected, setSelected] = useState<Region | null>(null);
   const [hovered, setHovered] = useState<Region | null>(null);
   const [transcribing, setTranscribing] = useState(0);
@@ -151,10 +165,12 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
   const findingsRef = useRef(findings);
   const baselineRef = useRef(baseline);
   const profileRef = useRef(profile);
+  const localeRef = useRef(locale);
   useEffect(() => {
     baselineRef.current = baseline;
     profileRef.current = profile;
-  }, [baseline, profile]);
+    localeRef.current = locale;
+  }, [baseline, profile, locale]);
   const vitalsRef = useRef(vitals);
   useEffect(() => {
     findingsRef.current = findings;
@@ -179,20 +195,22 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
     async (raw: string, source: TranscriptEntry["source"]) => {
       const text = raw.trim();
       if (!text) return;
-      const ex = extractSymptoms(text);
+      const lang = localeRef.current;
+      const ex = extractSymptoms(text, lang);
       const next = mergeFindings(findingsRef.current, ex);
       findingsRef.current = next;
       setFindings(next);
       setEntries((list) =>
         [
-          { id: crypto.randomUUID(), text, at: Date.now(), source, findings: ex.findings.map((f) => f.label), resolved: ex.resolved },
+          { id: crypto.randomUUID(), text, at: Date.now(), source, findings: ex.findings.map((f) => f.id), resolved: ex.resolved },
           ...list,
         ].slice(0, 50),
       );
       const status = statusOf(overallSeverity(next, vitalsRef.current));
-      setFeedback({ text: quickAdvice(next), engine: "Regras locais", pending: true });
-      const res = await feedbackFn(buildContext(profileRef.current, text, next, vitalsRef.current, status));
-      setFeedback((f) => (res.text ? { text: res.text, engine: res.engine, pending: false } : { ...f, pending: false }));
+      setFeedback({ text: null, engine: null, pending: true });
+      const res = await feedbackFn(buildContext(lang, profileRef.current, text, next, vitalsRef.current, status), lang);
+      const engine = `${res.engine === "openrouter" ? "OpenRouter" : messages[lang].engine.browserLabel} · ${res.model}`;
+      setFeedback((f) => (res.text ? { text: res.text, engine, pending: false } : { ...f, pending: false }));
     },
     [feedbackFn],
   );
@@ -202,7 +220,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
     async (audio: Float32Array) => {
       setTranscribing((n) => n + 1);
       try {
-        const text = await transcribe(audio);
+        const text = await transcribe(audio, localeRef.current);
         if (text) await handleText(text, "voice");
       } finally {
         setTranscribing((n) => n - 1);
@@ -223,13 +241,14 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
   const regions = useMemo(() => regionSeverity(findings), [findings]);
   const labels = useMemo(() => {
     const out: Partial<Record<Region, string>> = {};
-    for (const f of [...findings].reverse()) for (const r of f.regions) out[r] = f.label;
+    for (const f of [...findings].reverse()) for (const r of f.regions) out[r] = t.symptoms[f.id].label;
     // A whole-body symptom would label every limb; keep a single tag on the torso.
     for (const f of findings) {
-      if (f.regions.length > 3) for (const r of f.regions) if (r !== "torso" && out[r] === f.label) delete out[r];
+      const label = t.symptoms[f.id].label;
+      if (f.regions.length > 3) for (const r of f.regions) if (r !== "torso" && out[r] === label) delete out[r];
     }
     return out;
-  }, [findings]);
+  }, [findings, t]);
 
   const focus = selected ?? hovered;
   const focusFindings = focus ? findings.filter((f) => f.regions.includes(focus)) : [];
@@ -242,13 +261,14 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
       <div className="flex min-w-0 flex-1 flex-col gap-5 lg:min-h-0">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-[28px]">Olá, {firstName(profile)}</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-[28px]">{d.hello(firstName(profile))}</h1>
             <p className="text-sm text-ink-2">
-              {[profile.role, profile.mission, `${profile.age} anos`, profile.bloodType].filter(Boolean).join(" · ")}
+              {[profile.role, profile.mission, d.years(profile.age), profile.bloodType].filter(Boolean).join(" · ")}
             </p>
             <EngineStatus device={ai.device} stt={ai.models.stt} llm={ai.models.llm} active={ai.active} model={ai.openrouter.model} browserLabel={ai.browserModel.label} error={ai.error} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
+          <LanguageToggle />
           <EnginePicker active={ai.active} hasKey={ai.hasKey} onChoose={ai.choose} onSettings={setSettingsFocus} />
           <AiSettingsDialog
             open={settingsFocus !== undefined}
@@ -277,7 +297,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
             <span className={`grid size-9 place-items-center rounded-full ${live ? "mic-live bg-white/20" : "bg-accent-soft text-accent"}`}>
               {live ? <Mic className="size-[18px]" aria-hidden /> : <MicOff className="size-[18px]" aria-hidden />}
             </span>
-            {live ? "Escuta ligada" : "Ligar escuta contínua"}
+            {live ? d.micOn : d.micOff}
           </button>
           </div>
         </header>
@@ -287,7 +307,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
           <div className="flex min-w-0 flex-col gap-5 lg:min-h-0 lg:overflow-y-auto lg:px-1 lg:pb-2">
             <StatusCard status={status} feedback={feedback} findings={findings} />
 
-            <section id="sinais" aria-label="Sinais vitais" className="grid gap-4 sm:grid-cols-3">
+            <section id="sinais" aria-label={d.vitalsNav} className="grid gap-4 sm:grid-cols-3">
               {(["temperature", "systolic", "respiration"] as const).map((k) => (
                 <VitalCard key={k} spec={spec(k)} vitals={vitals} history={stream.history} />
               ))}
@@ -314,7 +334,7 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
           {/* Body column */}
           <section
             id="corpo"
-            aria-label="Corpo do tripulante"
+            aria-label={d.bodyRegion}
             className="relative min-h-[620px] overflow-hidden rounded-[28px] bg-[radial-gradient(120%_80%_at_50%_35%,#f7f8fb_0%,#e3e8f0_70%,#dbe1ea_100%)] shadow-card lg:min-h-0"
           >
             <div className="absolute inset-0">
@@ -334,24 +354,24 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
               <div className="pointer-events-auto rounded-2xl bg-surface/90 px-4 py-3 shadow-card backdrop-blur-sm" aria-live="polite">
                 {focus ? (
                   <>
-                    <p className="text-sm font-semibold">{REGION_LABEL[focus]}</p>
+                    <p className="text-sm font-semibold">{t.regions[focus]}</p>
                     {focusFindings.length ? (
                       <ul className="mt-1.5 space-y-1.5">
                         {focusFindings.map((f) => (
                           <li key={f.id} className="text-xs text-ink-2">
-                            <span className={`mr-1.5 rounded-md px-1.5 py-0.5 font-semibold ${SEVERITY_CHIP[f.severity]}`}>{SEVERITY_WORD[f.severity]}</span>
-                            {f.label}
+                            <span className={`mr-1.5 rounded-md px-1.5 py-0.5 font-semibold ${SEVERITY_CHIP[f.severity]}`}>{t.severity[f.severity]}</span>
+                            {t.symptoms[f.id].label}
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-0.5 text-xs text-ink-2">Sem queixas registradas.</p>
+                      <p className="mt-0.5 text-xs text-ink-2">{d.noComplaints}</p>
                     )}
                   </>
                 ) : (
                   <>
-                    <p className="text-sm font-semibold">Corpo</p>
-                    <p className="mt-0.5 text-xs text-ink-2">Toque num ponto para ver a região. Arraste para girar.</p>
+                    <p className="text-sm font-semibold">{d.body}</p>
+                    <p className="mt-0.5 text-xs text-ink-2">{d.bodyHint}</p>
                   </>
                 )}
               </div>
@@ -368,14 +388,15 @@ export function TwinDashboard({ profile, onEditProfile }: { profile: CrewProfile
 /* ---------- Shell ---------- */
 
 function Rail({ onEditProfile }: { onEditProfile: () => void }) {
+  const d = useT().dashboard;
   const items: [string, string, LucideIcon][] = [
-    ["#topo", "Visão geral", LayoutGrid],
-    ["#sinais", "Sinais vitais", HeartPulse],
-    ["#relatos", "Relatos", MessageCircle],
-    ["#corpo", "Corpo", PersonStanding],
+    ["#topo", d.overview, LayoutGrid],
+    ["#sinais", d.vitalsNav, HeartPulse],
+    ["#relatos", d.reports, MessageCircle],
+    ["#corpo", d.body, PersonStanding],
   ];
   return (
-    <nav id="topo" aria-label="Seções" className="hidden w-14 shrink-0 flex-col items-center sm:flex">
+    <nav id="topo" aria-label={d.sections} className="hidden w-14 shrink-0 flex-col items-center sm:flex">
       <span className="grid size-12 place-items-center rounded-2xl bg-surface shadow-card" role="img" aria-label="cheeseOS">
         <span className="flex items-start text-xl leading-none font-bold tracking-tight">
           c<span className="-mt-1 ml-px text-sm text-accent">+</span>
@@ -399,8 +420,8 @@ function Rail({ onEditProfile }: { onEditProfile: () => void }) {
       <button
         type="button"
         onClick={onEditProfile}
-        title="Editar dados do tripulante"
-        aria-label="Editar dados do tripulante"
+        title={d.editProfile}
+        aria-label={d.editProfile}
         className="grid size-11 place-items-center rounded-full bg-surface text-ink-2 shadow-card transition-colors duration-200 hover:text-accent"
       >
         <UserRoundPen className="size-[18px]" aria-hidden />
@@ -424,20 +445,21 @@ function EngineStatus({
   active: EngineId;
   model: string;
   browserLabel: string;
-  error: string | null;
+  error: OpenRouterErrorCode | null;
 }) {
+  const e = useT().engine;
   const sttText =
-    stt.state === "ready" ? "pronto" : stt.state === "loading" ? `${Math.round(stt.progress * 100)}%` : stt.state === "error" ? "falhou" : "aguardando";
+    stt.state === "ready" ? e.sttReady : stt.state === "loading" ? `${Math.round(stt.progress * 100)}%` : stt.state === "error" ? e.sttFailed : e.waiting;
   const remote = active === "openrouter";
   const llmText = remote
     ? `OpenRouter · ${model}`
     : llm.state === "ready"
-      ? `${browserLabel} no navegador`
+      ? e.browserReady(browserLabel)
       : llm.state === "loading"
-        ? `Baixando ${browserLabel} · ${Math.round(llm.progress * 100)}%`
+        ? e.browserLoading(browserLabel, Math.round(llm.progress * 100))
         : llm.state === "error"
-          ? `${browserLabel} não carregou neste aparelho`
-          : `${browserLabel} aguardando`;
+          ? e.browserFailed(browserLabel)
+          : e.browserWaiting(browserLabel);
   return (
     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
       <span className="flex items-center gap-1.5">
@@ -450,11 +472,11 @@ function EngineStatus({
       </span>
       {error ? (
         <span role="status" className="flex items-center gap-1 font-semibold text-crit">
-          <AlertTriangle className="size-3.5" aria-hidden /> {error}
+          <AlertTriangle className="size-3.5" aria-hidden /> {e.errors[error]}
         </span>
       ) : (
         <span className={`font-semibold ${remote ? "text-warn" : "text-accent"}`}>
-          {remote ? "Voz no aparelho · IA na nuvem" : "Processamento 100% no aparelho"}
+          {remote ? e.cloudBadge : e.localBadge}
         </span>
       )}
     </p>
@@ -472,14 +494,15 @@ function EnginePicker({
   onChoose: (id: EngineId) => void;
   onSettings: (focus: EngineId | null) => void;
 }) {
-  const options: { id: EngineId; Icon: LucideIcon; hint: string }[] = [
-    { id: "openrouter", Icon: Cloud, hint: hasKey ? "Modelos na nuvem com a sua chave" : "Informe sua chave do OpenRouter" },
-    { id: "browser", Icon: Cpu, hint: "Modelo pequeno rodando neste aparelho" },
+  const e = useT().engine;
+  const options: { id: EngineId; label: string; Icon: LucideIcon; hint: string }[] = [
+    { id: "openrouter", label: "OpenRouter", Icon: Cloud, hint: hasKey ? e.openrouterHint : e.openrouterNoKey },
+    { id: "browser", label: e.browserLabel, Icon: Cpu, hint: e.browserHint },
   ];
   return (
     <div className="flex items-center gap-1 rounded-full bg-surface p-1 shadow-card">
-      <div role="radiogroup" aria-label="IA da orientação" className="flex">
-        {options.map(({ id, Icon, hint }) => {
+      <div role="radiogroup" aria-label={e.pickerLabel} className="flex">
+        {options.map(({ id, label, Icon, hint }) => {
           const on = active === id;
           return (
             <button
@@ -494,7 +517,7 @@ function EnginePicker({
               }`}
             >
               <Icon className="size-3.5" aria-hidden />
-              {ENGINE_LABEL[id]}
+              {label}
             </button>
           );
         })}
@@ -502,8 +525,8 @@ function EnginePicker({
       <button
         type="button"
         onClick={() => onSettings(null)}
-        title="Configurar IA"
-        aria-label="Configurar IA"
+        title={e.configure}
+        aria-label={e.configure}
         className="grid size-7 place-items-center rounded-full text-ink-2 transition-colors hover:bg-sunken hover:text-ink"
       >
         <SlidersHorizontal className="size-3.5" aria-hidden />
@@ -530,6 +553,9 @@ function AiSettingsDialog({
   onSaved: (next: { browserModel: string; hasKey: boolean }) => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const t = useT();
+  const e = t.engine;
+  const locale = useLocale();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -548,25 +574,25 @@ function AiSettingsDialog({
       {open && (
         <form
           className="flex flex-col gap-5 p-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget);
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            const f = new FormData(ev.currentTarget);
             const apiKey = String(f.get("apiKey") ?? "").trim();
             saveOpenRouterSettings({ apiKey, model: String(f.get("model") ?? "") });
             onSaved({ browserModel: String(f.get("browserModel") ?? browserModel.id), hasKey: Boolean(apiKey) });
           }}
         >
           <h2 id="ai-title" className="text-lg font-bold">
-            Configurar IA
+            {e.settingsTitle}
           </h2>
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
-              <Cpu className="size-4 text-accent" aria-hidden /> Modelo no navegador
+              <Cpu className="size-4 text-accent" aria-hidden /> {e.browserSection}
             </legend>
             <p className="text-[13px] text-ink-2">
-              Roda neste aparelho, sem enviar nada. Baixa uma vez e fica em cache.
-              {device === "wasm" && " Sem GPU disponível: os modelos maiores ficam lentos."}
+              {e.browserIntro}
+              {device === "wasm" && e.noGpu}
             </p>
             {BROWSER_MODELS.map((m) => (
               <label
@@ -576,9 +602,9 @@ function AiSettingsDialog({
                 <input type="radio" name="browserModel" value={m.id} defaultChecked={m.id === browserModel.id} className="accent-accent" />
                 <span className="flex-1">
                   <span className="block text-sm font-semibold">{m.label}</span>
-                  <span className="block text-xs text-ink-2">{m.note}</span>
+                  <span className="block text-xs text-ink-2">{t.browserModels[m.id]}</span>
                 </span>
-                <span className="text-xs font-semibold text-ink-3 tabular-nums">{formatSize(device === "wasm" ? m.cpuMb : m.gpuMb)}</span>
+                <span className="text-xs font-semibold text-ink-3 tabular-nums">{formatSize(device === "wasm" ? m.cpuMb : m.gpuMb, locale)}</span>
               </label>
             ))}
           </fieldset>
@@ -587,12 +613,9 @@ function AiSettingsDialog({
             <legend className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
               <Cloud className="size-4 text-accent" aria-hidden /> OpenRouter
             </legend>
-            <p className="text-[13px] text-ink-2">
-              Modelos maiores na nuvem com a sua chave. Ela fica salva só neste navegador e vai direto para o OpenRouter. Com esta opção ativa, os
-              relatos e o perfil saem do aparelho.
-            </p>
+            <p className="text-[13px] text-ink-2">{e.openrouterIntro}</p>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">
-              Chave da API
+              {e.apiKey}
               <input
                 name="apiKey"
                 type="password"
@@ -605,11 +628,11 @@ function AiSettingsDialog({
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">
-              Modelo
+              {e.model}
               <input name="model" spellCheck={false} defaultValue={settings.model} placeholder={DEFAULT_OPENROUTER_MODEL} className={input} />
             </label>
             <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent-ink hover:underline">
-              Criar uma chave no OpenRouter
+              {e.createKey}
             </a>
           </fieldset>
 
@@ -623,14 +646,14 @@ function AiSettingsDialog({
                 }}
                 className="mr-auto rounded-full px-4 py-2 text-sm font-semibold text-crit hover:bg-crit-soft"
               >
-                Remover chave
+                {e.removeKey}
               </button>
             )}
             <button type="button" onClick={onClose} className="rounded-full px-4 py-2 text-sm font-semibold text-ink-2 hover:bg-sunken">
-              Cancelar
+              {t.common.cancel}
             </button>
             <button type="submit" className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white hover:bg-accent-ink">
-              Salvar
+              {t.common.save}
             </button>
           </div>
         </form>
@@ -663,9 +686,10 @@ function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactN
 
 function StatusCard({ status, feedback, findings }: { status: Status; feedback: Feedback; findings: Finding[] }) {
   const style = STATUS_STYLE[status];
-  const copy = STATUS_COPY[status];
+  const t = useT();
+  const copy = t.status[status];
   return (
-    <Card aria-label="Estado de saúde">
+    <Card aria-label={t.dashboard.healthState}>
       <div className="flex items-start gap-4">
         <span className={`grid size-12 shrink-0 place-items-center rounded-2xl transition-colors duration-500 ${style.tile}`}>
           <style.Icon className="size-6" aria-hidden />
@@ -676,15 +700,15 @@ function StatusCard({ status, feedback, findings }: { status: Status; feedback: 
             <span className="text-sm text-ink-2">{copy.summary}</span>
           </div>
           <p className="mt-1.5 max-w-[68ch] text-[15px] leading-relaxed text-ink" aria-live="polite">
-            {feedback.text}
+            {feedback.text ?? quickAdvice(findings, t)}
           </p>
           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-3">
             {feedback.pending ? (
               <>
-                <Loader2 className="size-3.5 animate-spin" aria-hidden /> Refinando orientação com a IA local…
+                <Loader2 className="size-3.5 animate-spin" aria-hidden /> {t.dashboard.refining}
               </>
             ) : (
-              <>Fonte: {feedback.engine}</>
+              <>{t.dashboard.source(feedback.engine ?? t.dashboard.rulesEngine)}</>
             )}
           </p>
         </div>
@@ -694,10 +718,10 @@ function StatusCard({ status, feedback, findings }: { status: Status; feedback: 
           {findings.map((f) => (
             <li key={f.id} className="rounded-2xl bg-sunken px-3.5 py-3 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold">{f.label}</span>
-                <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[f.severity]}`}>{SEVERITY_WORD[f.severity]}</span>
+                <span className="font-semibold">{t.symptoms[f.id].label}</span>
+                <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[f.severity]}`}>{t.severity[f.severity]}</span>
               </div>
-              <p className="mt-1 text-[13px] leading-snug text-ink-2">{f.advice}</p>
+              <p className="mt-1 text-[13px] leading-snug text-ink-2">{adviceOf(f, t)}</p>
             </li>
           ))}
         </ul>
@@ -728,15 +752,18 @@ function VitalCard({ spec: s, vitals, history }: { spec: VitalSpec; vitals: Vita
   const sev = s.assess(vitals);
   const Icon = VITAL_ICON[s.key];
   const [min, max] = CHART_RANGE[s.key] ?? [0, 100];
+  const t = useT();
+  const locale = useLocale();
+  const copy = t.vitals[s.key];
   return (
-    <section className="flex flex-col gap-3 rounded-3xl bg-surface p-3 shadow-card" aria-label={s.label}>
+    <section className="flex flex-col gap-3 rounded-3xl bg-surface p-3 shadow-card" aria-label={copy.label}>
       <div className="flex items-center gap-3 px-1 pt-1">
         <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${sev >= 2 ? "bg-warn-soft text-warn" : "bg-sunken text-ink-2"}`}>
           <Icon className="size-[18px]" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold">{s.label}</p>
-          <p className="tabular text-xs text-ink-3">Faixa {s.range}</p>
+          <p className="truncate text-[13px] font-semibold">{copy.label}</p>
+          <p className="tabular text-xs text-ink-3">{t.dashboard.range(copy.range)}</p>
         </div>
       </div>
       <div className="flex h-[76px] items-stretch gap-2 rounded-2xl bg-sunken p-2">
@@ -747,7 +774,7 @@ function VitalCard({ spec: s, vitals, history }: { spec: VitalSpec; vitals: Vita
           className="tabular flex min-w-[66px] flex-col items-center justify-center rounded-xl px-2 text-white transition-colors duration-500"
           style={{ background: SEVERITY_FILL[sev] }}
         >
-          <span className="text-base leading-none font-bold">{formatVital(s, vitals)}</span>
+          <span className="text-base leading-none font-bold">{formatVital(s, vitals, locale)}</span>
           <span className="mt-1 text-[11px] opacity-90">{s.unit}</span>
         </div>
       </div>
@@ -765,19 +792,20 @@ function HeartRateCard({ history, vitals }: { history: Vitals[]; vitals: Vitals 
   const toY = (v: number) => height - ((v - 40) / (150 - 40)) * height;
   const w = 100 / HISTORY;
   const offset = HISTORY - values.length;
+  const d = useT().dashboard;
   return (
-    <Card aria-label="Frequência cardíaca">
-      <SectionTitle aside="últimos 60 s">Frequência cardíaca</SectionTitle>
+    <Card aria-label={d.heartRate}>
+      <SectionTitle aside={d.last60}>{d.heartRate}</SectionTitle>
       <div className="flex items-end justify-center gap-8">
         <div className="text-center">
           <p className="tabular text-4xl font-bold tracking-tight" style={{ color: sev >= 2 ? SEVERITY_FILL[sev] : undefined }}>
             {Math.round(vitals.heartRate)}
           </p>
-          <p className="text-xs text-ink-3">bpm agora</p>
+          <p className="text-xs text-ink-3">{d.bpmNow}</p>
         </div>
         <div className="text-center">
           <p className="tabular text-xl font-semibold text-ink-2">{Math.round(avg)}</p>
-          <p className="text-xs text-ink-3">média</p>
+          <p className="text-xs text-ink-3">{d.average}</p>
         </div>
       </div>
       <div className="mt-3 grid grid-cols-[28px_minmax(0,1fr)] gap-2">
@@ -805,7 +833,7 @@ function HeartRateCard({ history, vitals }: { history: Vitals[]; vitals: Vitals 
         <div className="flex justify-between">
           <span>−60 s</span>
           <span>−30 s</span>
-          <span>agora</span>
+          <span>{d.now}</span>
         </div>
       </div>
     </Card>
@@ -816,6 +844,8 @@ function OxygenCard({ vitals, history }: { vitals: Vitals; history: Vitals[] }) 
   const s = spec("spo2");
   const sev = s.assess(vitals);
   const [min, max] = CHART_RANGE.spo2!;
+  const t = useT();
+  const locale = useLocale();
   return (
     <div className="absolute right-4 bottom-4 w-[200px] rounded-2xl bg-surface/95 p-3.5 shadow-card backdrop-blur-sm">
       <div className="flex items-center gap-2.5">
@@ -823,9 +853,9 @@ function OxygenCard({ vitals, history }: { vitals: Vitals; history: Vitals[] }) 
           <Wind className="size-4" aria-hidden />
         </span>
         <div>
-          <p className="text-xs text-ink-3">Saturação O₂</p>
+          <p className="text-xs text-ink-3">{t.vitals.spo2.label}</p>
           <p className="tabular text-sm font-bold" style={{ color: sev >= 2 ? SEVERITY_FILL[sev] : undefined }}>
-            {formatVital(s, vitals)}%
+            {formatVital(s, vitals, locale)}%
           </p>
         </div>
       </div>
@@ -851,20 +881,23 @@ function VoiceCard(props: {
 }) {
   const { micState, level, speaking, transcribing, stt, entries, draft, setDraft } = props;
   const live = micState === "listening";
+  const t = useT();
+  const v = t.voice;
+  const locale = useLocale();
 
-  let stateText = "Escuta desligada. Ligue no botão acima ou digite abaixo.";
-  if (micState === "requesting") stateText = "Pedindo acesso ao microfone…";
-  else if (micState === "denied") stateText = "Microfone bloqueado. Libere o acesso nas permissões do navegador.";
-  else if (micState === "error") stateText = "Não foi possível abrir o microfone.";
-  else if (live && stt.state === "loading") stateText = `Carregando reconhecimento de voz… ${Math.round(stt.progress * 100)}%`;
-  else if (live && stt.state === "error") stateText = "O reconhecimento de voz falhou ao carregar. Use o campo de texto.";
-  else if (live && transcribing) stateText = "Transcrevendo…";
-  else if (live && speaking) stateText = "Ouvindo você…";
-  else if (live) stateText = "Escutando. Fale como está se sentindo.";
+  let stateText = v.off;
+  if (micState === "requesting") stateText = v.requesting;
+  else if (micState === "denied") stateText = v.denied;
+  else if (micState === "error") stateText = v.error;
+  else if (live && stt.state === "loading") stateText = v.loading(Math.round(stt.progress * 100));
+  else if (live && stt.state === "error") stateText = v.sttFailed;
+  else if (live && transcribing) stateText = v.transcribing;
+  else if (live && speaking) stateText = v.hearing;
+  else if (live) stateText = v.listening;
 
   return (
-    <Card id="relatos" aria-label="Relatos">
-      <SectionTitle>Relatos</SectionTitle>
+    <Card id="relatos" aria-label={t.dashboard.reports}>
+      <SectionTitle>{t.dashboard.reports}</SectionTitle>
       <div className="flex items-center gap-3 rounded-2xl bg-sunken px-3.5 py-2.5">
         <span className={`size-2 shrink-0 rounded-full ${live ? (speaking ? "bg-accent" : "bg-ok") : "bg-ink-3/40"}`} aria-hidden />
         <p className="min-w-0 flex-1 truncate text-sm text-ink-2" aria-live="polite">
@@ -889,13 +922,13 @@ function VoiceCard(props: {
         }}
       >
         <label htmlFor="report" className="sr-only">
-          Descreva o que está sentindo
+          {v.inputLabel}
         </label>
         <input
           id="report"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Ou digite: estou com tontura…"
+          placeholder={v.placeholder}
           className="min-w-0 flex-1 rounded-full border border-line bg-surface px-4 py-2.5 text-sm outline-none transition-colors focus:border-accent"
         />
         <button
@@ -903,12 +936,12 @@ function VoiceCard(props: {
           disabled={!draft.trim()}
           className="flex items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-ink disabled:opacity-40"
         >
-          <Send className="size-4" aria-hidden /> Enviar
+          <Send className="size-4" aria-hidden /> {v.send}
         </button>
       </form>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {EXAMPLES.map((ex) => (
+        {v.examples.map((ex) => (
           <button
             key={ex}
             type="button"
@@ -920,10 +953,10 @@ function VoiceCard(props: {
         ))}
       </div>
 
-      <ol className="mt-4 space-y-2" aria-label="Histórico de relatos">
+      <ol className="mt-4 space-y-2" aria-label={v.historyLabel}>
         {entries.length === 0 ? (
           <li className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-sm text-ink-3">
-            Os relatos aparecem aqui, com os sintomas reconhecidos em cada fala.
+            {v.empty}
           </li>
         ) : (
           entries.map((e) => (
@@ -931,17 +964,17 @@ function VoiceCard(props: {
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-sm text-ink">“{e.text}”</p>
                 <span className="tabular shrink-0 text-xs text-ink-3">
-                  {e.source === "voice" ? "voz" : "texto"} · {timeOf(e.at)}
+                  {e.source === "voice" ? v.sourceVoice : v.sourceTyped} · {timeOf(e.at, locale)}
                 </span>
               </div>
               {(e.findings.length > 0 || e.resolved.length > 0) && (
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {e.findings.map((f) => (
                     <span key={f} className="rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-medium text-accent-ink">
-                      {f}
+                      {t.symptoms[f].label}
                     </span>
                   ))}
-                  {e.resolved.length > 0 && <span className="rounded-md bg-ok-soft px-1.5 py-0.5 text-xs font-medium text-ok">melhora relatada</span>}
+                  {e.resolved.length > 0 && <span className="rounded-md bg-ok-soft px-1.5 py-0.5 text-xs font-medium text-ok">{v.improvement}</span>}
                 </div>
               )}
             </li>

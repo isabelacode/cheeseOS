@@ -2,7 +2,9 @@
 
 import { useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, HeartPulse, IdCard, PersonStanding } from "lucide-react";
-import { BLOOD_TYPES, SEX_LABEL, saveProfile, type CrewProfile, type Sex } from "@/lib/crew/profile";
+import { BLOOD_TYPES, SEXES, saveProfile, type CrewProfile, type Sex } from "@/lib/crew/profile";
+import { useT, type Messages } from "@/lib/i18n";
+import { LanguageToggle } from "./LanguageToggle";
 
 type Draft = Omit<CrewProfile, "age" | "heightCm" | "weightKg" | "restingHeartRate"> & {
   age: string;
@@ -36,33 +38,30 @@ function toDraft(p: CrewProfile): Draft {
   };
 }
 
-const STEPS = [
-  { title: "Identificação", hint: "Quem está sendo monitorado.", Icon: IdCard },
-  { title: "Corpo", hint: "Medidas usadas pelo gêmeo digital.", Icon: PersonStanding },
-  { title: "Saúde", hint: "O que a IA deve considerar ao orientar.", Icon: HeartPulse },
-] as const;
-
-type Errors = Partial<Record<keyof Draft, string>>;
+const STEP_ICONS = [IdCard, PersonStanding, HeartPulse] as const;
 
 function numberIn(v: string, min: number, max: number) {
   const n = Number(v.replace(",", "."));
   return Number.isFinite(n) && n >= min && n <= max;
 }
 
+type ErrorKey = keyof Messages["onboarding"]["errors"];
+type Errors = Partial<Record<keyof Draft, ErrorKey>>;
+
+/** Errors are stored as message keys so they follow a language switch. */
 function validate(step: number, d: Draft): Errors {
   const e: Errors = {};
   if (step === 0) {
-    if (d.name.trim().length < 2) e.name = "Informe o nome completo.";
-    if (!d.role.trim()) e.role = "Informe a função a bordo.";
+    if (d.name.trim().length < 2) e.name = "name";
+    if (!d.role.trim()) e.role = "role";
   }
   if (step === 1) {
-    if (!numberIn(d.age, 18, 80)) e.age = "Idade entre 18 e 80 anos.";
-    if (!numberIn(d.heightCm, 140, 215)) e.heightCm = "Altura entre 140 e 215 cm.";
-    if (!numberIn(d.weightKg, 40, 160)) e.weightKg = "Peso entre 40 e 160 kg.";
+    if (!numberIn(d.age, 18, 80)) e.age = "age";
+    if (!numberIn(d.heightCm, 140, 215)) e.heightCm = "height";
+    if (!numberIn(d.weightKg, 40, 160)) e.weightKg = "weight";
   }
   if (step === 2) {
-    if (d.restingHeartRate && !numberIn(d.restingHeartRate, 35, 110))
-      e.restingHeartRate = "Frequência de repouso entre 35 e 110 bpm.";
+    if (d.restingHeartRate && !numberIn(d.restingHeartRate, 35, 110)) e.restingHeartRate = "restingHr";
   }
   return e;
 }
@@ -72,6 +71,9 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
   const [draft, setDraft] = useState<Draft>(initial ? toDraft(initial) : EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const editing = Boolean(initial);
+  const t = useT();
+  const o = t.onboarding;
+  const err = (k: keyof Draft) => (errors[k] ? o.errors[errors[k]] : undefined);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -82,7 +84,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
     const e = validate(step, draft);
     setErrors(e);
     if (Object.keys(e).length) return;
-    if (step < STEPS.length - 1) {
+    if (step < o.steps.length - 1) {
       setStep(step + 1);
       return;
     }
@@ -100,7 +102,8 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
     onDone?.();
   };
 
-  const current = STEPS[step];
+  const current = o.steps[step];
+  const CurrentIcon = STEP_ICONS[step];
 
   return (
     <div className="grid min-h-screen place-items-center px-4 py-10">
@@ -113,19 +116,20 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           </span>
           <div>
             <p className="text-sm font-semibold">cheeseOS</p>
-            <p className="text-xs text-ink-3">Gêmeo digital de saúde</p>
+            <p className="text-xs text-ink-3">{t.brand.tagline}</p>
           </div>
+          <LanguageToggle className="ml-auto" />
         </div>
 
         <h1 className="text-[28px] leading-tight font-bold tracking-tight text-balance">
-          {editing ? "Atualizar dados do tripulante" : "Vamos montar o seu gêmeo digital"}
+          {editing ? o.titleEdit : o.titleNew}
         </h1>
         <p className="mt-2 max-w-[52ch] text-[15px] text-ink-2">
-          Esses dados ficam só neste aparelho e ajudam a IA local a orientar você. Os sinais vitais continuam simulados.
+          {o.intro}
         </p>
 
-        <ol className="mt-6 grid grid-cols-3 gap-2" aria-label="Etapas">
-          {STEPS.map((s, i) => (
+        <ol className="mt-6 grid grid-cols-3 gap-2" aria-label={o.stepsLabel}>
+          {o.steps.map((s, i) => (
             <li key={s.title}>
               <button
                 type="button"
@@ -154,7 +158,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
         >
           <div className="mb-5 flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-accent">
-              <current.Icon className="size-5" aria-hidden />
+              <CurrentIcon className="size-5" aria-hidden />
             </span>
             <div>
               <h2 className="text-base font-semibold">{current.title}</h2>
@@ -164,15 +168,15 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
 
           {step === 0 && (
             <div className="grid gap-4">
-              <Field label="Nome completo" error={errors.name}>
-                <input autoFocus autoComplete="name" value={draft.name} onChange={(e) => set("name", e.target.value)} className={input(errors.name)} />
+              <Field label={o.name} error={err("name")}>
+                <input autoFocus autoComplete="name" value={draft.name} onChange={(e) => set("name", e.target.value)} className={input(err("name"))} />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Função a bordo" error={errors.role}>
-                  <input placeholder="Engenheira de voo" value={draft.role} onChange={(e) => set("role", e.target.value)} className={input(errors.role)} />
+                <Field label={o.role} error={err("role")}>
+                  <input placeholder={o.rolePlaceholder} value={draft.role} onChange={(e) => set("role", e.target.value)} className={input(err("role"))} />
                 </Field>
-                <Field label="Missão" optional>
-                  <input placeholder="Ares III" value={draft.mission} onChange={(e) => set("mission", e.target.value)} className={input()} />
+                <Field label={o.mission} optional>
+                  <input placeholder={o.missionPlaceholder} value={draft.mission} onChange={(e) => set("mission", e.target.value)} className={input()} />
                 </Field>
               </div>
             </div>
@@ -181,29 +185,29 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           {step === 1 && (
             <div className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Idade" suffix="anos" error={errors.age}>
-                  <input autoFocus inputMode="numeric" value={draft.age} onChange={(e) => set("age", e.target.value)} className={input(errors.age)} />
+                <Field label={o.age} suffix={o.years} error={err("age")}>
+                  <input autoFocus inputMode="numeric" value={draft.age} onChange={(e) => set("age", e.target.value)} className={input(err("age"))} />
                 </Field>
-                <Field label="Sexo">
+                <Field label={o.sex}>
                   <select value={draft.sex} onChange={(e) => set("sex", e.target.value as Sex)} className={input()}>
-                    {(Object.keys(SEX_LABEL) as Sex[]).map((s) => (
+                    {SEXES.map((s) => (
                       <option key={s} value={s}>
-                        {SEX_LABEL[s]}
+                        {t.sex[s]}
                       </option>
                     ))}
                   </select>
                 </Field>
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Altura" suffix="cm" error={errors.heightCm}>
-                  <input inputMode="numeric" value={draft.heightCm} onChange={(e) => set("heightCm", e.target.value)} className={input(errors.heightCm)} />
+                <Field label={o.height} suffix="cm" error={err("heightCm")}>
+                  <input inputMode="numeric" value={draft.heightCm} onChange={(e) => set("heightCm", e.target.value)} className={input(err("heightCm"))} />
                 </Field>
-                <Field label="Peso" suffix="kg" error={errors.weightKg}>
-                  <input inputMode="decimal" value={draft.weightKg} onChange={(e) => set("weightKg", e.target.value)} className={input(errors.weightKg)} />
+                <Field label={o.weight} suffix="kg" error={err("weightKg")}>
+                  <input inputMode="decimal" value={draft.weightKg} onChange={(e) => set("weightKg", e.target.value)} className={input(err("weightKg"))} />
                 </Field>
-                <Field label="Tipo sanguíneo" optional>
+                <Field label={o.bloodType} optional>
                   <select value={draft.bloodType} onChange={(e) => set("bloodType", e.target.value as Draft["bloodType"])} className={input()}>
-                    <option value="">Não sei</option>
+                    <option value="">{o.bloodUnknown}</option>
                     {BLOOD_TYPES.map((b) => (
                       <option key={b} value={b}>
                         {b}
@@ -217,17 +221,17 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
 
           {step === 2 && (
             <div className="grid gap-4">
-              <Field label="Frequência cardíaca em repouso" suffix="bpm" optional error={errors.restingHeartRate} hint="Base da simulação. Sem valor, usamos 68 bpm.">
-                <input autoFocus inputMode="numeric" placeholder="68" value={draft.restingHeartRate} onChange={(e) => set("restingHeartRate", e.target.value)} className={input(errors.restingHeartRate)} />
+              <Field label={o.restingHr} suffix="bpm" optional error={err("restingHeartRate")} hint={o.restingHrHint}>
+                <input autoFocus inputMode="numeric" placeholder="68" value={draft.restingHeartRate} onChange={(e) => set("restingHeartRate", e.target.value)} className={input(err("restingHeartRate"))} />
               </Field>
-              <Field label="Alergias" optional>
-                <input placeholder="Ex.: dipirona, látex" value={draft.allergies} onChange={(e) => set("allergies", e.target.value)} className={input()} />
+              <Field label={o.allergies} optional>
+                <input placeholder={o.allergiesPlaceholder} value={draft.allergies} onChange={(e) => set("allergies", e.target.value)} className={input()} />
               </Field>
-              <Field label="Medicações em uso" optional>
-                <input placeholder="Ex.: melatonina 3 mg à noite" value={draft.medications} onChange={(e) => set("medications", e.target.value)} className={input()} />
+              <Field label={o.medications} optional>
+                <input placeholder={o.medicationsPlaceholder} value={draft.medications} onChange={(e) => set("medications", e.target.value)} className={input()} />
               </Field>
-              <Field label="Condições prévias" optional>
-                <textarea rows={2} placeholder="Ex.: enxaqueca, asma leve" value={draft.conditions} onChange={(e) => set("conditions", e.target.value)} className={`${input()} resize-none`} />
+              <Field label={o.conditions} optional>
+                <textarea rows={2} placeholder={o.conditionsPlaceholder} value={draft.conditions} onChange={(e) => set("conditions", e.target.value)} className={`${input()} resize-none`} />
               </Field>
             </div>
           )}
@@ -235,24 +239,24 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           <div className="mt-6 flex items-center justify-between gap-3">
             {step > 0 ? (
               <button type="button" onClick={() => setStep(step - 1)} className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-ink-2 transition-colors hover:bg-sunken">
-                <ArrowLeft className="size-4" aria-hidden /> Voltar
+                <ArrowLeft className="size-4" aria-hidden /> {t.common.back}
               </button>
             ) : editing && onDone ? (
               <button type="button" onClick={onDone} className="rounded-full px-3 py-2 text-sm font-semibold text-ink-2 transition-colors hover:bg-sunken">
-                Cancelar
+                {t.common.cancel}
               </button>
             ) : (
               <span />
             )}
             <button type="submit" className="flex items-center gap-1.5 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-ink">
-              {step < STEPS.length - 1 ? (
+              {step < o.steps.length - 1 ? (
                 <>
-                  Continuar <ArrowRight className="size-4" aria-hidden />
+                  {t.common.continue} <ArrowRight className="size-4" aria-hidden />
                 </>
               ) : editing ? (
-                "Salvar dados"
+                o.submitEdit
               ) : (
-                "Abrir meu gêmeo digital"
+                o.submitNew
               )}
             </button>
           </div>
@@ -260,6 +264,11 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
       </div>
     </div>
   );
+}
+
+function OptionalTag() {
+  const t = useT();
+  return <span className="text-xs font-normal text-ink-3">{t.common.optional}</span>;
 }
 
 function input(error?: string) {
@@ -290,7 +299,7 @@ function Field({
           {label}
           {suffix && <span className="font-normal text-ink-3"> ({suffix})</span>}
         </span>
-        {optional && <span className="text-xs font-normal text-ink-3">opcional</span>}
+        {optional && <OptionalTag />}
       </span>
       {children}
       {error ? (

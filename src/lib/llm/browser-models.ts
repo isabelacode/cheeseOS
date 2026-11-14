@@ -1,3 +1,5 @@
+import { formatNumber, type Locale } from "@/lib/i18n/locale";
+
 /**
  * Small instruction models that run in the browser through transformers.js.
  * Sizes are the q4f16 (WebGPU) and q4 (CPU) downloads; weights are cached by
@@ -6,15 +8,14 @@
 export interface BrowserModel {
   id: string;
   label: string;
-  note: string;
   gpuMb: number;
   cpuMb: number;
 }
 
 export const BROWSER_MODELS: BrowserModel[] = [
-  { id: "onnx-community/Qwen2.5-0.5B-Instruct", label: "Qwen 2.5 0.5B", note: "Mais leve e rápido, respostas simples", gpuMb: 460, cpuMb: 750 },
-  { id: "onnx-community/gemma-3-1b-it-ONNX", label: "Gemma 3 1B", note: "Equilibrado, bom português", gpuMb: 730, cpuMb: 820 },
-  { id: "onnx-community/Qwen2.5-1.5B-Instruct", label: "Qwen 2.5 1.5B", note: "Mais capaz, pede GPU e mais memória", gpuMb: 1170, cpuMb: 1700 },
+  { id: "onnx-community/Qwen2.5-0.5B-Instruct", label: "Qwen 2.5 0.5B", gpuMb: 460, cpuMb: 750 },
+  { id: "onnx-community/gemma-3-1b-it-ONNX", label: "Gemma 3 1B", gpuMb: 730, cpuMb: 820 },
+  { id: "onnx-community/Qwen2.5-1.5B-Instruct", label: "Qwen 2.5 1.5B", gpuMb: 1170, cpuMb: 1700 },
 ];
 
 export const DEFAULT_BROWSER_MODEL = BROWSER_MODELS[0];
@@ -41,6 +42,6 @@ export function saveBrowserModel(id: string) {
   }
 }
 
-export function formatSize(mb: number) {
-  return mb >= 1000 ? `${(mb / 1000).toFixed(1).replace(".", ",")} GB` : `${mb} MB`;
+export function formatSize(mb: number, locale: Locale) {
+  return mb >= 1000 ? `${formatNumber(mb / 1000, 1, locale)} GB` : `${mb} MB`;
 }

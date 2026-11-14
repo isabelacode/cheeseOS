@@ -60,11 +60,9 @@ export function stepVitals(current: Vitals, target: Vitals): Vitals {
 }
 
 export interface VitalSpec {
-  key: keyof Vitals;
-  label: string;
+  key: "heartRate" | "spo2" | "temperature" | "respiration" | "systolic";
   unit: string;
   digits: number;
-  range: string;
   assess: (v: Vitals) => Severity;
   format?: (v: Vitals) => string;
 }
@@ -72,42 +70,32 @@ export interface VitalSpec {
 export const VITAL_SPECS: VitalSpec[] = [
   {
     key: "heartRate",
-    label: "Frequência cardíaca",
     unit: "bpm",
     digits: 0,
-    range: "50–100",
     assess: ({ heartRate: v }) => (v > 130 || v < 40 ? 3 : v > 105 || v < 50 ? 2 : 0),
   },
   {
     key: "spo2",
-    label: "Saturação O₂",
     unit: "%",
     digits: 0,
-    range: "≥ 95",
     assess: ({ spo2: v }) => (v < 90 ? 3 : v < 95 ? 2 : 0),
   },
   {
     key: "temperature",
-    label: "Temperatura",
     unit: "°C",
     digits: 1,
-    range: "36,0–37,5",
     assess: ({ temperature: v }) => (v >= 39 || v < 35 ? 3 : v > 37.7 ? 2 : 0),
   },
   {
     key: "respiration",
-    label: "Respiração",
     unit: "rpm",
     digits: 0,
-    range: "12–20",
     assess: ({ respiration: v }) => (v > 28 || v < 8 ? 3 : v > 21 ? 2 : 0),
   },
   {
     key: "systolic",
-    label: "Pressão arterial",
     unit: "mmHg",
     digits: 0,
-    range: "90–135",
     assess: ({ systolic: s }) => (s > 170 || s < 80 ? 3 : s > 140 || s < 92 ? 2 : 0),
     format: (v) => `${Math.round(v.systolic)}/${Math.round(v.diastolic)}`,
   },
@@ -131,9 +119,3 @@ export function regionSeverity(findings: Finding[]): Record<Region, Severity> {
   }
   return out;
 }
-
-export const STATUS_COPY: Record<Status, { label: string; summary: string }> = {
-  nominal: { label: "Estável", summary: "Sinais dentro da faixa esperada." },
-  attention: { label: "Atenção", summary: "Há sinais que pedem acompanhamento." },
-  critical: { label: "Crítico", summary: "Ação imediata recomendada." },
-};

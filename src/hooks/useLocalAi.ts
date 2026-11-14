@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DEFAULT_BROWSER_MODEL, readBrowserModel, saveBrowserModel, browserModelById, type BrowserModel } from "@/lib/llm/browser-models";
-import { OpenRouterError, openRouterFeedback, useOpenRouterSettings } from "@/lib/llm/openrouter";
+import { OpenRouterError, openRouterFeedback, useOpenRouterSettings, type OpenRouterErrorCode } from "@/lib/llm/openrouter";
+import { messages, type Locale } from "@/lib/i18n";
 import type { AiRequest, AiResponse, ModelKey, ModelState } from "@/workers/protocol";
 
 export interface ModelInfo {
@@ -14,11 +15,6 @@ export interface ModelInfo {
 type Pending = (text: string) => void;
 
 export type EngineId = "openrouter" | "browser";
-
-export const ENGINE_LABEL: Record<EngineId, string> = {
-  openrouter: "OpenRouter",
-  browser: "Navegador",
-};
 
 const CHOICE_KEY = "cheeseos.engine.v1";
 
@@ -45,7 +41,7 @@ export function useLocalAi() {
   });
   const openrouter = useOpenRouterSettings();
   const [choice, setChoice] = useState<EngineId>("openrouter");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<OpenRouterErrorCode | null>(null);
   const [browserModel, setBrowserModel] = useState<BrowserModel>(DEFAULT_BROWSER_MODEL);
   // Saved choices are read on mount; nothing is downloaded before that.
   const [booted, setBooted] = useState(false);
@@ -137,25 +133,25 @@ export function useLocalAi() {
   }, []);
 
   const transcribe = useCallback(
-    (audio: Float32Array) => request((id) => ({ type: "transcribe", id, audio }), [audio.buffer]),
+    (audio: Float32Array, locale: Locale) => request((id) => ({ type: "transcribe", id, audio, locale }), [audio.buffer]),
     [request],
   );
 
   const feedback = useCallback(
-    async (context: string): Promise<{ text: string; engine: string }> => {
+    async (context: string, locale: Locale): Promise<{ text: string; engine: EngineId; model: string }> => {
       if (active === "openrouter") {
         try {
-          const text = await openRouterFeedback(openrouter, context);
+          const text = await openRouterFeedback(openrouter, messages[locale].prompt, context);
           setError(null);
-          return { text, engine: `OpenRouter · ${openrouter.model}` };
+          return { text, engine: "openrouter", model: openrouter.model };
         } catch (e) {
-          setError(e instanceof OpenRouterError ? e.message : "Sem resposta do OpenRouter.");
-          return { text: "", engine: "" };
+          setError(e instanceof OpenRouterError ? e.code : "other");
+          return { text: "", engine: "openrouter", model: openrouter.model };
         }
       }
-      if (models.llm.state !== "ready") return { text: "", engine: "" };
-      const text = await request((id) => ({ type: "feedback", id, context }));
-      return { text, engine: `Navegador · ${browserModel.label}` };
+      if (models.llm.state !== "ready") return { text: "", engine: "browser", model: browserModel.label };
+      const text = await request((id) => ({ type: "feedback", id, context, locale }));
+      return { text, engine: "browser", model: browserModel.label };
     },
     [active, openrouter, models.llm.state, request, browserModel.label],
   );

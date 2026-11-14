@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { formatNumber, type Locale } from "@/lib/i18n/locale";
+import { messages } from "@/lib/i18n/messages";
 
 export type Sex = "feminino" | "masculino" | "outro" | "nao_informado";
 
@@ -20,12 +22,7 @@ export interface CrewProfile {
   conditions: string;
 }
 
-export const SEX_LABEL: Record<Sex, string> = {
-  feminino: "Feminino",
-  masculino: "Masculino",
-  outro: "Outro",
-  nao_informado: "Prefiro não informar",
-};
+export const SEXES: Sex[] = ["feminino", "masculino", "outro", "nao_informado"];
 
 /**
  * Stored only on this device. A habitat deployment would sync it with the
@@ -83,15 +80,21 @@ export function firstName(p: CrewProfile) {
   return p.name.trim().split(/\s+/)[0] ?? p.name;
 }
 
-/** Profile summary handed to the local LLM so advice accounts for the person. */
-export function profileContext(p: CrewProfile): string {
-  const sex = p.sex === "nao_informado" ? "" : `, sexo ${SEX_LABEL[p.sex].toLowerCase()}`;
-  const blood = p.bloodType ? `, tipo sanguíneo ${p.bloodType}` : "";
-  const lines = [
-    `Tripulante: ${p.name}, ${p.role}, ${p.age} anos${sex}, ${(p.heightCm / 100).toFixed(2).replace(".", ",")} m, ${p.weightKg} kg${blood}.`,
-    `Alergias: ${p.allergies.trim() || "nenhuma informada"}.`,
-    `Medicações em uso: ${p.medications.trim() || "nenhuma"}.`,
-    `Condições prévias: ${p.conditions.trim() || "nenhuma"}.`,
-  ];
-  return lines.join("\n");
+/** Profile summary handed to the LLM so advice accounts for the person. */
+export function profileContext(p: CrewProfile, locale: Locale): string {
+  const t = messages[locale].context;
+  return [
+    t.crew({
+      name: p.name,
+      role: p.role,
+      age: p.age,
+      sex: p.sex === "nao_informado" ? "" : messages[locale].sex[p.sex],
+      height: formatNumber(p.heightCm / 100, 2, locale),
+      weight: p.weightKg,
+      blood: p.bloodType,
+    }),
+    t.allergies(p.allergies.trim() || t.noneReported),
+    t.medications(p.medications.trim() || t.none),
+    t.conditions(p.conditions.trim() || t.none),
+  ].join("\n");
 }

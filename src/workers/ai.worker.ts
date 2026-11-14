@@ -6,7 +6,9 @@ import {
   type TextGenerationPipeline,
 } from "@huggingface/transformers";
 import type { AiRequest, AiResponse, ModelKey } from "./protocol";
-import { MEDICAL_SYSTEM_PROMPT, cleanModelText } from "@/lib/health/prompt";
+import { cleanModelText } from "@/lib/health/prompt";
+import { SPEECH_LANGUAGE, type Locale } from "@/lib/i18n/locale";
+import { messages } from "@/lib/i18n/messages";
 
 /**
  * Everything here runs on the astronaut's own device: no request leaves the
@@ -104,6 +106,11 @@ const HALLUCINATIONS = [
   /legendas? pela comunidade/i,
   /amara\.org/i,
   /^obrigad[oa]\.?$/i,
+  /^thank you\.?$/i,
+  /thanks for watching/i,
+  /subtitles by/i,
+  /^you\.?$/i,
+  /^bye\.?$/i,
   /inscreva-se/i,
   /^tchau\.?$/i,
   /^\[.*\]$/,
@@ -111,19 +118,19 @@ const HALLUCINATIONS = [
   /^\.+$/,
 ];
 
-async function transcribe(id: string, audio: Float32Array) {
+async function transcribe(id: string, audio: Float32Array, locale: Locale) {
   if (!stt) return post({ type: "transcript", id, text: "" });
-  const out = await stt(audio, { language: "portuguese", task: "transcribe" });
+  const out = await stt(audio, { language: SPEECH_LANGUAGE[locale], task: "transcribe" });
   const text = (Array.isArray(out) ? out[0]?.text : out.text)?.trim() ?? "";
   const clean = HALLUCINATIONS.some((r) => r.test(text)) ? "" : text;
   post({ type: "transcript", id, text: clean });
 }
 
-async function feedback(id: string, context: string) {
+async function feedback(id: string, context: string, locale: Locale) {
   if (!llm) return post({ type: "feedback", id, text: "" });
   const out = await llm(
     [
-      { role: "system", content: MEDICAL_SYSTEM_PROMPT },
+      { role: "system", content: messages[locale].prompt },
       { role: "user", content: context },
     ],
     { max_new_tokens: 90, do_sample: false },
@@ -143,8 +150,8 @@ async function handle(msg: AiRequest) {
   try {
     if (msg.type === "loadStt") await loadStt();
     else if (msg.type === "loadLlm") await loadLlm(msg.model);
-    else if (msg.type === "transcribe") await transcribe(msg.id, msg.audio);
-    else if (msg.type === "feedback") await feedback(msg.id, msg.context);
+    else if (msg.type === "transcribe") await transcribe(msg.id, msg.audio, msg.locale);
+    else if (msg.type === "feedback") await feedback(msg.id, msg.context, msg.locale);
   } catch (e) {
     post({ type: "error", id: "id" in msg ? msg.id : undefined, error: String(e) });
   }

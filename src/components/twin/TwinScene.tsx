@@ -5,7 +5,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import type { Region, Severity } from "@/lib/health/types";
-import { REGIONS, REGION_LABEL } from "@/lib/health/types";
+import { REGIONS } from "@/lib/health/types";
+import { useT } from "@/lib/i18n";
 import { CrewModel, HOTSPOT } from "./CrewModel";
 
 export interface TwinSceneProps {
@@ -42,6 +43,7 @@ function HotspotProjector({ onProject }: { onProject: (r: Region, x: number, y: 
 export default function TwinScene(props: TwinSceneProps) {
   const refs = useRef<Partial<Record<Region, HTMLButtonElement | null>>>({});
   const { severity, labels, selected, hovered, onSelect, onHover } = props;
+  const t = useT();
 
   const project = useCallback((r: Region, x: number, y: number, visible: boolean) => {
     const el = refs.current[r];
@@ -103,12 +105,12 @@ export default function TwinScene(props: TwinSceneProps) {
               className={`hotspot absolute top-0 left-0 transition-opacity duration-200 ${sev ? `hotspot--s${sev}` : ""}`}
               style={{ opacity: 0 }}
               aria-pressed={selected === r}
-              aria-label={`${REGION_LABEL[r]}${label ? `: ${label}` : ""}`}
+              aria-label={`${t.regions[r]}${label ? `: ${label}` : ""}`}
               onClick={() => onSelect(selected === r ? null : r)}
               onPointerEnter={() => onHover(r)}
               onPointerLeave={() => onHover(null)}
             >
-              {showLabel && <span className="hotspot-label">{label ?? REGION_LABEL[r]}</span>}
+              {showLabel && <span className="hotspot-label">{label ?? t.regions[r]}</span>}
             </button>
           );
         })}
