@@ -1,0 +1,27 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; }
+    /* Lower third over your camera. */
+    #intro-card { position: absolute; left: 200px; bottom: 150px; padding-left: 28px; }
+    #intro-bar { position: absolute; left: 0; top: 6px; bottom: 6px; width: 5px; border-radius: 3px; background: var(--cheese); transform-origin: top; }
+    #intro-kicker { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.16em; color: var(--cheese); }
+    #intro-name { font-size: 72px; font-weight: 700; letter-spacing: -0.025em; margin-top: 6px; line-height: 1.05; }
+    #intro-team { font-size: 40px; color: var(--ink-2); margin-top: 6px; }
+    #intro-team b { color: var(--ink); font-weight: 600; }
+  </style>
+  <div id="root" data-composition-id="intro" data-width="1920" data-height="1080">
+    <div id="intro-card" class="clip" data-start="0.2" data-duration="2.7">
+      <div id="intro-bar"></div>
+      <div id="intro-kicker">NASA SPACE APPS 2026</div>
+      <div id="intro-name">Eduardo</div>
+      <div id="intro-team">Team <b>Code and Cheese</b></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#intro-bar", { scaleY: 0 }, { scaleY: 1, duration: 0.45, ease: "power3.out" }, 0.2);
+    tl.fromTo(["#intro-kicker", "#intro-name", "#intro-team"], { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, stagger: 0.1, ease: "power3.out" }, 0.3);
+    tl.to("#intro-card", { opacity: 0, x: -30, duration: 0.3, ease: "power2.in" }, 2.55);
+    window.__timelines["intro"] = tl;
+  </script>
+</template>

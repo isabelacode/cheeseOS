@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.181.2/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --ground: #04060c;
+        --ink: #f4f6fb;
+        --ink-2: #a3acbe;
+        --accent: #3d7bff;
+        --cheese: #ffc93c;
+        --crit: #ff4b4b;
+        --card: rgba(7, 11, 22, 0.86);
+        --card-line: rgba(255, 255, 255, 0.12);
+        --font-display: "Outfit", sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+        /* Right-hand card column, inside the 80% title-safe box. */
+        --col-x: 1180px;
+        --col-w: 548px;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ground);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        font-family: var(--font-display);
+        color: var(--ink);
+      }
+
+      /* ---------- Presenter (you), full frame ---------- */
+      #presenter {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+      #presenter-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #presenter-placeholder {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 60% 75% at 30% 55%, #1c2742 0%, #0b1020 60%, #05070d 100%);
+      }
+      #presenter-silhouette {
+        position: absolute;
+        left: 300px;
+        bottom: 0;
+        width: 560px;
+        height: 760px;
+        color: rgba(255, 255, 255, 0.08);
+      }
+      #presenter-hint {
+        position: absolute;
+        left: 200px;
+        top: 130px;
+        font-family: var(--font-mono);
+        font-size: 28px;
+        letter-spacing: 0.14em;
+        color: rgba(255, 255, 255, 0.35);
+        line-height: 1.6;
+      }
+      /* Darkens the right side so the cards read over any background. */
+      #presenter-shade {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(4, 6, 12, 0) 40%, rgba(4, 6, 12, 0.55) 70%, rgba(4, 6, 12, 0.75) 100%);
+      }
+
+      /* ---------- Floating cards ---------- */
+      .card-host {
+        position: absolute;
+        z-index: 1;
+      }
+      .card {
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        background: var(--card);
+        border: 1px solid var(--card-line);
+        box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.9);
+        overflow: hidden;
+        opacity: 0;
+      }
+      #twin-host {
+        left: var(--col-x);
+        top: 110px;
+        width: var(--col-w);
+        height: 470px;
+      }
+      #twin-card {
+        background: radial-gradient(ellipse 80% 70% at 50% 60%, #10204a 0%, #070b18 70%);
+      }
+      #twin-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #twin-label {
+        position: absolute;
+        left: 26px;
+        top: 22px;
+        font-family: var(--font-mono);
+        font-size: 28px;
+        letter-spacing: 0.12em;
+        color: var(--ink-2);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      #twin-label i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #36d07a;
+      }
+      #info-host {
+        left: var(--col-x);
+        top: 604px;
+        width: var(--col-w);
+        height: 366px;
+      }
+
+      .scene-host {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!--
+        YOUR CLIP: record 30 s landscape (1920x1080), you on the LEFT half, right half free.
+        Save it as assets/me.mp4, then replace #presenter-placeholder with:
+          <video id="presenter-video" src="assets/me.mp4" data-has-audio="true"></video>
+        and move class/data-* timing to the video (it must be the timed element).
+      -->
+      <div id="presenter" class="clip" data-start="0" data-duration="30" data-track-index="0" data-layout-allow-overlap>
+        <div id="presenter-placeholder">
+          <svg id="presenter-silhouette" viewBox="0 0 56 76" fill="currentColor">
+            <circle cx="28" cy="20" r="13" />
+            <path d="M2 76c0-17 11.6-30 26-30s26 13 26 30z" />
+          </svg>
+          <div id="presenter-hint" data-layout-allow-occlusion>YOUR CAMERA · FULL FRAME<br />STAND ON THE LEFT HALF</div>
+        </div>
+        <div id="presenter-shade"></div>
+      </div>
+
+      <!-- Top card: the live 3D twin. -->
+      <div id="twin-host" class="card-host clip" data-start="0" data-duration="30" data-track-index="1" data-track-kind="graphics">
+        <div id="twin-card" class="card">
+          <canvas id="twin-canvas" width="1096" height="940"></canvas>
+          <div id="twin-label"><i></i>DIGITAL TWIN</div>
+        </div>
+      </div>
+
+      <!-- Bottom card: its content comes from the scenes below. -->
+      <div id="info-host" class="card-host clip" data-start="0" data-duration="30" data-track-index="2" data-track-kind="graphics">
+        <div id="info-card" class="card"></div>
+      </div>
+
+      <div id="intro" class="scene-host" data-composition-id="intro" data-composition-src="compositions/intro.html"
+        data-start="0" data-duration="3" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="hook" class="scene-host" data-composition-id="hook" data-composition-src="compositions/hook.html"
+        data-start="2" data-duration="3.2" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="title" class="scene-host" data-composition-id="title" data-composition-src="compositions/title.html"
+        data-start="5.2" data-duration="4.8" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="how" class="scene-host" data-composition-id="how" data-composition-src="compositions/how.html"
+        data-start="10" data-duration="10" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div id="future" class="scene-host" data-composition-id="future" data-composition-src="compositions/future.html"
+        data-start="20" data-duration="10" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      // Cards float in after the intro line, and out before the end card.
+      tl.fromTo("#twin-card", { opacity: 0, x: 60, scale: 0.96 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 1.7);
+      tl.fromTo("#info-card", { opacity: 0, x: 60, scale: 0.96 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 1.85);
+      // Gentle float so the column feels alive.
+      tl.fromTo("#twin-host", { y: 0 }, { y: -8, duration: 3, ease: "sine.inOut", yoyo: true, repeat: 7 }, 2.4);
+      tl.to("#twin-card", { opacity: 0, x: 60, duration: 0.45, ease: "power2.in" }, 25.6);
+      tl.to("#info-card", { opacity: 0, x: 60, duration: 0.45, ease: "power2.in" }, 25.5);
+      window.__timelines["main"] = tl;
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+      const W = 1096, H = 940;
+      const canvas = document.getElementById("twin-canvas");
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setSize(W, H, false);
+      renderer.setPixelRatio(1);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 200);
+
+      scene.add(new THREE.HemisphereLight(0x9fb6ff, 0x0a0d18, 0.9));
+      const key = new THREE.DirectionalLight(0xfff1dc, 2.4);
+      key.position.set(2.5, 3, 3.5);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0x3d7bff, 3.2);
+      rim.position.set(-3, 2.2, -3);
+      scene.add(rim);
+      const rim2 = new THREE.DirectionalLight(0x6fa0ff, 1.6);
+      rim2.position.set(3, 1.5, -2.5);
+      scene.add(rim2);
+
+      function hash(n) {
+        const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+        return s - Math.floor(s);
+      }
+      const STARS = 500;
+      const starPos = new Float32Array(STARS * 3);
+      for (let i = 0; i < STARS; i++) {
+        starPos[i * 3] = (hash(i) - 0.5) * 30;
+        starPos[i * 3 + 1] = (hash(i + 1000) - 0.5) * 24;
+        starPos[i * 3 + 2] = -6 - hash(i + 2000) * 30;
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+      const stars = new THREE.Points(
+        starGeo,
+        new THREE.PointsMaterial({ color: 0xcfd8ff, size: 0.06, sizeAttenuation: true, transparent: true, opacity: 0.7 }),
+      );
+      scene.add(stars);
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.42, 0.45, 96),
+        new THREE.MeshBasicMaterial({ color: 0x3d7bff, transparent: true, opacity: 0.7, side: THREE.DoubleSide }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      const disc = new THREE.Mesh(
+        new THREE.CircleGeometry(0.42, 96),
+        new THREE.MeshBasicMaterial({ color: 0x3d7bff, transparent: true, opacity: 0.08, side: THREE.DoubleSide }),
+      );
+      disc.rotation.x = -Math.PI / 2;
+
+      // Heat-zone shader from the app (src/components/twin/CrewModel.tsx).
+      const N = 7;
+      const TORSO = 1;
+      const centers = [
+        [0, 1.585, 0.0], [0, 1.3, 0.02], [0, 1.02, 0.02], [0.29, 1.08, -0.01],
+        [-0.29, 1.08, -0.01], [0.1, 0.55, 0.01], [-0.1, 0.55, 0.01],
+      ];
+      const radii = [
+        [0.13, 0.15, 0.14], [0.21, 0.17, 0.17], [0.19, 0.13, 0.16], [0.13, 0.32, 0.11],
+        [0.13, 0.32, 0.11], [0.12, 0.42, 0.12], [0.12, 0.42, 0.12],
+      ];
+      const uniforms = {
+        uSeverity: { value: new Float32Array(N) },
+        uTime: { value: 0 },
+        uScan: { value: -1 },
+        uTint: { value: [new THREE.Color("#e3e6eb"), new THREE.Color("#e8b54a"), new THREE.Color("#e07b2e"), new THREE.Color("#ff3b3b")] },
+        uCenter: { value: centers.map((c) => new THREE.Vector3(...c)) },
+        uRadius: { value: radii.map((r) => new THREE.Vector3(...r)) },
+      };
+      const material = new THREE.MeshStandardMaterial({ color: 0xe3e6eb, roughness: 0.45, metalness: 0.02 });
+      material.onBeforeCompile = (shader) => {
+        Object.assign(shader.uniforms, uniforms);
+        shader.vertexShader = shader.vertexShader
+          .replace("#include <common>", "#include <common>\nvarying vec3 vBind;")
+          .replace("#include <begin_vertex>", "#include <begin_vertex>\nvBind = position;");
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            "#include <common>",
+            `#include <common>
+varying vec3 vBind;
+uniform float uSeverity[${N}];
+uniform vec3 uCenter[${N}];
+uniform vec3 uRadius[${N}];
+uniform float uTime;
+uniform float uScan;
+uniform vec3 uTint[4];`,
+          )
+          .replace(
+            "#include <color_fragment>",
+            `#include <color_fragment>
+vec3 heatColor = vec3(0.0);
+float heat = 0.0;
+for (int i = 0; i < ${N}; i++) {
+  float d = length((vBind - uCenter[i]) / uRadius[i]);
+  float w = 1.0 - smoothstep(0.5, 1.2, d);
+  float sev = uSeverity[i];
+  if (sev > 0.01) {
+    float lv = clamp(sev, 1.0, 3.0);
+    vec3 tint = lv < 2.0 ? mix(uTint[1], uTint[2], lv - 1.0) : mix(uTint[2], uTint[3], lv - 2.0);
+    float pulse = 0.85 + 0.15 * sin(uTime * (1.5 + sev) * 2.0);
+    float a = w * clamp(0.55 + 0.2 * (sev - 1.0), 0.0, 1.0) * min(sev, 1.0) * pulse;
+    if (a > heat) { heat = a; heatColor = tint; }
+  }
+}
+diffuseColor.rgb = mix(diffuseColor.rgb, heatColor, min(1.0, heat * 1.1));
+float scan = (1.0 - smoothstep(0.0, 0.025, abs(vBind.y - uScan))) * step(0.0, uScan);
+vec3 extraGlow = heatColor * heat * 0.35 + vec3(0.24, 0.48, 1.0) * scan * 1.6;`,
+          )
+          .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += extraGlow;");
+      };
+
+      const body = new THREE.Group();
+      body.add(ring, disc);
+      scene.add(body);
+      let mixer = null;
+
+      // Camera keyframes inside the card: z/y = camera, ly = look-at height, r = body yaw.
+      const K = [
+        { t: 0.0, z: 5.6, y: 0.95, ly: 0.9, r: -1.2 },
+        { t: 2.6, z: 4.3, y: 0.95, ly: 0.9, r: -0.3 },
+        { t: 5.2, z: 4.2, y: 0.95, ly: 0.9, r: 0.35 },
+        { t: 10.0, z: 4.1, y: 0.95, ly: 0.9, r: -0.05 },
+        { t: 12.6, z: 1.9, y: 1.3, ly: 1.27, r: 0.0 },
+        { t: 15.0, z: 1.9, y: 1.3, ly: 1.27, r: 0.12 },
+        { t: 15.7, z: 4.1, y: 0.95, ly: 0.9, r: -0.1 },
+        { t: 20.0, z: 4.1, y: 0.95, ly: 0.9, r: 0.2 },
+        { t: 26.0, z: 6.5, y: 0.95, ly: 0.9, r: 0.2 + Math.PI * 1.6 },
+        { t: 30.0, z: 7.5, y: 0.95, ly: 0.9, r: 0.2 + Math.PI * 2.0 },
+      ];
+      const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+      function frame(t) {
+        if (t <= K[0].t) return K[0];
+        for (let i = 0; i < K.length - 1; i++) {
+          const a = K[i], b = K[i + 1];
+          if (t <= b.t) {
+            const u = ease((t - a.t) / (b.t - a.t));
+            const o = {};
+            for (const k of ["z", "y", "ly", "r"]) o[k] = a[k] + (b[k] - a[k]) * u;
+            return o;
+          }
+        }
+        return K[K.length - 1];
+      }
+      const clamp01 = (v) => Math.min(1, Math.max(0, v));
+
+      function renderAt(t) {
+        const f = frame(t);
+        body.rotation.y = f.r;
+        camera.position.set(0, f.y, f.z);
+        camera.lookAt(0, f.ly, 0);
+        stars.position.x = -t * 0.05;
+
+        // Chest lights up as the symptom is mapped, cools after the section.
+        const sev = 3 * clamp01((t - 12.3) / 1.0) * (1 - clamp01((t - 20) / 1.2));
+        uniforms.uSeverity.value[TORSO] = sev;
+        uniforms.uTime.value = t;
+        let scan = -1;
+        if (t > 2.0 && t < 3.8) scan = ((t - 2.0) / 1.8) * 1.8;
+        else if (t > 15.2 && t < 16.8) scan = ((t - 15.2) / 1.6) * 1.8;
+        uniforms.uScan.value = scan;
+
+        if (mixer) mixer.setTime(t % 4);
+        renderer.render(scene, camera);
+      }
+
+      async function build() {
+        const gltf = await new GLTFLoader().loadAsync("assets/crew-body.glb");
+        const model = gltf.scene;
+        model.traverse((o) => {
+          if (!o.isMesh) return;
+          o.material = material;
+          o.frustumCulled = false;
+        });
+        body.add(model);
+        const idle = gltf.animations.find((a) => /idle/i.test(a.name)) || gltf.animations[0];
+        if (idle) {
+          mixer = new THREE.AnimationMixer(model);
+          mixer.clipAction(idle).play();
+        }
+        await renderer.compileAsync(scene, camera);
+        renderAt(window.__hfThreeTime || 0);
+      }
+
+      window.__hf = window.__hf || {};
+      window.__hf.buildReady = window.__hf.buildReady || {};
+      window.__hf.buildReady["twin"] = build();
+
+      window.addEventListener("hf-seek", (e) => renderAt(e.detail.time));
+      renderAt(window.__hfThreeTime || 0);
+    </script>
+  </body>
+</html>
