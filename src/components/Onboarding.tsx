@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, HeartPulse, IdCard, PersonStanding } from "lucide-react";
 import { BLOOD_TYPES, SEXES, saveProfile, type CrewProfile, type Sex } from "@/lib/crew/profile";
 import { useT, type Messages } from "@/lib/i18n";
 import { LanguageToggle } from "./LanguageToggle";
+import { BrandMark } from "./BrandMark";
 
 type Draft = Omit<CrewProfile, "age" | "heightCm" | "weightKg" | "restingHeartRate"> & {
   age: string;
@@ -110,9 +112,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
       <div className="w-full max-w-[560px]">
         <div className="mb-6 flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-surface shadow-card" role="img" aria-label="cheeseOS">
-            <span className="flex items-start text-lg leading-none font-bold tracking-tight">
-              c<span className="-mt-1 ml-px text-xs text-accent">+</span>
-            </span>
+            <BrandMark size={34} />
           </span>
           <div>
             <p className="text-sm font-semibold">cheeseOS</p>
@@ -121,12 +121,27 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           <LanguageToggle className="ml-auto" />
         </div>
 
-        <h1 className="text-[28px] leading-tight font-bold tracking-tight text-balance">
-          {editing ? o.titleEdit : o.titleNew}
-        </h1>
-        <p className="mt-2 max-w-[52ch] text-[15px] text-ink-2">
-          {o.intro}
-        </p>
+        <div className="flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[28px] leading-tight font-bold tracking-tight text-balance">
+              {editing ? o.titleEdit : o.titleNew}
+            </h1>
+            <p className="mt-2 max-w-[52ch] text-[15px] text-ink-2">
+              {o.intro}
+            </p>
+          </div>
+          {!editing && (
+            <Image
+              src="/brand/mascot.webp"
+              alt=""
+              width={480}
+              height={539}
+              priority
+              className="mascot-float hidden w-28 shrink-0 select-none sm:block"
+              draggable={false}
+            />
+          )}
+        </div>
 
         <ol className="mt-6 grid grid-cols-3 gap-2" aria-label={o.stepsLabel}>
           {o.steps.map((s, i) => (

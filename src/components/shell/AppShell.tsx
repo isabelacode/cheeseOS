@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
@@ -20,6 +21,7 @@ import {
   UserRound,
   type LucideIcon,
 } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { useCrewSession } from "@/lib/session/CrewSession";
 import { UndoBar } from "./UndoBar";
 import { useT, type Messages } from "@/lib/i18n";
@@ -75,10 +77,9 @@ function Rail() {
   const pathname = usePathname();
   return (
     <nav aria-label={t.nav.label} className="sticky top-6 hidden h-[calc(100vh-48px)] w-[76px] shrink-0 flex-col items-center sm:flex">
-      <Link href="/" className="grid size-12 place-items-center rounded-2xl bg-surface shadow-card" aria-label="cheeseOS">
-        <span className="flex items-start text-xl leading-none font-bold tracking-tight">
-          c<span className="-mt-1 ml-px text-sm text-accent">+</span>
-        </span>
+      <Link href="/" className="flex flex-col items-center gap-1 text-[11px] font-bold tracking-tight text-ink" aria-label="cheeseOS">
+        <Image src="/brand/mascot.webp" alt="" width={480} height={539} priority className="h-auto w-[60px] select-none" draggable={false} />
+        cheeseOS
       </Link>
       <ul className="my-auto flex w-full flex-col gap-1">
         {PRIMARY.map(({ href, key, Icon }) => (
@@ -144,6 +145,9 @@ function TopBar() {
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-2">
+        <Link href="/" aria-label="cheeseOS" className="shrink-0 sm:hidden">
+          <BrandMark size={34} />
+        </Link>
         <Link
           href="/"
           aria-label={t.nav.statusLink(t.status[status].label)}

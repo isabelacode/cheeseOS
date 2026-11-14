@@ -173,6 +173,15 @@ input::placeholder {
   animation: entry-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Zero-g drift for the mascot. */
+@keyframes mascot-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
+.mascot-float {
+  animation: mascot-float 6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .mic-live, .entry-in, .hotspot--s3::before { animation: none; }
+  .mic-live, .entry-in, .hotspot--s3::before, .mascot-float { animation: none; }
 }
