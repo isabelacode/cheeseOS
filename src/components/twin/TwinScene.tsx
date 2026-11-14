@@ -16,9 +16,10 @@ export interface TwinSceneProps {
   onSelect: (r: Region | null) => void;
   onHover: (r: Region | null) => void;
   respiration: number;
+  femininity: number;
 }
 
-const BODY_OFFSET = new THREE.Vector3(0, -0.9, 0);
+const BODY_OFFSET = new THREE.Vector3(0, -0.85, 0);
 
 /**
  * Projects each region's anchor to screen space every frame and moves the
@@ -71,6 +72,7 @@ export default function TwinScene(props: TwinSceneProps) {
               onSelect={onSelect}
               onHover={onHover}
               respiration={props.respiration}
+              femininity={props.femininity}
             />
           </Suspense>
           <ContactShadows position={[0, -0.02, 0]} opacity={0.28} scale={4} blur={2.6} far={2} />

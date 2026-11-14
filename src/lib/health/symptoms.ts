@@ -101,7 +101,7 @@ const RULES: SymptomRule[] = [
   {
     id: "abdominal_pain",
     label: "Dor abdominal",
-    patterns: [/dor (de|na) barriga/, /dor no estomago/, /dor abdominal/, /colica/, /barriga doendo/],
+    patterns: [/dor (de|na) barriga/, /dor no estomago/, /dor abdominal/, /colica/, /(barriga|estomago)( \w+)? (esta |ta )?(doendo|doi)/],
     regions: ["abdomen"],
     severity: 2,
     advice: "Localizar a dor (quadrante) e monitorar evolução por 30 min.",
@@ -109,7 +109,7 @@ const RULES: SymptomRule[] = [
   {
     id: "headache",
     label: "Dor de cabeça",
-    patterns: [/dor de cabeca/, /cabeca (doendo|doi|latejando)/, /cefaleia/, /enxaqueca/],
+    patterns: [/dor de cabeca/, /cabeca( \w+)? (esta |ta )?(doendo|doi|latejando)/, /cefaleia/, /enxaqueca/],
     regions: ["head"],
     severity: 1,
     advice: "Hidratar, reduzir a luz e checar o CO₂ do módulo.",
@@ -133,7 +133,7 @@ const RULES: SymptomRule[] = [
   {
     id: "back_pain",
     label: "Dor nas costas",
-    patterns: [/dor nas costas/, /costas doendo/, /lombar/, /coluna/],
+    patterns: [/dor nas costas/, /costas( \w+)? (esta |ta )?(doendo|doi)/, /lombar/, /coluna/],
     regions: ["torso"],
     severity: 1,
     advice: "Alongamento em posição fetal; comum pelo alongamento da coluna em microgravidade.",
@@ -141,7 +141,7 @@ const RULES: SymptomRule[] = [
   {
     id: "arm_pain",
     label: "Dor no braço",
-    patterns: [/dor( \w+)? no braco/, /braco (doendo|doi)/, /(vai|irradia|desce|corre)( \w+){0,2} (pro|para o|ate o|no) braco/, /dor no ombro/, /dor no cotovelo/, /dor no punho/, /dor na mao/],
+    patterns: [/dor( \w+)? no braco/, /(braco|ombro|cotovelo|punho|mao)( \w+){0,2} (esta |ta )?(doendo|doi|dolorid)/, /(vai|irradia|desce|corre)( \w+){0,2} (pro|para o|ate o|no) braco/, /dor no ombro/, /dor no cotovelo/, /dor no punho/, /dor na mao/],
     regions: { limb: "arm" },
     severity: 1,
     advice: "Avaliar se houve esforço; gelo e repouso do membro.",
@@ -149,7 +149,7 @@ const RULES: SymptomRule[] = [
   {
     id: "leg_pain",
     label: "Dor na perna",
-    patterns: [/dor na perna/, /perna (doendo|doi)/, /dor no joelho/, /panturrilha/, /dor no pe\b/, /dor no tornozelo/],
+    patterns: [/dor na perna/, /(perna|joelho|panturrilha|tornozelo|pe|coxa)( \w+){0,2} (esta |ta )?(doendo|doi|dolorid)/, /dor no joelho/, /panturrilha/, /dor no pe\b/, /dor no tornozelo/],
     regions: { limb: "leg" },
     severity: 1,
     advice: "Checar inchaço; se unilateral e quente, avaliar trombose.",
