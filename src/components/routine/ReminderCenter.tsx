@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BellRing, X } from "lucide-react";
 import { useLocale } from "@/lib/i18n";
@@ -15,14 +16,26 @@ const HREF: Record<ReminderId, string> = {
   medication: "/perfil",
 };
 
+/** The screen a reminder points to, without the hash. */
+const pathOf = (id: ReminderId) => HREF[id].split("#")[0] || "/";
+
 /**
  * Checks the local reminders every 30 s while the app is open. A due reminder
  * shows once a day as an in-app notice and, when allowed, a system notification.
+ * The in-app notice is skipped on the screen it points to: the mission is already there.
  */
 export function ReminderCenter() {
   const routine = useRoutine();
   const r = routineMessages[useLocale()];
+  const pathname = usePathname();
   const [shown, setShown] = useState<ReminderId[]>([]);
+
+  // Arriving at the screen a notice points to dismisses it for good.
+  const [prevPath, setPrevPath] = useState(pathname);
+  if (prevPath !== pathname) {
+    setPrevPath(pathname);
+    setShown((cur) => cur.filter((id) => pathOf(id) !== pathname));
+  }
 
   useEffect(() => {
     ensureSince();
@@ -30,7 +43,8 @@ export function ReminderCenter() {
       const due = dueReminders(routine);
       if (!due.length) return;
       markFired(due);
-      setShown((cur) => [...new Set([...cur, ...due])]);
+      const elsewhere = due.filter((id) => pathOf(id) !== pathname);
+      if (elsewhere.length) setShown((cur) => [...new Set([...cur, ...elsewhere])]);
       if (routine.notify && typeof Notification !== "undefined" && Notification.permission === "granted") {
         for (const id of due) {
           try {
@@ -44,13 +58,13 @@ export function ReminderCenter() {
     check();
     const id = setInterval(check, 30_000);
     return () => clearInterval(id);
-  }, [routine, r]);
+  }, [routine, r, pathname]);
 
   // A reminder whose mission got done meanwhile disappears on its own.
   const done = missionsToday(routine);
   const visible = shown.filter((id) => {
     const m = REMINDER_MISSION[id];
-    return !m || !done[m];
+    return (!m || !done[m]) && pathOf(id) !== pathname;
   });
   if (!visible.length) return null;
   const close = (id: ReminderId) => setShown((cur) => cur.filter((x) => x !== id));
