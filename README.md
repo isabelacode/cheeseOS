@@ -1,7 +1,3 @@
-
-
-https://github.com/user-attachments/assets/8723f84e-4a90-463c-803c-78e6e2cb4699
-
 <div align="center">
 
 <img src="public/brand/mascot.webp" alt="cheeseOS mascot" width="140" />
