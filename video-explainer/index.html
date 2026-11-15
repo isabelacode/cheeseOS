@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      /* Same typeface as the app (variable font, SIL Open Font License). */
+      @font-face {
+        font-family: "Atkinson Hyperlegible Next";
+        src: url("assets/fonts/atkinson-hyperlegible-next.woff2") format("woff2");
+        font-weight: 200 800;
+        font-style: normal;
+      }
+      :root {
+        /* Same tokens as the app (src/app/globals.css). */
+        --bg: #f3f4f1;
+        --surface: #ffffff;
+        --ink: #101c2e;
+        --ink-2: #47536a;
+        --line: #d9dcd5;
+        --accent: #16294a;
+        --cheese: #f6bb2f;
+        --cheese-soft: #fdf0c9;
+        --crit: #c81e1e;
+        --font-ui: "Atkinson Hyperlegible Next", sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --win-x: 700px;
+        --win-y: 110px;
+        --win-w: 1124px;
+        --view-h: 800px;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        font-family: var(--font-ui);
+        color: var(--ink);
+        background: var(--bg);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ---------- Title and end cards ---------- */
+      .center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      #title-mascot {
+        width: 250px;
+        height: auto;
+      }
+      #title-name {
+        font-size: 150px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        margin-top: 18px;
+      }
+      #title-tag {
+        font-size: 46px;
+        font-weight: 500;
+        color: var(--ink-2);
+        margin-top: 26px;
+        max-width: 1300px;
+        line-height: 1.25;
+      }
+      #title-kicker {
+        font-family: var(--font-mono);
+        font-size: 28px;
+        letter-spacing: 0.16em;
+        color: var(--accent);
+        background: var(--cheese-soft);
+        padding: 12px 26px;
+        border-radius: 999px;
+        margin-top: 44px;
+      }
+
+      /* ---------- App window ---------- */
+      #window {
+        position: absolute;
+        left: var(--win-x);
+        top: var(--win-y);
+        width: var(--win-w);
+        border-radius: 26px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: 0 2px 4px rgba(16, 28, 46, 0.05), 0 50px 90px -40px rgba(16, 28, 46, 0.45);
+        overflow: hidden;
+      }
+      #win-bar {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--line);
+        background: #fafaf8;
+      }
+      #win-bar i {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--line);
+      }
+      #win-url {
+        margin-left: 18px;
+        font-family: var(--font-mono);
+        font-size: 28px;
+        color: var(--ink-2);
+      }
+      #viewport {
+        position: relative;
+        width: var(--win-w);
+        height: var(--view-h);
+        overflow: hidden;
+        background: var(--bg);
+      }
+      .page {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1440px;
+        opacity: 0;
+      }
+      .page img {
+        display: block;
+        width: 1440px;
+        height: auto;
+      }
+      .ring {
+        position: absolute;
+        border: 5px solid var(--cheese);
+        border-radius: 26px;
+        box-shadow: 0 0 0 8px rgba(246, 187, 47, 0.25);
+        opacity: 0;
+      }
+
+      /* ---------- Left caption column ---------- */
+      #progress {
+        position: absolute;
+        left: 96px;
+        top: 120px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      #progress b {
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: 28px;
+        letter-spacing: 0.12em;
+        color: var(--ink-2);
+        margin-right: 10px;
+      }
+      .pip {
+        width: 52px;
+        height: 8px;
+        border-radius: 4px;
+        background: var(--line);
+        overflow: hidden;
+      }
+      .pip i {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: var(--accent);
+        transform-origin: left center;
+        transform: scaleX(0);
+      }
+      .step {
+        position: absolute;
+        left: 96px;
+        top: 250px;
+        width: 540px;
+      }
+      .step-num {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        background: var(--cheese-soft);
+        padding: 10px 22px;
+        border-radius: 999px;
+      }
+      .step-num.crit {
+        color: #ffffff;
+        background: var(--crit);
+      }
+      .step-head {
+        font-size: 68px;
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        line-height: 1.04;
+        margin-top: 30px;
+      }
+      .step-body {
+        font-size: 34px;
+        line-height: 1.34;
+        color: var(--ink-2);
+        margin-top: 28px;
+      }
+      .step-note {
+        font-size: 28px;
+        line-height: 1.35;
+        color: var(--ink-2);
+        margin-top: 26px;
+        padding: 18px 22px;
+        border-radius: 20px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+      }
+      #quote {
+        font-size: 36px;
+        line-height: 1.3;
+        font-weight: 600;
+        margin-top: 30px;
+        padding: 24px 28px;
+        border-radius: 26px 26px 26px 6px;
+        background: var(--accent);
+        color: #ffffff;
+      }
+      #quote span {
+        opacity: 0;
+      }
+      .more-list {
+        margin-top: 34px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .more-item {
+        padding: 20px 24px;
+        border-radius: 22px;
+        background: var(--surface);
+        border: 2px solid var(--line);
+        opacity: 0.45;
+      }
+      .more-item b {
+        display: block;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .more-item span {
+        display: block;
+        font-size: 28px;
+        line-height: 1.3;
+        color: var(--ink-2);
+        margin-top: 4px;
+      }
+
+      /* ---------- End card ---------- */
+      #end-mascot {
+        width: 190px;
+        height: auto;
+      }
+      #end-head {
+        font-size: 96px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.02;
+        margin-top: 20px;
+      }
+      #end-points {
+        display: flex;
+        gap: 18px;
+        margin-top: 44px;
+      }
+      .end-point {
+        font-size: 32px;
+        font-weight: 700;
+        padding: 16px 30px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 2px solid var(--line);
+      }
+      #end-url {
+        font-family: var(--font-mono);
+        font-size: 40px;
+        font-weight: 600;
+        color: #ffffff;
+        background: var(--accent);
+        padding: 20px 40px;
+        border-radius: 22px;
+        margin-top: 50px;
+      }
+      #end-note {
+        font-size: 28px;
+        color: var(--ink-2);
+        margin-top: 40px;
+        max-width: 1200px;
+        line-height: 1.35;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="70" data-width="1920" data-height="1080">
+      <!-- 0:00 Title -->
+      <div id="title" class="clip center" data-start="0" data-duration="5.5" data-track-index="0">
+        <img id="title-mascot" src="assets/mascot.webp" alt="">
+        <div id="title-name">cheeseOS</div>
+        <div id="title-tag">The health twin that keeps working when Earth goes quiet.</div>
+        <div id="title-kicker">HOW IT WORKS</div>
+      </div>
+
+      <!-- 0:05 The app window stays on screen through every step. -->
+      <div id="stage" class="clip" data-start="5.2" data-duration="57.3" data-track-index="1">
+        <div id="progress">
+          <b>HOW IT WORKS</b>
+          <div class="pip"><i id="pip-1"></i></div>
+          <div class="pip"><i id="pip-2"></i></div>
+          <div class="pip"><i id="pip-3"></i></div>
+          <div class="pip"><i id="pip-4"></i></div>
+          <div class="pip"><i id="pip-5"></i></div>
+          <div class="pip"><i id="pip-6"></i></div>
+        </div>
+        <div id="window">
+          <div id="win-bar"><i></i><i></i><i></i><span id="win-url">cheeseOS</span></div>
+          <div id="viewport">
+            <div class="page" id="pg-stable" data-layout-allow-overflow="">
+              <img src="assets/shots/now-stable.png" alt="">
+              <div class="ring" id="ring-speak" style="left: 132px; top: 196px; width: 730px; height: 208px"></div>
+            </div>
+            <div class="page" id="pg-symptoms" data-layout-allow-overflow="">
+              <img src="assets/shots/now-symptoms.png" alt="">
+              <div class="ring" id="ring-act" style="left: 134px; top: 198px; width: 724px; height: 232px"></div>
+            </div>
+            <div class="page" id="pg-vitals" data-layout-allow-overflow=""><img src="assets/shots/vitals.png" alt=""></div>
+            <div class="page" id="pg-critical" data-layout-allow-overflow=""><img src="assets/shots/now-critical.png" alt=""></div>
+            <div class="page" id="pg-trainer" data-layout-allow-overflow=""><img src="assets/shots/trainer.png" alt=""></div>
+            <div class="page" id="pg-log" data-layout-allow-overflow=""><img src="assets/shots/log.png" alt=""></div>
+            <div class="page" id="pg-science" data-layout-allow-overflow=""><img src="assets/shots/science.png" alt=""></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="s1" class="clip" data-start="5.5" data-duration="8.5" data-track-index="2">
+        <div class="step">
+          <div class="step-num">01 · SPEAK</div>
+          <div class="step-head">Say or type how you feel.</div>
+          <div id="quote" data-text="“I have a headache and feel a little nauseous.”"></div>
+          <div class="step-body">Speech is transcribed on the device, in English or Portuguese.</div>
+        </div>
+      </div>
+
+      <div id="s2" class="clip" data-start="14" data-duration="10" data-track-index="2">
+        <div class="step">
+          <div class="step-num">02 · SEE</div>
+          <div class="step-head">Your 3D twin lights up.</div>
+          <div class="step-body">Each symptom is mapped to one of seven body regions and coloured by severity.</div>
+        </div>
+      </div>
+
+      <div id="s3" class="clip" data-start="24" data-duration="10" data-track-index="2">
+        <div class="step">
+          <div class="step-num">03 · ACT</div>
+          <div class="step-head">Clear next steps, with no connection.</div>
+          <div class="step-body">Recognition, red flags and the onboard protocol are local rules. AI is optional, never required.</div>
+        </div>
+      </div>
+
+      <div id="s4" class="clip" data-start="34" data-duration="9" data-track-index="2">
+        <div class="step">
+          <div class="step-num">04 · COMPARE</div>
+          <div class="step-head">Vital signs against reference ranges.</div>
+          <div class="step-body">Attention and critical limits come from published NASA and NIH references.</div>
+          <div class="step-note">In this demo the readings are simulated and react to what you report.</div>
+        </div>
+      </div>
+
+      <div id="s5" class="clip" data-start="43" data-duration="9.5" data-track-index="2">
+        <div class="step">
+          <div class="step-num crit">CRITICAL</div>
+          <div class="step-head">Red flags come first.</div>
+          <div class="step-body">Chest pain with shortness of breath turns the screen critical: what to do now comes first.</div>
+        </div>
+      </div>
+
+      <div id="s6" class="clip" data-start="52.5" data-duration="10" data-track-index="2">
+        <div class="step">
+          <div class="step-num">AND MORE</div>
+          <div class="more-list">
+            <div class="more-item" id="more-1"><b>Training</b><span>The camera counts repetitions on the device.</span></div>
+            <div class="more-item" id="more-2"><b>Log and report</b><span>A full export for the flight surgeon.</span></div>
+            <div class="more-item" id="more-3"><b>Mission science</b><span>NASA's five hazards, with sources.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1:02 End card -->
+      <div id="end" class="clip center" data-start="62.5" data-duration="7.5" data-track-index="0">
+        <img id="end-mascot" src="assets/mascot.webp" alt="">
+        <div id="end-head">Health that travels<br>as far as we do.</div>
+        <div id="end-points">
+          <div class="end-point">Local rules first</div>
+          <div class="end-point">On-device by default</div>
+          <div class="end-point">English and Portuguese</div>
+        </div>
+        <div id="end-url">github.com/isabelacode/cheeseOS</div>
+        <div id="end-note">Support and demonstration tool. It does not replace medical evaluation. Vital signs shown are simulated.</div>
+      </div>
+
+      <audio id="bgm" class="clip" src="assets/music.mp3" data-start="0" data-duration="70" data-media-start="0.8" data-volume="1.4" data-fade-in="0.8" data-fade-out="3" data-track-index="10"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // The quote is typed out one character at a time: the spans must exist before the timeline reads them.
+      const quote = document.getElementById("quote");
+      for (const ch of quote.dataset.text) {
+        const span = document.createElement("span");
+        span.textContent = ch;
+        quote.appendChild(span);
+      }
+
+      // The viewport shows a region of the 1440 px wide page: { x, y } top-left corner, w = visible width.
+      const VIEW_W = 1124;
+      const cam = (r) => ({ x: -r.x * (VIEW_W / r.w), y: -r.y * (VIEW_W / r.w), scale: VIEW_W / r.w });
+      gsap.set(".page", { transformOrigin: "0 0" });
+      const show = (id, at, from) => {
+        tl.set(id, cam(from), at - 0.02);
+        tl.to(id, { opacity: 1, duration: 0.5, ease: "power2.out" }, at);
+      };
+      const hide = (id, at) => tl.to(id, { opacity: 0, duration: 0.5, ease: "power2.in" }, at);
+      const move = (id, at, to, duration) => tl.to(id, { ...cam(to), duration, ease: "power2.inOut" }, at);
+      const stepIn = (id, at) =>
+        tl.fromTo(id + " .step > *", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out", stagger: 0.12 }, at);
+      const stepOut = (id, at) => tl.to(id + " .step > *", { opacity: 0, y: -18, duration: 0.3, ease: "power2.in" }, at);
+      const pip = (n, at, duration) => tl.fromTo("#pip-" + n, { scaleX: 0 }, { scaleX: 1, duration, ease: "none" }, at);
+      const FULL = { x: 0, y: 0, w: 1440 };
+
+      // ---- Title ----
+      tl.fromTo("#title-mascot", { y: 14, scale: 0.94 }, { y: 0, scale: 1, duration: 1.2, ease: "power2.out" }, 0);
+      tl.fromTo("#title-name", { y: 10 }, { y: 0, duration: 1.0, ease: "power2.out" }, 0);
+      tl.fromTo("#title-tag", { opacity: 0.999, y: 10 }, { opacity: 1, y: 0, duration: 1.0, ease: "power2.out" }, 0);
+      tl.fromTo("#title-kicker", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(2)" }, 1.2);
+      tl.to("#title > *", { opacity: 0, y: -30, duration: 0.45, ease: "power2.in", stagger: 0.05 }, 4.8);
+
+      // ---- Stage ----
+      tl.fromTo("#window", { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 0.8, ease: "power3.out" }, 5.4);
+      tl.fromTo("#progress", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 5.6);
+
+      // 01 Speak (5.5 - 14)
+      show("#pg-stable", 5.5, FULL);
+      stepIn("#s1", 5.9);
+      pip(1, 5.5, 8.5);
+      move("#pg-stable", 7.4, { x: 122, y: 70, w: 790 }, 1.6);
+      tl.fromTo("#ring-speak", { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" }, 9.0);
+      tl.to("#quote span", { opacity: 1, duration: 0.01, stagger: 0.035 }, 6.5);
+      tl.to("#ring-speak", { opacity: 0, duration: 0.4 }, 13.0);
+      stepOut("#s1", 13.55);
+      hide("#pg-stable", 13.6);
+
+      // 02 See (14 - 24)
+      show("#pg-symptoms", 14.0, FULL);
+      stepIn("#s2", 14.3);
+      pip(2, 14, 10);
+      move("#pg-symptoms", 15.6, { x: 880, y: 75, w: 560 }, 1.8);
+      move("#pg-symptoms", 18.4, { x: 880, y: 190, w: 560 }, 4.6);
+      stepOut("#s2", 23.55);
+
+      // 03 Act (24 - 34), same screen, the plan on the left
+      move("#pg-symptoms", 23.6, { x: 122, y: 150, w: 830 }, 1.4);
+      stepIn("#s3", 24.3);
+      pip(3, 24, 10);
+      tl.fromTo("#ring-act", { opacity: 0, scale: 1.05 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" }, 25.6);
+      tl.to("#ring-act", { opacity: 0, duration: 0.4 }, 28.4);
+      move("#pg-symptoms", 28.8, { x: 122, y: 440, w: 830 }, 4.2);
+      stepOut("#s3", 33.55);
+      hide("#pg-symptoms", 33.6);
+
+      // 04 Compare (34 - 43)
+      show("#pg-vitals", 34.0, FULL);
+      stepIn("#s4", 34.3);
+      pip(4, 34, 9);
+      move("#pg-vitals", 36.0, { x: 130, y: 280, w: 980 }, 1.8);
+      move("#pg-vitals", 39.2, { x: 760, y: 280, w: 680 }, 2.6);
+      stepOut("#s4", 42.55);
+      hide("#pg-vitals", 42.6);
+
+      // Red flags (43 - 52.5)
+      show("#pg-critical", 43.0, { x: 122, y: 80, w: 880 });
+      stepIn("#s5", 43.3);
+      pip(5, 43, 9.5);
+      move("#pg-critical", 44.6, { x: 122, y: 130, w: 850 }, 2.6);
+      move("#pg-critical", 47.6, { x: 122, y: 1372, w: 850 }, 3.4);
+      stepOut("#s5", 52.05);
+      hide("#pg-critical", 52.1);
+
+      // And more (52.5 - 62.5): three short beats
+      const on = (id, at) => tl.to(id, { opacity: 1, borderColor: "#16294a", duration: 0.35 }, at);
+      const off = (id, at) => tl.to(id, { opacity: 0.45, borderColor: "#d9dcd5", duration: 0.35 }, at);
+      stepIn("#s6", 52.7);
+      pip(6, 52.5, 10);
+      show("#pg-trainer", 52.5, { x: 360, y: 80, w: 840 });
+      on("#more-1", 53.2);
+      move("#pg-trainer", 53.0, { x: 360, y: 250, w: 840 }, 2.6);
+      hide("#pg-trainer", 55.6);
+      off("#more-1", 55.8);
+      show("#pg-log", 55.9, { x: 150, y: 200, w: 960 });
+      on("#more-2", 55.9);
+      move("#pg-log", 56.4, { x: 470, y: 205, w: 960 }, 2.4);
+      hide("#pg-log", 58.9);
+      off("#more-2", 59.1);
+      show("#pg-science", 59.2, { x: 130, y: 370, w: 900 });
+      on("#more-3", 59.2);
+      move("#pg-science", 59.7, { x: 130, y: 1110, w: 900 }, 2.2);
+      stepOut("#s6", 62.0);
+      tl.to("#window", { opacity: 0, x: 80, duration: 0.45, ease: "power2.in" }, 62.0);
+      tl.to("#progress", { opacity: 0, duration: 0.3 }, 62.0);
+
+      // ---- End card ----
+      tl.fromTo("#end-mascot", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.8)" }, 62.7);
+      tl.fromTo("#end-head", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 63.0);
+      tl.fromTo(".end-point", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.15 }, 63.7);
+      tl.fromTo("#end-url", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.8)" }, 64.6);
+      tl.fromTo("#end-note", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 65.2);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
