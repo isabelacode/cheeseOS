@@ -3,3 +3,6 @@ snaps/
 renders/
 *.mp4
 .thumbnails/
+.waveform-cache/
+# unsliced narration take; the composition uses voice/block-*.wav
+voice/full.wav

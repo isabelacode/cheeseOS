@@ -13,12 +13,14 @@
     .how-bar { width: 9px; height: 60px; border-radius: 5px; background: var(--accent); transform: scaleY(0.1); }
     #how-chip { display: inline-flex; align-items: center; gap: 14px; padding: 14px 24px; border-radius: 999px; background: rgba(255,75,75,0.14); border: 2px solid rgba(255,75,75,0.6); font-size: 32px; font-weight: 600; color: #ffd2d2; }
     #how-chip i { width: 16px; height: 16px; border-radius: 50%; background: var(--crit); }
-    #how-chart { width: 472px; height: 100px; display: block; }
+    #how-chart { width: 472px; height: 74px; display: block; }
+    #how-s3 .how-head span { color: var(--cheese); }
+    #how-s3 .how-body { margin-top: 14px; }
     .how-legend { font-family: var(--font-mono); font-size: 28px; color: var(--ink-2); margin-top: 8px; }
     .how-legend b { color: var(--crit); font-weight: 600; }
-    #how-badges { display: flex; flex-direction: column; gap: 12px; }
-    .how-badge { display: flex; align-items: flex-start; gap: 14px; font-size: 30px; font-weight: 500; line-height: 1.2; }
-    .how-badge i { flex: none; width: 12px; height: 12px; margin-top: 12px; border-radius: 50%; background: var(--cheese); }
+    #how-badges { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .how-badge { display: flex; align-items: center; gap: 14px; font-size: 32px; font-weight: 600; line-height: 1.2; }
+    .how-badge i { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--cheese); color: #14100a; font-family: var(--font-mono); font-style: normal; font-weight: 700; font-size: 28px; display: flex; align-items: center; justify-content: center; }
   </style>
   <div id="root" data-composition-id="how" data-width="1920" data-height="1080">
     <div id="how-steps" class="clip" data-start="0" data-duration="10">
@@ -28,9 +30,9 @@
       <div class="how-dot"><i id="how-d4"></i></div>
     </div>
 
-    <div id="how-s1" class="how-step clip" data-start="0" data-duration="2.5">
+    <div id="how-s1" class="how-step clip" data-start="0" data-duration="2">
       <div class="how-num">01 · SPEAK</div>
-      <div class="how-head">Just say how you feel.</div>
+      <div class="how-head">Say how you feel.</div>
       <div class="how-body">
         <div id="how-quote">“My chest feels tight.”</div>
         <div id="how-wave">
@@ -42,32 +44,33 @@
       </div>
     </div>
 
-    <div id="how-s2" class="how-step clip" data-start="2.5" data-duration="2.5">
+    <div id="how-s2" class="how-step clip" data-start="2" data-duration="2.4">
       <div class="how-num">02 · SEE</div>
-      <div class="how-head">It lights up on your digital twin.</div>
+      <div class="how-head">Your 3D twin lights up.</div>
       <div class="how-body"><div id="how-chip"><i></i>Chest · Critical</div></div>
     </div>
 
-    <div id="how-s3" class="how-step clip" data-start="5" data-duration="2.5">
+    <div id="how-s3" class="how-step clip" data-start="4.4" data-duration="3">
       <div class="how-num">03 · COMPARE</div>
-      <div class="how-head">Against your own baseline.</div>
+      <div class="how-head">Against your baseline and <span>NASA risk data.</span></div>
       <div class="how-body">
-        <svg id="how-chart" viewBox="0 0 472 100">
+        <svg id="how-chart" viewBox="0 0 472 100" preserveAspectRatio="none">
           <rect x="0" y="56" width="472" height="30" fill="rgba(61,123,255,0.18)" rx="5" />
           <path id="how-line" d="M0 72 L60 68 L120 74 L180 70 L240 71 L290 64 L330 50 L370 34 L410 22 L460 14"
             fill="none" stroke="#ff4b4b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
           <circle id="how-pt" cx="460" cy="14" r="8" fill="#ff4b4b" />
         </svg>
-        <div class="how-legend">HR <b>118</b> · baseline 62</div>
+        <div class="how-legend">HR <b>118</b> · your normal 62</div>
       </div>
     </div>
 
-    <div id="how-s4" class="how-step clip" data-start="7.5" data-duration="2.5">
-      <div class="how-num">04 · ACT</div>
+    <div id="how-s4" class="how-step clip" data-start="7.4" data-duration="2.6">
+      <div class="how-num">04 · ACT · OFFLINE</div>
       <div class="how-head">Clear next steps.</div>
       <div class="how-body" id="how-badges">
-        <div class="how-badge"><i></i>Offline, AI on the device</div>
-        <div class="how-badge"><i></i>Limits from NASA HRP risks</div>
+        <div class="how-badge"><i>1</i>Stop the activity</div>
+        <div class="how-badge"><i>2</i>Run an ECG now</div>
+        <div class="how-badge"><i>3</i>Start the cardiac protocol</div>
       </div>
     </div>
   </div>
@@ -77,33 +80,36 @@
     const outStep = (sel, at) => tl.to(sel, { opacity: 0, y: -14, duration: 0.22, ease: "power2.in" }, at);
 
     tl.fromTo("#how-steps", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0);
+    // Step windows follow the narration, so they are not equal.
+    const STEPS = [[0, 2], [2, 2.4], [4.4, 3], [7.4, 2.5]];
     ["#how-d1", "#how-d2", "#how-d3", "#how-d4"].forEach((d, i) =>
-      tl.fromTo(d, { scaleX: 0 }, { scaleX: 1, duration: 2.4, ease: "none" }, i * 2.5));
+      tl.fromTo(d, { scaleX: 0 }, { scaleX: 1, duration: STEPS[i][1] - 0.1, ease: "none" }, STEPS[i][0]));
     tl.to("#how-steps", { opacity: 0, duration: 0.25 }, 9.7);
 
     inStep("#how-s1 > *", 0.1);
     const bars = gsap.utils.toArray("#how-s1 .how-bar");
     const w = { t: 0 };
-    tl.fromTo(w, { t: 0 }, { t: 2.2, duration: 2.2, ease: "none", onUpdate: () => {
+    tl.fromTo(w, { t: 0 }, { t: 1.7, duration: 1.7, ease: "none", onUpdate: () => {
       bars.forEach((b, i) => {
-        const env = Math.min(1, w.t * 2) * Math.max(0, 1 - Math.max(0, w.t - 1.6) * 2);
+        const env = Math.min(1, w.t * 3) * Math.max(0, 1 - Math.max(0, w.t - 1.3) * 2.5);
         const v = 0.15 + 0.85 * env * Math.abs(Math.sin(w.t * 9 + i * 0.9) * Math.cos(w.t * 4.3 + i * 0.37));
         b.style.transform = "scaleY(" + v.toFixed(3) + ")";
       });
-    } }, 0.2);
-    outStep("#how-s1 > *", 2.25);
+    } }, 0.15);
+    outStep("#how-s1 > *", 1.85);
 
-    inStep("#how-s2 > *", 2.6);
-    tl.fromTo("#how-chip", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }, 3.1);
-    outStep("#how-s2 > *", 4.75);
+    // Step 2 sits over the enlarged twin (main timeline, 11.8-14.2).
+    inStep("#how-s2 > *", 2.4);
+    tl.fromTo("#how-chip", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(2.4)" }, 2.85);
+    outStep("#how-s2 > *", 4.15);
 
-    inStep("#how-s3 > *", 5.1);
-    tl.fromTo("#how-line", { strokeDasharray: 600, strokeDashoffset: 600 }, { strokeDashoffset: 0, duration: 1.2, ease: "power2.inOut" }, 5.3);
-    tl.fromTo("#how-pt", { scale: 0, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, 6.4);
-    outStep("#how-s3 > *", 7.25);
+    inStep("#how-s3 > *", 4.6);
+    tl.fromTo("#how-line", { strokeDasharray: 600, strokeDashoffset: 600 }, { strokeDashoffset: 0, duration: 1.2, ease: "power2.inOut" }, 4.85);
+    tl.fromTo("#how-pt", { scale: 0, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, 5.95);
+    outStep("#how-s3 > *", 7.15);
 
-    inStep("#how-s4 > *", 7.6);
-    tl.fromTo("#how-s4 .how-badge", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, stagger: 0.18, ease: "power3.out" }, 7.8);
+    inStep("#how-s4 > *", 7.5);
+    tl.fromTo("#how-s4 .how-badge", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, stagger: 0.3, ease: "power3.out" }, 7.8);
     outStep("#how-s4 > *", 9.75);
     window.__timelines["how"] = tl;
   </script>

@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1920, height=1080" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
     <script type="importmap">
       {
@@ -140,6 +140,41 @@
         border-radius: 50%;
         background: #36d07a;
       }
+      /* Real NASA "Blue Marble" photo, rises behind the twin for the "Tomorrow" beat. */
+      #twin-earth {
+        position: absolute;
+        left: -176px;
+        top: 250px;
+        width: 900px;
+        height: 900px;
+        border-radius: 50%;
+        overflow: hidden;
+        opacity: 0;
+        box-shadow: 0 0 70px 6px rgba(80, 150, 255, 0.45);
+      }
+      #twin-earth img {
+        position: absolute;
+        left: -9.5%;
+        top: -9.5%;
+        width: 119%;
+        height: 119%;
+        display: block;
+      }
+      /* Keeps the step text readable while the twin takes over the column. */
+      #twin-scrim {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(115deg, rgba(4, 6, 12, 0) 38%, rgba(4, 6, 12, 0.82) 72%, rgba(4, 6, 12, 0.94) 100%);
+        opacity: 0;
+      }
+      #twin-alert {
+        position: absolute;
+        inset: 0;
+        border-radius: 28px;
+        border: 3px solid var(--crit);
+        box-shadow: inset 0 0 60px rgba(255, 75, 75, 0.45);
+        opacity: 0;
+      }
       #info-host {
         left: var(--col-x);
         top: 604px;
@@ -155,54 +190,61 @@
     </style>
   </head>
   <body>
-    <div
-      id="root"
-      data-composition-id="main"
-      data-start="0"
-      data-duration="30"
-      data-width="1920"
-      data-height="1080"
-    >
+    <div data-hf-id="hf-j7pz" id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1920" data-height="1080">
       <!--
         YOUR CLIP: record 30 s landscape (1920x1080), you on the LEFT half, right half free.
         Save it as assets/me.mp4, then replace #presenter-placeholder with:
           <video id="presenter-video" src="assets/me.mp4" data-has-audio="true"></video>
         and move class/data-* timing to the video (it must be the timed element).
       -->
-      <div id="presenter" class="clip" data-start="0" data-duration="30" data-track-index="0" data-layout-allow-overlap>
-        <div id="presenter-placeholder">
-          <svg id="presenter-silhouette" viewBox="0 0 56 76" fill="currentColor">
-            <circle cx="28" cy="20" r="13" />
-            <path d="M2 76c0-17 11.6-30 26-30s26 13 26 30z" />
+      <div data-hf-id="hf-fnfj" id="presenter" class="clip" data-start="0" data-duration="30" data-track-index="0" data-layout-allow-overlap="">
+        <div data-hf-id="hf-pxab" id="presenter-placeholder">
+          <svg data-hf-id="hf-xnza" id="presenter-silhouette" viewBox="0 0 56 76" fill="currentColor">
+            <circle data-hf-id="hf-efby" cx="28" cy="20" r="13" />
+            <path data-hf-id="hf-qhg0" d="M2 76c0-17 11.6-30 26-30s26 13 26 30z" />
           </svg>
-          <div id="presenter-hint" data-layout-allow-occlusion>YOUR CAMERA · FULL FRAME<br />STAND ON THE LEFT HALF</div>
+          <div data-hf-id="hf-0fe8" id="presenter-hint" data-layout-allow-occlusion="">YOUR CAMERA · FULL FRAME<br data-hf-id="hf-x5px">STAND ON THE LEFT HALF</div>
         </div>
-        <div id="presenter-shade"></div>
+        <div data-hf-id="hf-6j6f" id="presenter-shade"></div>
       </div>
 
       <!-- Top card: the live 3D twin. -->
-      <div id="twin-host" class="card-host clip" data-start="0" data-duration="30" data-track-index="1" data-track-kind="graphics">
-        <div id="twin-card" class="card">
-          <canvas id="twin-canvas" width="1096" height="940"></canvas>
-          <div id="twin-label"><i></i>DIGITAL TWIN</div>
+      <div data-hf-id="hf-80bv" id="twin-host" class="card-host clip" data-start="0" data-duration="30" data-track-index="1" data-track-kind="graphics">
+        <div data-hf-id="hf-tjj9" id="twin-card" class="card">
+          <div data-hf-id="hf-ufsl" id="twin-earth" data-layout-allow-overflow=""><img data-hf-id="hf-j1zx" src="assets/earth.jpg" alt="Earth, NASA Blue Marble"></div>
+          <canvas data-hf-id="hf-be9p" id="twin-canvas" width="1096" height="940"></canvas>
+          <div data-hf-id="hf-mnf6" id="twin-scrim"></div>
+          <div data-hf-id="hf-6p2a" id="twin-alert"></div>
+          <div data-hf-id="hf-3zwg" id="twin-label"><i data-hf-id="hf-wt6k"></i>DIGITAL TWIN</div>
         </div>
       </div>
 
       <!-- Bottom card: its content comes from the scenes below. -->
-      <div id="info-host" class="card-host clip" data-start="0" data-duration="30" data-track-index="2" data-track-kind="graphics">
-        <div id="info-card" class="card"></div>
+      <div data-hf-id="hf-teb6" id="info-host" class="card-host clip" data-start="0" data-duration="30" data-track-index="2" data-track-kind="graphics">
+        <div data-hf-id="hf-hxcv" id="info-card" class="card"></div>
       </div>
 
-      <div id="intro" class="scene-host" data-composition-id="intro" data-composition-src="compositions/intro.html"
-        data-start="0" data-duration="3" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
-      <div id="hook" class="scene-host" data-composition-id="hook" data-composition-src="compositions/hook.html"
-        data-start="2" data-duration="3.2" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
-      <div id="title" class="scene-host" data-composition-id="title" data-composition-src="compositions/title.html"
-        data-start="5.2" data-duration="4.8" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
-      <div id="how" class="scene-host" data-composition-id="how" data-composition-src="compositions/how.html"
-        data-start="10" data-duration="10" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
-      <div id="future" class="scene-host" data-composition-id="future" data-composition-src="compositions/future.html"
-        data-start="20" data-duration="10" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-jsvo" id="intro" class="scene-host" data-composition-id="intro" data-composition-src="compositions/intro.html" data-start="0" data-duration="3" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-p2zo" id="hook" class="scene-host" data-composition-id="hook" data-composition-src="compositions/hook.html" data-start="2" data-duration="3.2" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-znuc" id="title" class="scene-host" data-composition-id="title" data-composition-src="compositions/title.html" data-start="5.2" data-duration="4.8" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-pufw" id="how" class="scene-host" data-composition-id="how" data-composition-src="compositions/how.html" data-start="10" data-duration="10" data-track-index="4" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-0ksn" id="future" class="scene-host" data-composition-id="future" data-composition-src="compositions/future.html" data-start="20" data-duration="10" data-track-index="3" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+
+      <!-- Music bed: kept low so it sits under the presenter's voice. -->
+      <audio data-hf-id="hf-3tta" id="bgm" class="clip" src=".media/audio/bgm/bgm_001.mp3" data-start="0" data-duration="30" data-media-start="0.8" data-volume="0.083176" data-fade-in="0.6" data-fade-out="2.2" data-track-index="10"></audio>
+      <!-- GUIDE VOICE (synthetic, for timing and practice): delete these five when assets/me.mp4 goes in. -->
+      <audio id="guide-1" class="clip" src="voice/block-1.wav" data-start="0" data-duration="2.56" data-volume="1" data-track-index="14"></audio>
+      <audio id="guide-2" class="clip" src="voice/block-2.wav" data-start="2.6" data-duration="3.28" data-volume="1" data-track-index="14"></audio>
+      <audio id="guide-3" class="clip" src="voice/block-3.wav" data-start="5.95" data-duration="4.43" data-volume="1" data-track-index="14"></audio>
+      <audio id="guide-4" class="clip" src="voice/block-4.wav" data-start="10.45" data-duration="9.72" data-volume="1" data-track-index="14"></audio>
+      <audio id="guide-5" class="clip" src="voice/block-5.wav" data-start="20.25" data-duration="9.02" data-volume="1" data-track-index="14"></audio>
+      <!-- Effects, each on a visible action. -->
+      <audio data-hf-id="hf-s6ce" id="sfx-cards-in" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="1.3" data-duration="2.2" data-volume="0.3" data-fade-out="0.4" data-track-index="11"></audio>
+      <audio data-hf-id="hf-iktu" id="sfx-count-pop" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="3.48" data-duration="0.48" data-volume="0.9" data-track-index="12"></audio>
+      <audio data-hf-id="hf-pioi" id="sfx-twin-zoom" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="11.5" data-duration="2.2" data-volume="0.38" data-fade-out="0.4" data-track-index="11"></audio>
+      <audio data-hf-id="hf-1l94" id="sfx-heartbeat" class="clip" src=".media/audio/sfx/sfx_003.mp3" data-start="12.35" data-duration="1.6" data-media-start="0.4" data-volume="0.7" data-fade-in="0.05" data-fade-out="0.5" data-track-index="13"></audio>
+      <audio data-hf-id="hf-gsrj" id="sfx-chip-pop" class="clip" src=".media/audio/sfx/sfx_002.mp3" data-start="12.8" data-duration="0.48" data-volume="0.9" data-track-index="12"></audio>
+      <audio data-hf-id="hf-hs9j" id="sfx-end-card" class="clip" src=".media/audio/sfx/sfx_001.mp3" data-start="24.95" data-duration="2.2" data-volume="0.3" data-fade-out="0.4" data-track-index="11"></audio>
     </div>
 
     <script>
@@ -212,8 +254,30 @@
       tl.fromTo("#info-card", { opacity: 0, x: 60, scale: 0.96 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 1.85);
       // Gentle float so the column feels alive.
       tl.fromTo("#twin-host", { y: 0 }, { y: -8, duration: 3, ease: "sine.inOut", yoyo: true, repeat: 7 }, 2.4);
-      tl.to("#twin-card", { opacity: 0, x: 60, duration: 0.45, ease: "power2.in" }, 25.6);
-      tl.to("#info-card", { opacity: 0, x: 60, duration: 0.45, ease: "power2.in" }, 25.5);
+
+      // 0:11.8 "Your 3D twin lights up": the twin takes over the column, the info card steps back.
+      gsap.set("#twin-host", { transformOrigin: "100% 0%" });
+      tl.to("#twin-host", { scale: 1.83, duration: 0.65, ease: "power3.inOut" }, 11.8);
+      tl.to("#info-card", { opacity: 0, duration: 0.3, ease: "power2.in" }, 11.8);
+      tl.to("#twin-label", { opacity: 0, duration: 0.25 }, 11.8);
+      tl.fromTo("#twin-scrim", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 11.9);
+      // Red alert pulse on the card edge as the chest goes critical.
+      tl.fromTo("#twin-alert", { opacity: 0 }, { opacity: 1, duration: 0.14, ease: "power2.out" }, 12.5);
+      tl.to("#twin-alert", { opacity: 0.25, duration: 0.4, ease: "sine.inOut" }, 12.65);
+      tl.to("#twin-alert", { opacity: 0.8, duration: 0.25, ease: "sine.inOut" }, 13.05);
+      tl.to("#twin-alert", { opacity: 0, duration: 0.45, ease: "sine.in" }, 13.3);
+      tl.to("#twin-host", { scale: 1, duration: 0.55, ease: "power3.inOut" }, 14.2);
+      tl.to("#twin-scrim", { opacity: 0, duration: 0.35 }, 14.2);
+      tl.to("#info-card", { opacity: 1, duration: 0.3, ease: "power2.out" }, 14.45);
+      tl.to("#twin-label", { opacity: 1, duration: 0.3 }, 14.65);
+
+      // 0:22.6 "Tomorrow": Earth rises behind the twin.
+      tl.fromTo("#twin-earth", { opacity: 0, y: 140 }, { opacity: 1, y: 0, duration: 1.3, ease: "power3.out" }, 22.5);
+      tl.to("#twin-earth", { y: -26, duration: 1.6, ease: "none" }, 23.8);
+
+      // Crossfade into the end card (no empty column in between).
+      tl.to("#twin-card", { opacity: 0, duration: 0.4, ease: "power2.in" }, 25.3);
+      tl.to("#info-card", { opacity: 0, duration: 0.4, ease: "power2.in" }, 25.3);
       window.__timelines["main"] = tl;
     </script>
 
@@ -341,16 +405,19 @@ vec3 extraGlow = heatColor * heat * 0.35 + vec3(0.24, 0.48, 1.0) * scan * 1.6;`,
 
       // Camera keyframes inside the card: z/y = camera, ly = look-at height, r = body yaw.
       const K = [
-        { t: 0.0, z: 5.6, y: 0.95, ly: 0.9, r: -1.2 },
-        { t: 2.6, z: 4.3, y: 0.95, ly: 0.9, r: -0.3 },
-        { t: 5.2, z: 4.2, y: 0.95, ly: 0.9, r: 0.35 },
-        { t: 10.0, z: 4.1, y: 0.95, ly: 0.9, r: -0.05 },
-        { t: 12.6, z: 1.9, y: 1.3, ly: 1.27, r: 0.0 },
-        { t: 15.0, z: 1.9, y: 1.3, ly: 1.27, r: 0.12 },
-        { t: 15.7, z: 4.1, y: 0.95, ly: 0.9, r: -0.1 },
-        { t: 20.0, z: 4.1, y: 0.95, ly: 0.9, r: 0.2 },
-        { t: 26.0, z: 6.5, y: 0.95, ly: 0.9, r: 0.2 + Math.PI * 1.6 },
-        { t: 30.0, z: 7.5, y: 0.95, ly: 0.9, r: 0.2 + Math.PI * 2.0 },
+        { t: 0.0, z: 5.6, y: 0.95, ly: 0.9, x: 0, r: -1.2 },
+        { t: 2.6, z: 4.3, y: 0.95, ly: 0.9, x: 0, r: -0.3 },
+        { t: 5.2, z: 4.2, y: 0.95, ly: 0.9, x: 0, r: 0.35 },
+        { t: 10.0, z: 4.1, y: 0.95, ly: 0.9, x: 0, r: -0.05 },
+        { t: 11.8, z: 4.1, y: 0.95, ly: 0.9, x: 0, r: -0.12 },
+        // Takeover: head and chest, body pushed left so the step text has the right side.
+        { t: 12.5, z: 2.05, y: 1.45, ly: 1.41, x: 0.36, r: 0.1 },
+        { t: 14.2, z: 1.95, y: 1.45, ly: 1.41, x: 0.36, r: 0.28 },
+        { t: 14.8, z: 4.1, y: 0.95, ly: 0.9, x: 0, r: -0.1 },
+        { t: 20.0, z: 4.1, y: 0.95, ly: 0.9, x: 0, r: 0.2 },
+        { t: 22.6, z: 4.1, y: 0.95, ly: 0.9, x: 0, r: 0.05 },
+        { t: 25.8, z: 4.5, y: 1.0, ly: 0.9, x: 0, r: 0.5 },
+        { t: 30.0, z: 4.5, y: 1.0, ly: 0.9, x: 0, r: 0.5 },
       ];
       const ease = (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
       function frame(t) {
@@ -360,7 +427,7 @@ vec3 extraGlow = heatColor * heat * 0.35 + vec3(0.24, 0.48, 1.0) * scan * 1.6;`,
           if (t <= b.t) {
             const u = ease((t - a.t) / (b.t - a.t));
             const o = {};
-            for (const k of ["z", "y", "ly", "r"]) o[k] = a[k] + (b[k] - a[k]) * u;
+            for (const k of ["z", "y", "ly", "x", "r"]) o[k] = a[k] + (b[k] - a[k]) * u;
             return o;
           }
         }
@@ -371,17 +438,17 @@ vec3 extraGlow = heatColor * heat * 0.35 + vec3(0.24, 0.48, 1.0) * scan * 1.6;`,
       function renderAt(t) {
         const f = frame(t);
         body.rotation.y = f.r;
-        camera.position.set(0, f.y, f.z);
-        camera.lookAt(0, f.ly, 0);
+        camera.position.set(f.x, f.y, f.z);
+        camera.lookAt(f.x, f.ly, 0);
         stars.position.x = -t * 0.05;
 
         // Chest lights up as the symptom is mapped, cools after the section.
-        const sev = 3 * clamp01((t - 12.3) / 1.0) * (1 - clamp01((t - 20) / 1.2));
+        const sev = 3 * clamp01((t - 12.25) / 0.7) * (1 - clamp01((t - 20) / 1.2));
         uniforms.uSeverity.value[TORSO] = sev;
         uniforms.uTime.value = t;
         let scan = -1;
         if (t > 2.0 && t < 3.8) scan = ((t - 2.0) / 1.8) * 1.8;
-        else if (t > 15.2 && t < 16.8) scan = ((t - 15.2) / 1.6) * 1.8;
+        else if (t > 14.9 && t < 16.5) scan = ((t - 14.9) / 1.6) * 1.8;
         uniforms.uScan.value = scan;
 
         if (mixer) mixer.setTime(t % 4);
