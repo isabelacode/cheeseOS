@@ -7,7 +7,7 @@ import { useLocale } from "@/lib/i18n";
 import { trainerMessages } from "@/lib/i18n/pages/trainer";
 import { EXERCISES, type ExerciseId } from "@/lib/exercise/exercises";
 import { exerciseStats, leastDone, neglected, useExerciseHistory } from "@/lib/exercise/history";
-import { missionsToday, setMission, useRoutine } from "@/lib/routine/routine";
+import { missionWeek, missionsToday, setMission, useRoutine } from "@/lib/routine/routine";
 import { relativeTime, useNow } from "@/components/body/useNow";
 import { TrainerSession } from "@/components/trainer/TrainerSession";
 
@@ -28,6 +28,8 @@ export function TrainerView() {
   const weekReps = order.reduce((s, id) => s + stats[id].reps, 0);
   const weekSets = order.reduce((s, id) => s + stats[id].sessions, 0);
   const doneToday = missionsToday(routine, now || undefined).exercise;
+  const week = missionWeek(routine, "exercise", now || undefined);
+  const weekDays = week.filter(Boolean).length;
   const critical = status === "critical";
 
   return (
@@ -36,6 +38,17 @@ export function TrainerView() {
         <h1 className="text-3xl font-bold tracking-tight">{m.title}</h1>
         <p className="mt-1.5 text-lg text-ink-2">{m.intro}</p>
         <p className="tabular mt-3 text-base font-bold">{weekSets ? m.week(weekReps, weekSets) : m.weekEmpty}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-surface px-4 py-3 shadow-card">
+          <span className="flex gap-1.5" aria-hidden>
+            {week.map((done, i) => (
+              <span key={i} className={`size-3.5 rounded-full ${done ? "bg-ok" : "bg-sunken"}`} />
+            ))}
+          </span>
+          <span className="min-w-0">
+            <span className={`tabular block text-base font-bold ${weekDays >= 6 ? "text-ok" : ""}`}>{m.days(weekDays)}</span>
+            <span className="block text-sm text-ink-2">{m.daysGoal}</span>
+          </span>
+        </div>
       </div>
 
       {critical && (

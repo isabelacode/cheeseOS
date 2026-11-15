@@ -127,6 +127,8 @@ export interface ReportArgs {
   missionsTotal: number;
   /** Camera-counted training over the last 7 days, and the exercises left behind. */
   training?: { reps: number; sets: number; least: string[] };
+  /** Self-reported sleep over the last 7 nights (omitted when nothing was reported). */
+  sleep?: { avg: number; nights: number; loss: boolean };
 }
 
 type Row = string[];
@@ -234,7 +236,8 @@ export function buildReport(a: ReportArgs): { heading: string; generated: string
   });
 
   const training = a.training ? [f.training(a.training.reps, a.training.sets), ...(a.training.least.length ? [f.trainingLeast(a.training.least.join(", "))] : [])] : [];
-  sections.push({ title: f.routine, lines: [f.streak(a.streak), f.missions(a.missionsDone, a.missionsTotal), ...training] });
+  const sleep = a.sleep ? [f.sleep(formatNumber(a.sleep.avg, 1, a.locale), a.sleep.nights) + (a.sleep.loss ? f.sleepLoss : "")] : [];
+  sections.push({ title: f.routine, lines: [f.streak(a.streak), f.missions(a.missionsDone, a.missionsTotal), ...training, ...sleep] });
 
   const log: string[] = [];
   const shown = shownResolved(entries);

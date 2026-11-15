@@ -174,7 +174,7 @@ const pt: ScienceCopy = {
       name: "Campos gravitacionais",
       short: "Microgravidade e transições",
       body: "Sem gravidade, fluidos sobem para a cabeça (congestão, dor de cabeça, alterações nos olhos — SANS), ossos perdem de 1% a 1,5% de densidade por mês, músculos atrofiam e o equilíbrio se desregula nas transições de gravidade.",
-      countermeasure: "Cerca de 2 h de exercício resistido e aeróbico por dia, exames de visão periódicos e hidratação.",
+      countermeasure: "Cerca de 1,5 h de exercício resistido e aeróbico por dia, 6 a 7 dias por semana, exames de visão periódicos e hidratação.",
       sources: ["hrpHazards", "bodyInSpace", "sansEvidence"],
     },
     environment: {
@@ -280,7 +280,7 @@ const en: ScienceCopy = {
       name: "Gravity fields",
       short: "Microgravity and transitions",
       body: "Without gravity, fluids shift to the head (congestion, headache, eye changes — SANS), bones lose 1% to 1.5% of density per month, muscles atrophy and balance is thrown off during gravity transitions.",
-      countermeasure: "About 2 h of resistive and aerobic exercise a day, periodic vision checks and hydration.",
+      countermeasure: "About 1.5 h of resistive and aerobic exercise a day, 6 to 7 days a week, periodic vision checks and hydration.",
       sources: ["hrpHazards", "bodyInSpace", "sansEvidence"],
     },
     environment: {

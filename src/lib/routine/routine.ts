@@ -32,7 +32,15 @@ export interface RoutineState {
   notify: boolean;
   /** First time reminders were checked on this device: earlier times of that day stay quiet. */
   since?: number;
+  /** Per local day ("YYYY-MM-DD"): hours slept in the night that ended that day, as reported by the crew member. */
+  sleep: Record<string, number>;
 }
+
+/** Adults need 7 h or more a night; a weekly mean under 6 h is treated as sleep loss. */
+export const SLEEP_GOAL = 7;
+export const SLEEP_LOW = 6;
+const SLEEP_MAX = 16;
+const SLEEP_MIN_NIGHTS = 3;
 
 export const DEFAULT_REMINDERS: Reminder[] = [
   { id: "checkin", enabled: true, time: "08:00" },
@@ -44,7 +52,7 @@ export const DEFAULT_REMINDERS: Reminder[] = [
 
 const KEY = "cheeseos.routine.v1";
 const KEEP_DAYS = 90;
-const EMPTY: RoutineState = { days: {}, reminders: DEFAULT_REMINDERS, fired: {}, notify: false };
+const EMPTY: RoutineState = { days: {}, reminders: DEFAULT_REMINDERS, fired: {}, notify: false, sleep: {} };
 
 export function dayKey(ms: number) {
   const d = new Date(ms);
@@ -81,6 +89,9 @@ function sanitize(input: unknown): RoutineState {
     fired: isRecord(v.fired) ? v.fired : {},
     notify: Boolean(v.notify),
     since: typeof v.since === "number" ? v.since : undefined,
+    sleep: isRecord(v.sleep)
+      ? (Object.fromEntries(Object.entries(v.sleep).filter(([, h]) => typeof h === "number" && h >= 0 && h <= SLEEP_MAX)) as Record<string, number>)
+      : {},
   };
 }
 
@@ -105,7 +116,9 @@ function read(): RoutineState {
 function write(next: RoutineState) {
   const keys = Object.keys(next.days).sort();
   const days = Object.fromEntries(keys.slice(-KEEP_DAYS).map((k) => [k, next.days[k]]));
-  const value = { ...next, days };
+  const nights = Object.keys(next.sleep).sort();
+  const sleep = Object.fromEntries(nights.slice(-KEEP_DAYS).map((k) => [k, next.sleep[k]]));
+  const value = { ...next, days, sleep };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(value));
     memory = null;
@@ -188,6 +201,43 @@ export function fullDays(s: RoutineState, now = Date.now(), span = 7): number {
     if (MISSIONS.every((m) => d[m])) n++;
   }
   return n;
+}
+
+/** Whether `mission` was done on each of the last `span` days, oldest first (today is the last entry). */
+export function missionWeek(s: RoutineState, mission: Mission, now = Date.now(), span = 7): boolean[] {
+  return Array.from({ length: span }, (_, i) => Boolean(s.days[dayKey(daysBefore(now, span - 1 - i))]?.[mission]));
+}
+
+/** Record the hours slept in the night that ended on the day of `at` (`null` clears it). */
+export function setSleep(hours: number | null, at = Date.now()) {
+  const day = dayKey(at);
+  updateRoutine((s) => {
+    const sleep = { ...s.sleep };
+    if (hours === null) delete sleep[day];
+    else sleep[day] = Math.min(SLEEP_MAX, Math.max(0, hours));
+    return { ...s, sleep };
+  });
+}
+
+/** Hours slept on each of the last `span` nights, oldest first (last night is the last entry); `null` where nothing was reported. */
+export function sleepWeek(s: RoutineState, now = Date.now(), span = 7): (number | null)[] {
+  return Array.from({ length: span }, (_, i) => s.sleep[dayKey(daysBefore(now, span - 1 - i))] ?? null);
+}
+
+export interface SleepSummary {
+  /** Nights reported in the window. */
+  nights: number;
+  /** Mean hours over the reported nights; `null` with none. */
+  avg: number | null;
+  /** 0 enough sleep (or nothing reported), 1 under the goal, 2 sleep loss (needs `SLEEP_MIN_NIGHTS`: one short night is not a pattern). */
+  level: 0 | 1 | 2;
+}
+
+export function sleepSummary(s: RoutineState, now = Date.now(), span = 7): SleepSummary {
+  const hours = sleepWeek(s, now, span).filter((h): h is number => h !== null);
+  if (!hours.length) return { nights: 0, avg: null, level: 0 };
+  const avg = hours.reduce((a, b) => a + b, 0) / hours.length;
+  return { nights: hours.length, avg, level: avg < SLEEP_LOW && hours.length >= SLEEP_MIN_NIGHTS ? 2 : avg < SLEEP_GOAL ? 1 : 0 };
 }
 
 export function missionsToday(s: RoutineState, now = Date.now()): Record<Mission, boolean> {

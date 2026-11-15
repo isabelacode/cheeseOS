@@ -28,6 +28,20 @@ export interface RoutineMessages {
     openOnly: string;
   };
   toast: { title: string; dismiss: string; open: string };
+  sleep: {
+    title: string;
+    ask: string;
+    /** Spoken label of one choice, e.g. "7 hours". */
+    option: (label: string) => string;
+    hours: (h: string) => string;
+    avg: (h: string, nights: number) => string;
+    empty: string;
+    chart: string;
+    night: (h: string) => string;
+    noNight: string;
+    level: [string, string, string];
+    why: string;
+  };
 }
 
 const pt: RoutineMessages = {
@@ -68,6 +82,23 @@ const pt: RoutineMessages = {
     openOnly: "Sem servidor nem conta: os lembretes ficam só neste aparelho.",
   },
   toast: { title: "Lembrete", dismiss: "Dispensar", open: "Abrir" },
+  sleep: {
+    title: "Sono",
+    ask: "Quantas horas você dormiu esta noite?",
+    option: (l) => `${l} horas`,
+    hours: (h) => `${h} h`,
+    avg: (h, n) => `Média de ${h} h em ${n} ${n === 1 ? "noite" : "noites"}`,
+    empty: "Nenhuma noite registrada nos últimos 7 dias.",
+    chart: "Horas de sono nas últimas 7 noites",
+    night: (h) => `${h} h`,
+    noNight: "sem registro",
+    level: [
+      "Sono dentro do recomendado: 7 h ou mais por noite.",
+      "Abaixo de 7 h por noite. Proteja o horário de descanso de hoje.",
+      "Perda de sono: média abaixo de 6 h. Atenção e reflexos caem. Reduza a carga de trabalho e conte no check-in se está difícil dormir.",
+    ],
+    why: "Por que no espaço? Na ISS o Sol nasce e se põe 16 vezes por dia, o que confunde o relógio do corpo. Horas dormidas são informadas por você, não medidas por sensor.",
+  },
 };
 
 const en: RoutineMessages = {
@@ -108,6 +139,23 @@ const en: RoutineMessages = {
     openOnly: "No server or account: reminders stay on this device only.",
   },
   toast: { title: "Reminder", dismiss: "Dismiss", open: "Open" },
+  sleep: {
+    title: "Sleep",
+    ask: "How many hours did you sleep last night?",
+    option: (l) => `${l} hours`,
+    hours: (h) => `${h} h`,
+    avg: (h, n) => `Average of ${h} h over ${n} ${n === 1 ? "night" : "nights"}`,
+    empty: "No night recorded in the last 7 days.",
+    chart: "Hours of sleep over the last 7 nights",
+    night: (h) => `${h} h`,
+    noNight: "not recorded",
+    level: [
+      "Sleep within the recommendation: 7 h or more a night.",
+      "Under 7 h a night. Protect tonight's rest period.",
+      "Sleep loss: average under 6 h. Attention and reflexes drop. Lighten the workload and say so in the check-in if sleeping is hard.",
+    ],
+    why: "Why in space? On the ISS the Sun rises and sets 16 times a day, which confuses the body clock. Hours slept are reported by you, not measured by a sensor.",
+  },
 };
 
 export const routineMessages: Record<Locale, RoutineMessages> = { pt, en };

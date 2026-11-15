@@ -6,6 +6,9 @@ export interface TrainerMessages {
   intro: string;
   week: (reps: number, sets: number) => string;
   weekEmpty: string;
+  /** Days with the exercise countermeasure done, against the ISS schedule. */
+  days: (n: number) => string;
+  daysGoal: string;
   listTitle: string;
   orderHint: string;
   least: string;
@@ -59,6 +62,8 @@ const pt: TrainerMessages = {
   intro: "A câmera acompanha o movimento e conta as repetições. Tudo roda neste aparelho.",
   week: (r, s) => `${r} ${r === 1 ? "repetição" : "repetições"} em ${s} ${s === 1 ? "série" : "séries"} nos últimos 7 dias`,
   weekEmpty: "Nenhum treino registrado nos últimos 7 dias.",
+  days: (n) => `Exercício em ${n} dos últimos 7 dias`,
+  daysGoal: "Na ISS, a tripulação treina de 6 a 7 dias por semana.",
   listTitle: "Exercícios",
   orderHint: "Em ordem: primeiro os que você fez menos nos últimos 7 dias.",
   least: "Fez menos",
@@ -83,7 +88,7 @@ const pt: TrainerMessages = {
   },
   critical: "Estado crítico: treino suspenso. Interrompa a atividade e siga a orientação da tela Agora.",
   privacy: "O vídeo é analisado neste aparelho. Nada é gravado nem enviado.",
-  why: "Por que no espaço? Sem gravidade, os ossos perdem de 1% a 1,5% de densidade por mês e os músculos atrofiam. A contramedida são cerca de 2 h diárias de exercício resistido e aeróbico. A câmera mede movimento e amplitude, não carga nem densidade óssea.",
+  why: "Por que no espaço? Sem gravidade, os ossos perdem de 1% a 1,5% de densidade por mês e os músculos atrofiam. A contramedida na ISS é 1,5 h por dia de exercício resistido e aeróbico, 6 a 7 dias por semana. A câmera mede movimento e amplitude, não carga nem densidade óssea.",
   tutorial: { title: "Como fazer", demo: (n) => `Animação do gêmeo fazendo ${n}`, begin: "Começar" },
   session: {
     close: "Fechar treino",
@@ -123,6 +128,8 @@ const en: TrainerMessages = {
   intro: "The camera follows the movement and counts the repetitions. Everything runs on this device.",
   week: (r, s) => `${r} ${r === 1 ? "repetition" : "repetitions"} in ${s} ${s === 1 ? "set" : "sets"} over the last 7 days`,
   weekEmpty: "No training recorded in the last 7 days.",
+  days: (n) => `Exercise on ${n} of the last 7 days`,
+  daysGoal: "On the ISS, the crew trains 6 to 7 days a week.",
   listTitle: "Exercises",
   orderHint: "In order: the ones you did least in the last 7 days come first.",
   least: "Done least",
@@ -147,7 +154,7 @@ const en: TrainerMessages = {
   },
   critical: "Critical state: training suspended. Stop the activity and follow the guidance on the Now screen.",
   privacy: "The video is analysed on this device. Nothing is recorded or sent.",
-  why: "Why in space? Without gravity, bones lose 1% to 1.5% of density per month and muscles atrophy. The countermeasure is about 2 h of resistive and aerobic exercise a day. The camera measures movement and range, not load or bone density.",
+  why: "Why in space? Without gravity, bones lose 1% to 1.5% of density per month and muscles atrophy. The countermeasure on the ISS is 1.5 h a day of resistive and aerobic exercise, 6 to 7 days a week. The camera measures movement and range, not load or bone density.",
   tutorial: { title: "How to do it", demo: (n) => `Animation of the twin doing ${n}`, begin: "Begin" },
   session: {
     close: "Close training",

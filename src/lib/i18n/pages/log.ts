@@ -103,6 +103,8 @@ export interface LogMessages {
     missions: (done: number, total: number) => string;
     training: (reps: number, sets: number) => string;
     trainingLeast: (names: string) => string;
+    sleep: (hours: string, nights: number) => string;
+    sleepLoss: string;
     print: string;
   };
   exportHtml: string;
@@ -209,6 +211,8 @@ const pt: LogMessages = {
     missions: (d, t) => `Missões de hoje: ${d} de ${t}`,
     training: (r, s) => `Treino com câmera em 7 dias: ${r} ${r === 1 ? "repetição" : "repetições"} em ${s} ${s === 1 ? "série" : "séries"}`,
     trainingLeast: (n) => `Exercícios menos feitos: ${n}`,
+    sleep: (h, n) => `Sono informado em 7 dias: média de ${h} h em ${n} ${n === 1 ? "noite" : "noites"}`,
+    sleepLoss: " (perda de sono: abaixo de 6 h)",
     print: "Imprimir / salvar PDF",
   },
   exportHtml: "Relatório visual (HTML/PDF)",
@@ -315,6 +319,8 @@ const en: LogMessages = {
     missions: (d, t) => `Today's missions: ${d} of ${t}`,
     training: (r, s) => `Camera training in 7 days: ${r} ${r === 1 ? "repetition" : "repetitions"} in ${s} ${s === 1 ? "set" : "sets"}`,
     trainingLeast: (n) => `Exercises done least: ${n}`,
+    sleep: (h, n) => `Self-reported sleep in 7 days: average of ${h} h over ${n} ${n === 1 ? "night" : "nights"}`,
+    sleepLoss: " (sleep loss: under 6 h)",
     print: "Print / save as PDF",
   },
   exportHtml: "Visual report (HTML/PDF)",

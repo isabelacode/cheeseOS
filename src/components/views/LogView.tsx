@@ -21,7 +21,7 @@ import {
   type SourceFilter,
 } from "@/components/log/logData";
 import type { SymptomId } from "@/lib/health/types";
-import { MISSIONS, checkinStreak, missionsToday, useRoutine } from "@/lib/routine/routine";
+import { MISSIONS, checkinStreak, missionsToday, sleepSummary, useRoutine } from "@/lib/routine/routine";
 import { EXERCISE_IDS } from "@/lib/exercise/exercises";
 import { exerciseStats, neglected, useExerciseHistory, type ExerciseSession } from "@/lib/exercise/history";
 import { trainerMessages } from "@/lib/i18n/pages/trainer";
@@ -95,11 +95,13 @@ export function LogView() {
   function reportArgs() {
     const at = Date.now();
     const done = missionsToday(routine, at);
+    const slept = sleepSummary(routine, at);
     return {
       profile: s.profile, findings, entries, locale, t, l, now: at,
       status: s.status, safety: s.safety, vitals: s.vitals, trend: s.trend,
       streak: checkinStreak(routine, at), missionsDone: MISSIONS.filter((m) => done[m]).length, missionsTotal: MISSIONS.length,
       training: trainingReport(training, at, locale),
+      sleep: slept.avg === null ? undefined : { avg: slept.avg, nights: slept.nights, loss: slept.level === 2 },
     };
   }
   function exportReport() {

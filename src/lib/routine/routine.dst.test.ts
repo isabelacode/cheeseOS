@@ -11,7 +11,7 @@ afterAll(() => {
   else process.env.TZ = originalTz;
 });
 
-const state = (p: Partial<RoutineState> = {}): RoutineState => ({ days: {}, reminders: DEFAULT_REMINDERS, fired: {}, notify: false, ...p });
+const state = (p: Partial<RoutineState> = {}): RoutineState => ({ days: {}, reminders: DEFAULT_REMINDERS, fired: {}, notify: false, sleep: {}, ...p });
 const full = { checkin: 1, vitals: 1, exercise: 1, hydration: 1 };
 
 describe("calendar days across daylight saving changes", () => {

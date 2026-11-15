@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_REMINDERS, checkinStreak, dayKey, dueReminders, fullDays, type RoutineState } from "./routine";
+import { DEFAULT_REMINDERS, checkinStreak, dayKey, dueReminders, fullDays, missionWeek, sleepSummary, sleepWeek, type RoutineState } from "./routine";
 import { buildExport, buildHtml, type ReportArgs } from "@/components/log/logData";
 import { messages } from "@/lib/i18n/messages";
 import { logMessages } from "@/lib/i18n/pages/log";
@@ -13,7 +13,7 @@ const at = (h: number, m = 0, dayOffset = 0) => {
   const d = new Date(2026, 10, 14 + dayOffset, h, m);
   return d.getTime();
 };
-const state = (p: Partial<RoutineState> = {}): RoutineState => ({ days: {}, reminders: DEFAULT_REMINDERS, fired: {}, notify: false, ...p });
+const state = (p: Partial<RoutineState> = {}): RoutineState => ({ days: {}, reminders: DEFAULT_REMINDERS, fired: {}, notify: false, sleep: {}, ...p });
 
 describe("streak and progress", () => {
   it("counts consecutive check-in days, tolerating an open today", () => {
@@ -27,6 +27,28 @@ describe("streak and progress", () => {
     const now = at(9);
     const full = { checkin: 1, vitals: 1, exercise: 1, hydration: 1 };
     expect(fullDays(state({ days: { [dayKey(now)]: full, [dayKey(now - DAY)]: { checkin: 1 } } }), now)).toBe(1);
+  });
+  it("lists a mission day by day over the last week, oldest first", () => {
+    const now = at(9);
+    const days = { [dayKey(now)]: { exercise: 1 }, [dayKey(now - 2 * DAY)]: { exercise: 1, checkin: 1 }, [dayKey(now - 7 * DAY)]: { exercise: 1 } };
+    expect(missionWeek(state({ days }), "exercise", now)).toEqual([false, false, false, false, true, false, true]);
+    expect(missionWeek(state({ days }), "checkin", now).filter(Boolean)).toHaveLength(1);
+  });
+});
+
+describe("sleep", () => {
+  const now = at(9);
+  it("lists the last seven nights, oldest first, with gaps", () => {
+    const sleep = { [dayKey(now)]: 6, [dayKey(now - 2 * DAY)]: 8, [dayKey(now - 7 * DAY)]: 9 };
+    expect(sleepWeek(state({ sleep }), now)).toEqual([null, null, null, null, 8, null, 6]);
+  });
+  it("averages only the reported nights and grades the mean", () => {
+    expect(sleepSummary(state(), now)).toEqual({ nights: 0, avg: null, level: 0 });
+    expect(sleepSummary(state({ sleep: { [dayKey(now)]: 8, [dayKey(now - DAY)]: 7 } }), now)).toEqual({ nights: 2, avg: 7.5, level: 0 });
+    expect(sleepSummary(state({ sleep: { [dayKey(now)]: 6, [dayKey(now - DAY)]: 7 } }), now).level).toBe(1);
+    // One or two short nights are only "under the goal"; the loss alert needs three.
+    expect(sleepSummary(state({ sleep: { [dayKey(now)]: 5, [dayKey(now - DAY)]: 4 } }), now).level).toBe(1);
+    expect(sleepSummary(state({ sleep: { [dayKey(now)]: 5, [dayKey(now - DAY)]: 6, [dayKey(now - 2 * DAY)]: 5 } }), now).level).toBe(2);
   });
 });
 

@@ -13,6 +13,7 @@ import { BodyPanel } from "@/components/health/BodyPanel";
 import { VitalsStrip, vitalsOutOfRange } from "@/components/now/VitalsStrip";
 import { SafetyAlerts } from "@/components/health/SafetyAlerts";
 import { MissionsCard } from "@/components/routine/MissionsCard";
+import { SleepCard } from "@/components/routine/SleepCard";
 
 /** A quiet row that opens on demand: on a good day the detail stays out of the way. */
 function Line({ title, aside, tone = "", open = false, children }: { title: string; aside: string; tone?: string; open?: boolean; children: ReactNode }) {
@@ -60,6 +61,7 @@ export function NowView() {
         <LastReport logHref="/relatos" />
         {/* Exercise and streaks contradict "stop the activity". */}
         {s.status !== "critical" && <MissionsCard plain />}
+        {s.status !== "critical" && <SleepCard />}
         <div>
           <Line
             title={out ? n.vitalsOut(out) : n.vitalsIn(5)}

@@ -10,7 +10,7 @@ Next.js 16 · React 19 · Three.js · transformers.js · Tailwind CSS 4
 
 </div>
 
-On Mars, a message to Earth can take 22 minutes. If a crew member gets sick, there is no doctor to call.
+On Mars, a message to Earth can take up to 20 minutes each way. If a crew member gets sick, there is no doctor to call.
 
 cheeseOS is a health app for crews on long-duration missions. The astronaut says or types how they feel. The app recognizes the symptoms on the device itself, lights up the affected region on a 3D twin, shows the onboard protocol, explains how each symptom relates to the hazards of NASA's Human Research Program, and keeps a log ready for the flight surgeon.
 
@@ -47,8 +47,10 @@ The core principle is **local rules first**. Symptom recognition, red flags (car
 - **Safety alerts.** Red flags and dangerous symptom combinations raise a critical banner. Medications that conflict with the allergies in the profile are blocked.
 - **NASA hazards (RIDGE).** Radiation, isolation, distance from Earth, gravity, and hostile or closed environments. Each symptom has a "Why in space?" note, and the Science page gathers explanations, countermeasures and sources.
 - **Vital signs.** Charts with alert ranges. The values are simulated and react to symptoms: a fever shows up right away, and the signs recover gradually once the symptom is gone.
+- **Training.** Six guided exercises (resistive and aerobic) with a 3D demo. The camera counts repetitions and checks range of motion on the device with MediaPipe; no video is recorded or sent. The screen shows on how many of the last 7 days the exercise countermeasure was done, against the ISS routine of 6 to 7 days a week.
+- **Sleep.** One tap on the Now screen records the hours slept last night. The app shows the last 7 nights and warns when the weekly average falls under 7 h, or under 6 h across three or more nights. Hours are self-reported, not measured.
 - **Routine.** Daily missions (check-in, vitals review, exercise and hydration), a check-in streak, and configurable local reminders.
-- **Report.** Export as text or as printable HTML, with safety alerts, active symptoms and protocol, symptom history, vital signs from the last hour, and the full log.
+- **Report.** Export as text or as printable HTML, with safety alerts, active symptoms and protocol, symptom history, vital signs from the last hour, the routine (training and sleep), and the full log.
 - **Two languages.** Interface in Portuguese and in English, switchable at any time.
 - **Demo mode.** Speeds up the simulation so the signs worsen and recover in seconds, which helps in short presentations. It lives in Settings.
 
@@ -121,11 +123,12 @@ Nothing leaves the device, with one exception: if OpenRouter is chosen as the AI
 src/
 ├── app/            Routes (App Router)
 ├── components/     Interface, organized by area (views, twin, vitals, log…)
-├── hooks/          useLocalAi (AI engines) and useVoiceListener (microphone and VAD)
+├── hooks/          useLocalAi (AI engines), useVoiceListener (microphone and VAD) and usePoseTracker (camera)
 ├── lib/
 │   ├── health/     Symptoms, safety alerts, medications, vital signs and prompt
 │   ├── science/    NASA hazards, countermeasures and sources
 │   ├── routine/    Daily missions, streak and reminders
+│   ├── exercise/   Exercises, repetition counting from pose landmarks and training history
 │   ├── session/    Session state and persistence
 │   ├── crew/       Crew member profile
 │   ├── llm/        Browser models and OpenRouter client
@@ -142,6 +145,7 @@ video/              Pitch video (HyperFrames)
 | `/sinais` | Vital signs |
 | `/relatos` | Log and symptom timeline |
 | `/corpo` | 3D twin and per-region details |
+| `/treino` | Training: guided exercises counted by the camera |
 | `/ciencia` | NASA hazards, countermeasures and sources |
 | `/perfil` | Crew member profile |
 | `/ajustes` | AI engine, language, reminders, demo mode and data |
@@ -157,11 +161,11 @@ The health logic in `src/lib/health/` is made of pure functions with no React de
 npm test
 ```
 
-There are 133 tests in 12 files, covering symptom recognition, safety alerts, allergies, the AI answer filter, vital signs, the routine (including daylight saving time), session persistence, speech detection, the OpenRouter client and the translations.
+There are 189 tests in 14 files, covering symptom recognition, safety alerts, allergies, the AI answer filter, vital signs, the routine (including daylight saving time), repetition counting and training history, session persistence, speech detection, the OpenRouter client and the translations.
 
 ## Pitch video
 
-The [video/](video/) folder holds the project's 30-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md).
+The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md).
 
 ```bash
 cd video
