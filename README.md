@@ -17,6 +17,14 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 > [!IMPORTANT]
 > Support and demonstration tool. It does not replace medical evaluation or the flight surgeon. The vital signs shown are **simulated**.
 
+<div align="center">
+
+[![Watch the cheeseOS explainer video](video-explainer/thumbnail.png)](video-explainer/cheeseos-explainer.mp4)
+
+**[Watch the explainer video](video-explainer/cheeseos-explainer.mp4)** (narrated, with sound). Subtitles: [English](video-explainer/cheeseos-explainer.en.srt) · [Português](video-explainer/cheeseos-explainer.pt-BR.srt)
+
+</div>
+
 ## Contents
 
 - [How it works](#how-it-works)
@@ -26,7 +34,7 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 - [Privacy](#privacy)
 - [Architecture](#architecture)
 - [Tests](#tests)
-- [Pitch video](#pitch-video)
+- [Videos](#videos)
 - [Sources](#sources)
 
 ## How it works
@@ -137,6 +145,7 @@ src/
 assets/             3D model source (Blender)
 public/twin/        Exported 3D model (GLB)
 video/              Pitch video (HyperFrames)
+video-explainer/    Explainer video (HyperFrames)
 ```
 
 | Route | Screen |
@@ -163,12 +172,14 @@ npm test
 
 There are 189 tests in 14 files, covering symptom recognition, safety alerts, allergies, the AI answer filter, vital signs, the routine (including daylight saving time), repetition counting and training history, session persistence, speech detection, the OpenRouter client and the translations.
 
-## Pitch video
+## Videos
 
-The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md).
+**Explainer.** [video-explainer/cheeseos-explainer.mp4](video-explainer/cheeseos-explainer.mp4) walks through how the app works, with narration and sound. Subtitles are available in [English](video-explainer/cheeseos-explainer.en.srt) and [Portuguese](video-explainer/cheeseos-explainer.pt-BR.srt). The source is in [video-explainer/](video-explainer/).
+
+**Pitch.** The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md).
 
 ```bash
-cd video
+cd video            # or: cd video-explainer
 npm run dev      # preview
 npm run render   # render
 ```
