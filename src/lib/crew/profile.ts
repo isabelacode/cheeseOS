@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { formatNumber, type Locale } from "@/lib/i18n/locale";
 import { messages } from "@/lib/i18n/messages";
 import { resetRoutine } from "@/lib/routine/routine";
+import { EXERCISE_KEY, resetExerciseHistory } from "@/lib/exercise/history";
 import { resetDemoMode } from "@/lib/demo";
 
 export type Sex = "feminino" | "masculino" | "outro" | "nao_informado";
@@ -98,6 +99,7 @@ const DEVICE_KEYS = [
   "cheeseos.engine.v1",
   "cheeseos.browser-model.v1",
   "cheeseos.routine.v1",
+  EXERCISE_KEY,
   "cheeseos.demo.v1",
 ];
 
@@ -116,6 +118,7 @@ export function deleteProfile() {
   memory = null;
   // Routine and demo mode may also live only in memory when storage is blocked.
   resetRoutine();
+  resetExerciseHistory();
   resetDemoMode();
   listeners.forEach((l) => l());
 }

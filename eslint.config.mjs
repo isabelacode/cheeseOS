@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     ".codex/**",
     ".impeccable/**",
     "video/**",
+    // MediaPipe runtime copied from node_modules.
+    "public/pose/wasm/**",
   ]),
 ]);
 

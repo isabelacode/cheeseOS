@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, FileText, MessageSquareText, Mic, Search, Send, X } from "lucide-react";
 import { useCrewSession } from "@/lib/session/CrewSession";
-import { useLocale, useT } from "@/lib/i18n";
+import { useLocale, useT, type Locale } from "@/lib/i18n";
 import { logMessages } from "@/lib/i18n/pages/log";
 import { Card, SectionTitle } from "@/components/health/ui";
 import { LogEntryItem } from "@/components/log/LogEntryItem";
@@ -22,6 +22,19 @@ import {
 } from "@/components/log/logData";
 import type { SymptomId } from "@/lib/health/types";
 import { MISSIONS, checkinStreak, missionsToday, useRoutine } from "@/lib/routine/routine";
+import { EXERCISE_IDS } from "@/lib/exercise/exercises";
+import { exerciseStats, neglected, useExerciseHistory, type ExerciseSession } from "@/lib/exercise/history";
+import { trainerMessages } from "@/lib/i18n/pages/trainer";
+
+/** Training lines for the flight surgeon's report: weekly volume and the exercises left behind. */
+function trainingReport(sessions: ExerciseSession[], now: number, locale: Locale) {
+  const stats = exerciseStats(sessions, now);
+  return {
+    reps: EXERCISE_IDS.reduce((n, id) => n + stats[id].reps, 0),
+    sets: EXERCISE_IDS.reduce((n, id) => n + stats[id].sessions, 0),
+    least: neglected(stats).map((id) => trainerMessages[locale].exercises[id].name),
+  };
+}
 
 export function LogView() {
   const s = useCrewSession();
@@ -78,6 +91,7 @@ export function LogView() {
   }
 
   const routine = useRoutine();
+  const training = useExerciseHistory();
   function reportArgs() {
     const at = Date.now();
     const done = missionsToday(routine, at);
@@ -85,6 +99,7 @@ export function LogView() {
       profile: s.profile, findings, entries, locale, t, l, now: at,
       status: s.status, safety: s.safety, vitals: s.vitals, trend: s.trend,
       streak: checkinStreak(routine, at), missionsDone: MISSIONS.filter((m) => done[m]).length, missionsTotal: MISSIONS.length,
+      training: trainingReport(training, at, locale),
     };
   }
   function exportReport() {

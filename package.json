@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "pose:assets": "node scripts/copy-pose-wasm.mjs",
+    "predev": "npm run pose:assets",
     "dev": "next dev",
+    "prebuild": "npm run pose:assets",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -11,6 +14,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.2",
+    "@mediapipe/tasks-vision": "^1.2.3",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "lucide-react": "^1.73.0",

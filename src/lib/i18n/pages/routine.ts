@@ -36,7 +36,7 @@ const pt: RoutineMessages = {
   missions: {
     checkin: { label: "Check-in de saúde", hint: "Conte como você está, mesmo que esteja bem." },
     vitals: { label: "Revisar sinais vitais", hint: "Abra a tela Sinais e confira as tendências." },
-    exercise: { label: "Contramedida de exercício", hint: "Treino resistido e aeróbico: protege ossos e músculos." },
+    exercise: { label: "Contramedida de exercício", hint: "Abra o Treino: a câmera conta as repetições." },
     hydration: { label: "Hidratação", hint: "Beber água ao longo do dia reduz risco de cálculo renal." },
   },
   auto: "automático",
@@ -76,7 +76,7 @@ const en: RoutineMessages = {
   missions: {
     checkin: { label: "Health check-in", hint: "Say how you feel, even if you feel fine." },
     vitals: { label: "Review vital signs", hint: "Open the Vitals screen and check the trends." },
-    exercise: { label: "Exercise countermeasure", hint: "Resistive and aerobic training: protects bones and muscles." },
+    exercise: { label: "Exercise countermeasure", hint: "Open Training: the camera counts the repetitions." },
     hydration: { label: "Hydration", hint: "Drinking water through the day lowers kidney stone risk." },
   },
   auto: "automatic",

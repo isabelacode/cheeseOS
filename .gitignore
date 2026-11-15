@@ -40,5 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# MediaPipe runtime, copied from node_modules by scripts/copy-pose-wasm.mjs
+/public/pose/wasm/
+
 # blender backups
 *.blend1

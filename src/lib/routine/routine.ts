@@ -9,8 +9,8 @@ import { useSyncExternalStore } from "react";
 export const MISSIONS = ["checkin", "vitals", "exercise", "hydration"] as const;
 export type Mission = (typeof MISSIONS)[number];
 
-/** Missions completed by using the app; the others are ticked by the crew member. */
-export const AUTO_MISSIONS: Mission[] = ["checkin", "vitals"];
+/** Missions completed by using the app (exercise can also be ticked on the Training screen); the others are ticked by the crew member. */
+export const AUTO_MISSIONS: Mission[] = ["checkin", "vitals", "exercise"];
 
 export const REMINDER_IDS = ["checkin", "vitals", "exercise", "hydration", "medication"] as const;
 export type ReminderId = (typeof REMINDER_IDS)[number];

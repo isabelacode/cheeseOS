@@ -9,6 +9,7 @@ import { profileMessages } from "./pages/profile";
 import { routineMessages } from "./pages/routine";
 import { safetyMessages } from "./pages/safety";
 import { settingsMessages } from "./pages/settings";
+import { trainerMessages } from "./pages/trainer";
 import { vitalsMessages } from "./pages/vitals";
 
 const catalogs: Record<string, Record<Locale, unknown>> = {
@@ -20,6 +21,7 @@ const catalogs: Record<string, Record<Locale, unknown>> = {
   routine: routineMessages,
   safety: safetyMessages,
   settings: settingsMessages,
+  trainer: trainerMessages,
   vitals: vitalsMessages,
 };
 

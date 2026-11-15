@@ -51,6 +51,7 @@ export interface Messages {
     label: string;
     skip: string;
     now: string;
+    trainer: string;
     history: string;
     me: string;
     sections: string;
@@ -318,6 +319,7 @@ const pt: Messages = {
     label: "Navegação principal",
     skip: "Pular para o conteúdo",
     now: "Agora",
+    trainer: "Treino",
     history: "Histórico",
     me: "Eu",
     sections: "Seções desta área",
@@ -622,6 +624,7 @@ const en: Messages = {
     label: "Main navigation",
     skip: "Skip to content",
     now: "Now",
+    trainer: "Training",
     history: "History",
     me: "Me",
     sections: "Sections in this area",

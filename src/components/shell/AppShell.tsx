@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { Activity, AlertTriangle, CheckCircle2, Cloud, Cpu, Mic, MicOff, PowerOff, ShieldAlert, UserRound, type LucideIcon } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, Cloud, Cpu, Dumbbell, Mic, MicOff, PowerOff, ShieldAlert, UserRound, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { useCrewSession } from "@/lib/session/CrewSession";
 import { UndoBar } from "./UndoBar";
@@ -17,15 +17,16 @@ import { settingsMessages } from "@/lib/i18n/pages/settings";
 import { useT, type Messages } from "@/lib/i18n";
 import type { Status } from "@/lib/health/types";
 
-type AreaKey = keyof Pick<Messages["nav"], "now" | "history" | "me">;
+type AreaKey = keyof Pick<Messages["nav"], "now" | "trainer" | "history" | "me">;
 type PageKey = keyof Pick<Messages["nav"], "vitals" | "log" | "body" | "profile" | "settings"> | "science";
 
 /**
- * Three places, named for what the crew member wants: report now, look back, or
+ * Four places, named for what the crew member wants: report now, train, look back, or
  * manage their own data. Each area's pages share a row of tabs under the top bar.
  */
 const AREAS: { href: string; key: AreaKey; Icon: LucideIcon; pages: { href: string; key: PageKey }[] }[] = [
   { href: "/", key: "now", Icon: Mic, pages: [] },
+  { href: "/treino", key: "trainer", Icon: Dumbbell, pages: [] },
   {
     href: "/relatos",
     key: "history",
@@ -111,7 +112,7 @@ function Rail() {
   );
 }
 
-/** Phone: the same three places within thumb reach. */
+/** Phone: the same places within thumb reach. */
 function TabBar() {
   const t = useT();
   const pathname = usePathname();
@@ -121,7 +122,7 @@ function TabBar() {
       aria-label={t.nav.label}
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] sm:hidden"
     >
-      <ul className="grid grid-cols-3 gap-2">
+      <ul className="grid grid-cols-4 gap-1.5">
         {AREAS.map(({ href, key, Icon }) => (
           <li key={href}>
             <RailLink href={href} label={t.nav[key]} Icon={Icon} active={area?.key === key} />

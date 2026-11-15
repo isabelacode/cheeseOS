@@ -11,7 +11,7 @@ import { Card, SectionTitle } from "@/components/health/ui";
 import { useNow } from "@/components/body/useNow";
 
 /** Where an automatic mission gets done. */
-const MISSION_HREF: Partial<Record<Mission, string>> = { checkin: "#report", vitals: "/sinais" };
+const MISSION_HREF: Partial<Record<Mission, string>> = { checkin: "#report", vitals: "/sinais", exercise: "/treino" };
 
 /**
  * Daily monitoring routine: missions, check-in streak and a week of progress.

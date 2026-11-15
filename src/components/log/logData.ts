@@ -125,6 +125,8 @@ export interface ReportArgs {
   streak: number;
   missionsDone: number;
   missionsTotal: number;
+  /** Camera-counted training over the last 7 days, and the exercises left behind. */
+  training?: { reps: number; sets: number; least: string[] };
 }
 
 type Row = string[];
@@ -231,7 +233,8 @@ export function buildReport(a: ReportArgs): { heading: string; generated: string
     },
   });
 
-  sections.push({ title: f.routine, lines: [f.streak(a.streak), f.missions(a.missionsDone, a.missionsTotal)] });
+  const training = a.training ? [f.training(a.training.reps, a.training.sets), ...(a.training.least.length ? [f.trainingLeast(a.training.least.join(", "))] : [])] : [];
+  sections.push({ title: f.routine, lines: [f.streak(a.streak), f.missions(a.missionsDone, a.missionsTotal), ...training] });
 
   const log: string[] = [];
   const shown = shownResolved(entries);
