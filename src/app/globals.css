@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #eceef2;
+  --bg: #f3f4f1;
   --surface: #ffffff;
-  --sunken: #f3f4f7;
-  --ink: #111827;
-  --ink-2: #4b5563;
-  --ink-3: #5c6370;
-  --line: #e4e6eb;
-  --accent: #1462ff;
-  --accent-ink: #0b4fd6;
-  --accent-soft: #e8efff;
+  --sunken: #eef0eb;
+  --ink: #101c2e;
+  --ink-2: #47536a;
+  --ink-3: #5a6578;
+  --line: #d9dcd5;
+  /* Deep navy carries actions and selection; the mascot's cheese yellow is kept for the one voice action. */
+  --accent: #16294a;
+  --accent-ink: #1d3f8a;
+  --accent-soft: #fdf0c9;
+  --cheese: #f6bb2f;
+  --cheese-ink: #2a1d00;
   --ok: #137a39;
   --ok-soft: #e6f6ec;
   --mild: #8a6a00;
@@ -33,6 +36,8 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+  --color-cheese: var(--cheese);
+  --color-cheese-ink: var(--cheese-ink);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
   --color-mild: var(--mild);
@@ -42,18 +47,19 @@
   --color-crit: var(--crit);
   --color-crit-soft: var(--crit-soft);
   --shadow-card: var(--shadow);
-  --font-sans: var(--font-jakarta);
+  --font-sans: var(--font-ui);
 }
 
 html {
   color-scheme: light;
+  background: var(--bg);
   accent-color: var(--accent);
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-jakarta), system-ui, sans-serif;
+  font-family: var(--font-ui), system-ui, sans-serif;
 }
 
 ::selection {
@@ -68,7 +74,7 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #d3d6dd transparent;
+  scrollbar-color: #c9cdc4 transparent;
 }
 
 input::placeholder {
@@ -145,7 +151,7 @@ input::placeholder {
   top: 50%;
   transform: translateY(-50%);
   white-space: nowrap;
-  font: 600 12px/1 var(--font-jakarta), system-ui, sans-serif;
+  font: 600 13px/1 var(--font-ui), system-ui, sans-serif;
   color: var(--ink);
   background: var(--surface);
   padding: 6px 9px;
@@ -165,8 +171,8 @@ input::placeholder {
 }
 
 @keyframes listening {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(20 98 255 / 0.35); }
-  50% { box-shadow: 0 0 0 8px rgb(20 98 255 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgb(246 187 47 / 0.6); }
+  50% { box-shadow: 0 0 0 18px rgb(246 187 47 / 0); }
 }
 .mic-live {
   animation: listening 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;

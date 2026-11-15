@@ -51,6 +51,9 @@ export interface Messages {
     label: string;
     skip: string;
     now: string;
+    history: string;
+    me: string;
+    sections: string;
     vitals: string;
     log: string;
     body: string;
@@ -315,6 +318,9 @@ const pt: Messages = {
     label: "Navegação principal",
     skip: "Pular para o conteúdo",
     now: "Agora",
+    history: "Histórico",
+    me: "Eu",
+    sections: "Seções desta área",
     vitals: "Sinais",
     log: "Diário",
     body: "Corpo",
@@ -367,7 +373,7 @@ const pt: Messages = {
     now: "agora",
   },
   voice: {
-    off: "Escuta desligada. Toque no microfone no topo da tela ou digite abaixo.",
+    off: "Escuta desligada. Toque no microfone ou digite abaixo.",
     requesting: "Pedindo acesso ao microfone…",
     denied: "Microfone bloqueado. Libere o acesso nas permissões do navegador.",
     error: "Não foi possível abrir o microfone.",
@@ -616,6 +622,9 @@ const en: Messages = {
     label: "Main navigation",
     skip: "Skip to content",
     now: "Now",
+    history: "History",
+    me: "Me",
+    sections: "Sections in this area",
     vitals: "Vitals",
     log: "Log",
     body: "Body",

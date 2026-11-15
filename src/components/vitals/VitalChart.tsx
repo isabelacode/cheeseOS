@@ -167,7 +167,7 @@ export function VitalChart(props: Props) {
           </defs>
 
           {/* Normal band */}
-          <rect x={PAD.left} y={bandTop} width={plotW} height={Math.max(0, bandBottom - bandTop)} fill="var(--accent-soft)" />
+          <rect x={PAD.left} y={bandTop} width={plotW} height={Math.max(0, bandBottom - bandTop)} fill="var(--ok-soft)" />
 
           {/* Grid + y ticks */}
           {yTicks.map((v) => (

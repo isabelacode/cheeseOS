@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Atkinson_Hyperlegible_Next } from "next/font/google";
 import { CrewApp } from "@/components/CrewApp";
 // Hook-free modules only: the "@/lib/i18n" barrel imports React client hooks, which a
 // Server Component layout cannot pull in.
@@ -8,10 +8,10 @@ import { messages } from "@/lib/i18n/messages";
 import "./globals.css";
 
 // next/font self-hosts the files at build time, so the UI needs no network at runtime.
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
+// A face drawn for low-vision legibility: the crew member may be reading while unwell.
+const ui = Atkinson_Hyperlegible_Next({
+  variable: "--font-ui",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
 // Every route renders from the crew profile stored on this device, so the server
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang={INTL_LOCALE[DEFAULT_LOCALE]} className={`${jakarta.variable} h-full antialiased`}>
+    <html lang={INTL_LOCALE[DEFAULT_LOCALE]} className={`${ui.variable} h-full antialiased`}>
       <body className="min-h-full" suppressHydrationWarning>
         <CrewApp>{children}</CrewApp>
       </body>

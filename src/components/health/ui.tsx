@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useState, type HTMLAttributes, type ReactNode } from "react";
-import { Activity, AlertTriangle, Check, CheckCircle2, Gauge, HeartPulse, Loader2, ShieldAlert, Sparkles, Thermometer, Undo2, Wind, X, type LucideIcon } from "lucide-react";
+import type { HTMLAttributes, ReactNode } from "react";
+import { Activity, AlertTriangle, CheckCircle2, Gauge, HeartPulse, ShieldAlert, Thermometer, Wind, type LucideIcon } from "lucide-react";
 import { VITAL_SPECS, type VitalSpec } from "@/lib/health/vitals";
 import { adviceOf } from "@/lib/health/advice";
-import type { Finding, Severity, Status, SymptomId, Vitals } from "@/lib/health/types";
+import type { Finding, Severity, Status, Vitals } from "@/lib/health/types";
 import { formatNumber, INTL_LOCALE, useLocale, useT, type Locale, type Messages } from "@/lib/i18n";
 
-import { nowMessages } from "@/lib/i18n/pages/now";
-import { soundsMoreUrgent } from "@/lib/text/urgency";
-import { SafeMarkdown } from "@/components/now/SafeMarkdown";
-import { SpaceWhy } from "@/components/science/SpaceWhy";
-import type { Feedback } from "@/lib/session/CrewSession";
 import { LIVE_WINDOW as HISTORY } from "@/lib/session/CrewSession";
 
 export const SEVERITY_CHIP: Record<Severity, string> = {
@@ -21,8 +16,8 @@ export const SEVERITY_CHIP: Record<Severity, string> = {
   3: "text-crit bg-crit-soft",
 };
 
-/** Fill for value blocks and chart marks: blue when in range, like the rest of the UI. */
-export const SEVERITY_FILL: Record<Severity, string> = { 0: "#1462ff", 1: "#1462ff", 2: "#e07b2e", 3: "#d63b3b" };
+/** Fill for value blocks and chart marks: navy when in range, like the rest of the UI. */
+export const SEVERITY_FILL: Record<Severity, string> = { 0: "#16294a", 1: "#16294a", 2: "#e07b2e", 3: "#d63b3b" };
 
 export const STATUS_STYLE: Record<Status, { tile: string; text: string; Icon: LucideIcon }> = {
   nominal: { tile: "bg-ok-soft text-ok", text: "text-ok", Icon: CheckCircle2 },
@@ -76,191 +71,9 @@ export function Card({ children, className = "", ...rest }: { children: ReactNod
 export function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
-      <h2 className="flex items-center gap-2 text-[15px] font-semibold">
-        <span className="size-1.5 rounded-full bg-accent" aria-hidden />
-        {children}
-      </h2>
+      <h2 className="text-base font-bold">{children}</h2>
       {aside && <span className="text-xs text-ink-3">{aside}</span>}
     </div>
-  );
-}
-
-/* ---------- Health ---------- */
-
-export function StatusCard({
-  status,
-  feedback,
-  findings,
-  onResolve,
-  onDismiss,
-  onUndo,
-  canUndo = false,
-  vitals,
-  recovering = false,
-}: {
-  status: Status;
-  feedback: Feedback;
-  findings: Finding[];
-  /** The symptom is gone (logged as an improvement). */
-  onResolve?: (id: SymptomId) => void;
-  /** The symptom was misrecognized. */
-  onDismiss?: (id: SymptomId) => void;
-  onUndo?: () => void;
-  canUndo?: boolean;
-  /** Current vitals; lets the card name a vital that holds the status up. */
-  vitals?: Vitals;
-  /** Simulated vitals are easing back after a symptom was marked "gone". */
-  recovering?: boolean;
-}) {
-  const style = STATUS_STYLE[status];
-  const t = useT();
-  const n = nowMessages[useLocale()];
-  const copy = t.status[status];
-  const locale = useLocale();
-  // Vitals that hold the status at or above every reported symptom: say so, or the
-  // status looks stuck (simulated vitals ease back over a few minutes).
-  const findingMax = findings.reduce((m, f) => Math.max(m, f.severity), 0);
-  const drivers = vitals
-    ? VITAL_SPECS.filter((sp) => {
-        const sev = sp.assess(vitals);
-        return sev >= 2 && sev > findingMax;
-      })
-    : [];
-
-  // With findings, each card carries its own advice (and the shell banner the top action): no repeat here.
-  const primary = findings.length > 0 ? null : status !== "nominal" && !drivers.length ? n.vitalsOnly : quickAdvice(findings, t);
-  // A severe symptom needs a second tap to be marked gone; the first arms it for a few seconds.
-  const [confirming, setConfirming] = useState<SymptomId | null>(null);
-  useEffect(() => {
-    if (!confirming) return;
-    const id = setTimeout(() => setConfirming(null), 4000);
-    return () => clearTimeout(id);
-  }, [confirming]);
-  const aiText = feedback.text;
-  const escalates = aiText ? soundsMoreUrgent(aiText, feedback.status ?? status) : false;
-  const hasActions = Boolean(onResolve || onDismiss);
-
-  return (
-    <Card aria-label={t.dashboard.healthState}>
-      <div className="flex items-start gap-4">
-        <span className={`grid size-12 shrink-0 place-items-center rounded-2xl transition-colors duration-500 ${style.tile}`}>
-          <style.Icon className="size-6" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2.5" aria-live="polite">
-            <span className={`text-xl font-bold ${style.text}`}>{copy.label}</span>
-            <span className="text-sm text-ink-2">{copy.summary}</span>
-          </div>
-          {primary && <p className="mt-1.5 max-w-[68ch] text-[15px] leading-relaxed text-ink">{primary}</p>}
-          {drivers.length > 0 && vitals && (
-            <p className="mt-1.5 max-w-[68ch] text-[14px] leading-relaxed text-ink-2">
-              {n.heldBy(
-                drivers.map((sp) => `${t.vitals[sp.key].label} ${formatVital(sp, vitals, locale)} ${sp.unit}`).join(", "),
-                copy.label,
-                findings.length > 0,
-              )}
-            </p>
-          )}
-          {recovering && <p className="mt-1.5 max-w-[68ch] text-[13px] leading-relaxed text-ok">{n.recovering}</p>}
-          <p className="mt-1.5 text-xs text-ink-3">{t.dashboard.source(t.dashboard.rulesEngine)}</p>
-        </div>
-      </div>
-
-      {!feedback.pending && !aiText && feedback.dropped && (
-        <p className="mt-4 flex items-start gap-2 rounded-2xl bg-sunken px-3.5 py-2.5 text-[13px] text-ink-2" aria-live="polite">
-          <Sparkles className="mt-0.5 size-3.5 shrink-0 text-ink-3" aria-hidden />
-          {n.aiDropped[feedback.dropped]}
-        </p>
-      )}
-      {(feedback.pending || aiText) && (
-        <div className="mt-4 rounded-2xl bg-sunken px-3.5 py-3" aria-live="polite">
-          <p className="flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-ink-2">
-            <Sparkles className="size-3.5 text-accent-ink" aria-hidden />
-            {n.aiSuggestion}
-            {feedback.engine && !feedback.pending && <span className="font-normal text-ink-3">· {feedback.engine}</span>}
-          </p>
-          {feedback.pending ? (
-            <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-ink-3">
-              <Loader2 className="size-3.5 animate-spin" aria-hidden /> {t.dashboard.refining}
-            </p>
-          ) : (
-            aiText && (
-              <>
-                <SafeMarkdown text={aiText} className="mt-1.5 max-w-[68ch] text-[14px] leading-relaxed text-ink-2" />
-                {escalates && (
-                  <p className="mt-2.5 flex items-start gap-2 rounded-xl bg-warn-soft px-3 py-2 text-[13px] font-medium text-warn">
-                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                    {n.aiEscalates(copy.label.toLowerCase())}
-                  </p>
-                )}
-              </>
-            )
-          )}
-        </div>
-      )}
-
-      {findings.length > 0 && (
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-          {findings.map((f) => {
-            const label = t.symptoms[f.id].label;
-            return (
-              <li key={f.id} className="flex flex-col rounded-2xl bg-sunken px-3.5 py-3 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold">{label}</span>
-                  <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[f.severity]}`}>{t.severity[f.severity]}</span>
-                </div>
-                <p className="mt-1 text-[13px] leading-snug text-ink-2">{adviceOf(f, t)}</p>
-                <SpaceWhy finding={f} className="mt-1.5" />
-                {hasActions && (
-                  <div className="mt-auto flex flex-wrap gap-1.5 pt-2.5">
-                    {onResolve && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (f.severity >= 3 && confirming !== f.id) {
-                            setConfirming(f.id);
-                            return;
-                          }
-                          setConfirming(null);
-                          onResolve(f.id);
-                        }}
-                        aria-label={confirming === f.id ? n.resolveConfirmLabel(label) : n.resolveLabel(label)}
-                        className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors sm:min-h-8 ${
-                          confirming === f.id ? "bg-ok-soft text-ok ring-1 ring-ok/40" : "bg-surface text-ink hover:bg-ok-soft hover:text-ok"
-                        }`}
-                      >
-                        <Check className="size-3.5" aria-hidden /> {confirming === f.id ? n.resolveConfirm : n.resolve}
-                      </button>
-                    )}
-                    {onDismiss && (
-                      <button
-                        type="button"
-                        onClick={() => onDismiss(f.id)}
-                        aria-label={n.dismissLabel(label)}
-                        className="flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-ink-2 transition-colors hover:bg-surface hover:text-ink sm:min-h-8"
-                      >
-                        <X className="size-3.5" aria-hidden /> {n.dismiss}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {onUndo && canUndo && (
-        <button
-          type="button"
-          onClick={onUndo}
-          title={t.nav.undoHint}
-          className="mt-3 flex min-h-11 items-center gap-1.5 rounded-full px-1 text-[13px] font-semibold text-accent-ink hover:underline sm:min-h-8"
-        >
-          <Undo2 className="size-3.5" aria-hidden /> {t.nav.undoLast}
-        </button>
-      )}
-    </Card>
   );
 }
 

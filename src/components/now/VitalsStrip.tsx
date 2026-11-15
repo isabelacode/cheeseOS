@@ -17,15 +17,18 @@ function position(key: (typeof KEYS)[number], v: Vitals): Position {
 
 const KEYS = ["temperature", "systolic", "respiration", "heartRate", "spo2"] as const;
 
-/** All vitals at a glance; each tile opens its detail on /sinais. */
-export function VitalsStrip({ vitals }: { vitals: Vitals }) {
+/** How many of the vitals shown here are outside their range. */
+export function vitalsOutOfRange(v: Vitals): number {
+  return KEYS.filter((key) => spec(key).assess(v) >= 2).length;
+}
+
+/** All vitals at a glance; each tile opens its detail on /sinais. `plain` drops the card frame. */
+export function VitalsStrip({ vitals, plain = false }: { vitals: Vitals; plain?: boolean }) {
   const t = useT();
   const locale = useLocale();
   const n = nowMessages[locale];
 
-  return (
-    <Card aria-label={n.vitalsTitle}>
-      <SectionTitle aside={n.vitalsAside}>{n.vitalsTitle}</SectionTitle>
+  const list = (
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-5">
         {KEYS.map((key) => {
           const s = spec(key);
@@ -42,7 +45,7 @@ export function VitalsStrip({ vitals }: { vitals: Vitals }) {
                 aria-label={`${n.openVital(copy.label)} (${formatVital(s, vitals, locale)} ${s.unit}, ${n.vitalState[pos]})`}
                 className="flex h-full flex-col gap-1.5 rounded-2xl bg-sunken px-3 py-2.5 transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"
               >
-                <span className="flex items-center gap-1.5 text-xs text-ink-2">
+                <span className="flex items-center gap-1.5 text-sm text-ink-2">
                   <Icon className={`size-3.5 shrink-0 ${sev >= 3 ? "text-crit" : sev >= 2 ? "text-warn" : "text-ink-3"}`} aria-hidden />
                   <span className="leading-tight">{copy.label}</span>
                 </span>
@@ -50,23 +53,29 @@ export function VitalsStrip({ vitals }: { vitals: Vitals }) {
                   <span className={`tabular text-lg leading-none font-bold ${sev >= 3 ? "text-crit" : sev >= 2 ? "text-warn" : ""}`}>
                     {formatVital(s, vitals, locale)}
                   </span>
-                  <span className="text-[11px] font-semibold text-ink-3">{s.unit}</span>
+                  <span className="text-xs font-semibold text-ink-3">{s.unit}</span>
                 </span>
                 <span className="flex flex-wrap items-center gap-1.5">
                   <span
-                    className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                    className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${
                       pos === "in" ? SEVERITY_CHIP[0] : tone ? SEVERITY_CHIP[tone] : "bg-surface text-ink-2"
                     }`}
                   >
                     {n.vitalState[pos]}
                   </span>
-                  <span className="tabular text-[11px] text-ink-3">{copy.range}</span>
+                  <span className="tabular text-xs text-ink-3">{copy.range}</span>
                 </span>
               </Link>
             </li>
           );
         })}
       </ul>
+  );
+  if (plain) return list;
+  return (
+    <Card aria-label={n.vitalsTitle}>
+      <SectionTitle aside={n.vitalsAside}>{n.vitalsTitle}</SectionTitle>
+      {list}
     </Card>
   );
 }

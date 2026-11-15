@@ -30,9 +30,14 @@ export function BodyPanel({
   className = "",
   selected: controlled,
   onSelect,
+  title,
+  hint,
   children,
 }: {
   className?: string;
+  /** Caption shown while no region is in focus; defaults to the generic body hint. */
+  title?: string;
+  hint?: string;
   selected?: Region | null;
   onSelect?: (r: Region | null) => void;
   children?: ReactNode;
@@ -52,7 +57,7 @@ export function BodyPanel({
   return (
     <section
       aria-label={d.bodyRegion}
-      className={`relative flex flex-col overflow-hidden rounded-[28px] bg-[radial-gradient(120%_80%_at_50%_35%,#f7f8fb_0%,#e3e8f0_70%,#dbe1ea_100%)] shadow-card ${className}`}
+      className={`relative flex flex-col overflow-hidden rounded-[28px] bg-[radial-gradient(120%_80%_at_50%_35%,#fbfbf9_0%,#e6e8e2_70%,#dcdfd8_100%)] shadow-card ${className}`}
     >
       {/* Below lg the caption sits above the canvas so it never covers the head hotspot. */}
       <div className="relative z-10 mx-3 mt-3 lg:pointer-events-none lg:absolute lg:top-4 lg:left-4 lg:m-0 lg:max-w-[min(260px,calc(100%-10rem))]">
@@ -75,8 +80,8 @@ export function BodyPanel({
             </>
           ) : (
             <>
-              <p className="text-sm font-semibold">{d.body}</p>
-              <p className="mt-0.5 text-xs text-ink-2">{d.bodyHint}</p>
+              <p className="text-base font-bold">{title ?? d.body}</p>
+              <p className="mt-0.5 text-sm text-ink-2">{hint ?? d.bodyHint}</p>
             </>
           )}
         </div>

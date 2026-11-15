@@ -294,7 +294,7 @@ function VitalsContent() {
               </li>
             ))}
             <li className="flex items-center gap-1.5">
-              <span className="h-2.5 w-[18px] rounded-sm bg-accent-soft ring-1 ring-accent/20" />
+              <span className="h-2.5 w-[18px] rounded-sm bg-ok-soft ring-1 ring-ok/20" />
               {isBp ? m.legend.normalSystolic : m.legend.normal}
             </li>
             <li className="flex items-center gap-1.5">
