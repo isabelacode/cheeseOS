@@ -1,63 +1,55 @@
-# Roteiro do pitch: cheeseOS (30s)
+# Roteiro do pitch: cheeseOS (29s)
 
-Cada bloco começa no segundo em que o cartão correspondente aparece no vídeo.
-Fale devagar e com calma. Frases curtas são melhores do que frases perfeitas.
+Uma pessoa fala tudo. São 50 palavras em 29 segundos, em frases curtas, com pausa entre elas.
+Cada fala começa no segundo em que a cena correspondente aparece no vídeo.
 
-A linha **Pronúncia** é uma aproximação "do jeito que se fala" em português. A sílaba em MAIÚSCULA é a mais forte.
+A coluna **Pronúncia** é uma aproximação "do jeito que se fala" em português. A sílaba em MAIÚSCULA é a mais forte.
 
----
+| Tempo | Cena | EN | PT | Pronúncia |
+|---|---|---|---|---|
+| 0:00 | Câmera, com o seu nome | Hi! I'm Eduardo. | Oi! Eu sou o Eduardo. | RÁI! áim edu-ÁR-dou |
+| 0:02,6 | Câmera mais perto, "20 min" ao lado | On Mars, help can take twenty minutes. | Em Marte, a ajuda pode levar vinte minutos. | ón MÁRZ, rélp kén têik TUÉN-ti MÍ-nits |
+| 0:06,2 | Tela cheia: o gêmeo e o nome | This is cheeseOS. It works offline. | Este é o cheeseOS. Ele funciona offline. | dís iz TCHÍIZ-ou-és. it uârks óf-LÁIN |
+| 0:09,8 | Câmera, passo 01 | Say how you feel. | Diga como você se sente. | sêi ráu iú FÍIL |
+| 0:12,2 | Câmera, passo 02 | Your twin shows where. | O seu gêmeo mostra onde. | iór tuín chôuz UÉR |
+| 0:14,6 | Câmera mais perto, passo 03 | We check NASA data. | A gente confere os dados da NASA. | uí tchék NÉ-sa DÊI-ta |
+| 0:17,0 | Câmera mais perto, passo 04 | You get clear steps. | Você recebe passos claros. | iú guét klíir STÉPS |
+| 0:19,4 | Tela cheia: agachamento e sono | It counts exercise and sleep. | Ele conta exercício e sono. | it káunts ÉK-ser-sáiz énd SLÍIP |
+| 0:22,6 | Câmera, a Terra ao lado | It helps anyone far from a doctor. | Ele ajuda qualquer pessoa longe de um médico. | it rélps É-ni-uân fár fróm â DÓC-tor |
+| 0:25,9 | Tela cheia: mascote e logo | cheeseOS. Health that goes with you. | cheeseOS. Saúde que vai com você. | TCHÍIZ-ou-és. RÉLF dét gôuz uíf IÚ |
 
-## 0:00 – Apresentação
-**EN:** Hi, I'm Eduardo, from Code and Cheese.
-**PT:** Oi, eu sou o Eduardo, do Code and Cheese.
-**Pronúncia:** rái, áim edu-ÁR-dou, fróm CÔUD én TCHÍIZ
-
-## 0:02 – O problema
-**EN:** On Mars, help from Earth is twenty-two minutes away.
-**PT:** Em Marte, a ajuda da Terra está a vinte e dois minutos de distância.
-**Pronúncia:** ón MÁRZ, rélp fróm ÂRF iz TUÉN-ti TÚ MÍ-nits â-UÊI
-
-## 0:05 – O nome
-**EN:** This is cheeseOS: the health twin that works when Earth goes quiet.
-**PT:** Este é o cheeseOS: o gêmeo de saúde que funciona quando a Terra fica em silêncio.
-**Pronúncia:** dís iz TCHÍIZ-ou-és: dâ RÉLF tuín dét UÂRKS uén ÂRF gôuz KUÁI-et
-
-## 0:10 – Como funciona (os 4 passos, numa fala só)
-**EN:** Say how you feel. Your 3D twin lights up. We check it against your baseline and NASA's health risk data, then give clear next steps, offline.
-**PT:** Diga como você se sente. Seu gêmeo 3D acende. A gente compara com o seu padrão normal e com os dados de risco de saúde da NASA, e então dá os próximos passos claros, offline.
-**Pronúncia:** sêi ráu iú FÍIL. iór FRÍ-DÍ tuín LÁITS âp. uí TCHÉK it â-GUÉNST iór BÊIS-lain énd NÉ-saz rélf RÍSK DÊI-ta, dén guív KLÍIR nékst STÉPS, óf-LÁIN
-
-Na tela, os passos trocam em 0:10 (Speak), 0:12 (See, o gêmeo cresce), 0:14,4 (Compare) e 0:17,4 (Act).
-
-## 0:20 – Hoje e amanhã
-**EN:** Today, it protects a crew in deep space. Tomorrow, anyone far from a doctor.
-**PT:** Hoje, ele protege uma tripulação no espaço profundo. Amanhã, qualquer pessoa longe de um médico.
-**Pronúncia:** tchu-DÊI, it pro-TÉKTS â KRÚ in díip SPÊIS. tchu-MÓ-rou, É-ni-uân FÁR fróm â DÓC-tor
-
-## 0:25 – Fechamento
-**EN:** cheeseOS: health that travels as far as we do.
-**PT:** cheeseOS: saúde que vai tão longe quanto a gente.
-**Pronúncia:** TCHÍIZ-ou-és: RÉLF dét TRÉ-vols éz FÁR éz uí DÚ
-
----
+Nas cenas de tela cheia você não aparece, só a sua voz. Continue falando normalmente.
 
 ## Texto corrido (para ler direto)
 
-> Hi, I'm Eduardo, from Code and Cheese.
-> On Mars, help from Earth is twenty-two minutes away.
-> This is cheeseOS: the health twin that works when Earth goes quiet.
-> Say how you feel. Your 3D twin lights up. We check it against your baseline and NASA's health risk data, then give clear next steps, offline.
-> Today, it protects a crew in deep space. Tomorrow, anyone far from a doctor.
-> cheeseOS: health that travels as far as we do.
+> Hi! I'm Eduardo.
+> On Mars, help can take twenty minutes.
+> This is cheeseOS. It works offline.
+> Say how you feel.
+> Your twin shows where.
+> We check NASA data.
+> You get clear steps.
+> It counts exercise and sleep.
+> It helps anyone far from a doctor.
+> cheeseOS. Health that goes with you.
 
-## Áudio para treinar
+## Teleprompter
 
-A pasta `voice/` tem a leitura em voz sintética: `full.wav` (27 s, o roteiro inteiro) e `block-1.wav` a `block-5.wav` (um por bloco). Ouça, repita junto e tente terminar no mesmo tempo.
+`teleprompter.html` mostra cada fala no segundo certo e grava a câmera ao mesmo tempo. Sirva a pasta por um servidor local (por exemplo `python3 -m http.server 3010` dentro de `video/`) e abra `http://localhost:3010/teleprompter.html`.
+
+## Gravação
+
+- **Enquadramento:** na horizontal, você no terço esquerdo do quadro, do peito para cima. O lado direito fica livre para os gráficos.
+- **Fundo:** parede branca, a um passo de distância para não fazer sombra.
+- **Luz:** de frente para a janela, nunca com ela atrás.
+- **Roupa:** camisa lisa em tom médio ou escuro (azul-marinho ou cinza-chumbo). Sem branco, sem listras finas e sem estampa.
+- **Arquivo:** 1080p ou mais, o original do celular. O WhatsApp reduz a qualidade.
+- **Duração:** 29 segundos. Deixe um segundo de silêncio antes de começar.
 
 ## Dicas para praticar
-- **"Earth" e "health":** o *th* final é a língua entre os dentes, soprando, tipo um "f" suave. Se sair "f", tudo bem.
+
+- **"health":** o *th* final é a língua entre os dentes, soprando, tipo um "f" suave. Se sair "f", tudo bem.
 - **"cheese":** "tchíiz", com o "i" bem longo, como num sorriso.
-- **Pausas:** respire depois de "Code and Cheese", depois de "doctor to call" e antes de "Today".
-- **Se passar de 30s:** corte o "Hi" do começo e o "offline" do fim do bloco 0:10.
+- **Pausas:** cada ponto final é uma pausa. Não emende as frases.
 - Grave no celular, ouça e repita 3 ou 4 vezes. Na terceira já fica natural.
-- **Na gravação:** olhe para a câmera, não para o texto. Cole o texto corrido logo abaixo da lente.
+- Olhe para a câmera, não para o texto.

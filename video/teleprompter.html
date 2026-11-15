@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cheeseOS · Teleprompter</title>
+    <style>
+      :root {
+        --ground: #05070d;
+        --ink: #f4f6fb;
+        --ink-2: #a3acbe;
+        --line: rgba(255, 255, 255, 0.16);
+        --p1: #ffc93c;
+        --p2: #6fa0ff;
+        --rec: #d42b2b;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { min-height: 100%; background: var(--ground); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+      body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 14px 16px 18px; }
+
+      /* The stage keeps the video's 16:9 frame, so what you see is what the pitch will crop. */
+      #stage { position: relative; width: min(100%, calc((100vh - 150px) * 16 / 9)); aspect-ratio: 16 / 9; background: #0b1020; border-radius: 10px; overflow: hidden; }
+      #cam, #playback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      /* Shown as the file will be; the "Espelhar" option flips the preview only. */
+      #playback { display: none; background: #000; }
+      #stage.review #playback { display: block; }
+      #stage.review .guide, #stage.review #prompt { display: none; }
+
+      /* Framing guides: where the side panel and the opening name card will sit in the final video. */
+      .guide { position: absolute; pointer-events: none; font-size: clamp(10px, 1.1vw, 14px); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+      #g-panel { right: 0; top: 0; width: 42.7%; height: 100%; background: rgba(5, 7, 13, 0.6); border-left: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3%; }
+      #g-lower { left: 10%; bottom: 11.5%; width: 34%; height: 12%; border: 1px dashed var(--line); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+      body.mirror #g-panel { right: auto; left: 0; border-left: 0; border-right: 1px solid var(--line); }
+      body.mirror #g-lower { left: auto; right: 9%; }
+
+      /* The lines sit at the top, next to the lens, so your eyes stay close to the camera. */
+      #prompt { position: absolute; left: 0; top: 0; width: 100%; padding: 2.2% 3% 3.5%; background: linear-gradient(180deg, rgba(5, 7, 13, 0.92) 0%, rgba(5, 7, 13, 0.78) 70%, rgba(5, 7, 13, 0) 100%); text-align: center; }
+      #who { visibility: hidden; display: inline-block; font-size: clamp(11px, 1.3vw, 16px); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.25em 0.8em; border-radius: 999px; color: #0b0d14; background: var(--p1); }
+      #who.on { visibility: visible; }
+      #line { font-size: clamp(22px, 4.2vw, 62px); font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; margin-top: 0.35em; text-wrap: balance; }
+      #line span { color: rgba(244, 246, 251, 0.62); transition: color 0.12s linear; }
+      #line span.on { color: var(--ink); }
+      #say { font-size: clamp(13px, 1.9vw, 26px); color: var(--p1); margin-top: 0.4em; font-weight: 500; }
+      #pt { font-size: clamp(12px, 1.5vw, 20px); color: var(--ink-2); margin-top: 0.25em; }
+      #next { font-size: clamp(12px, 1.6vw, 22px); color: var(--ink-2); margin-top: 0.7em; }
+      #next b { color: var(--ink); font-weight: 600; }
+      body.no-say #say, body.no-pt #pt { display: none; }
+      #bar { position: absolute; left: 0; top: 0; height: 5px; width: 100%; background: var(--p1); transform-origin: left; transform: scaleX(0); }
+
+      #count { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 22vw; font-weight: 800; background: rgba(5, 7, 13, 0.55); }
+      #count.on { display: flex; }
+      #rec { position: absolute; left: 2%; bottom: 3%; display: none; align-items: center; gap: 8px; font-size: clamp(12px, 1.4vw, 18px); font-weight: 700; font-variant-numeric: tabular-nums; background: rgba(5, 7, 13, 0.8); padding: 0.35em 0.8em; border-radius: 999px; }
+      #rec.on { display: flex; }
+      #rec i { width: 0.7em; height: 0.7em; border-radius: 50%; background: var(--rec); }
+      #rec.rehearse i { background: var(--ink-2); }
+
+      #controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+      button, .btn { font: inherit; font-size: 16px; font-weight: 650; color: var(--ink); background: #161c2e; border: 1px solid var(--line); border-radius: 10px; padding: 10px 18px; cursor: pointer; text-decoration: none; }
+      button:hover, .btn:hover { background: #1e2640; }
+      button:disabled { opacity: 0.4; cursor: default; }
+      #b-rec { background: var(--rec); border-color: transparent; color: #fff; }
+      #b-rec:hover { background: #b82323; }
+      #b-save { background: var(--p1); border-color: transparent; color: #14100a; display: none; }
+      label { font-size: 14px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+      #practice { width: min(100%, 1100px); }
+      #practice h2 { font-size: 15px; font-weight: 650; color: var(--ink-2); letter-spacing: 0.06em; text-transform: uppercase; margin: 6px 0 10px; }
+      #lines { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 8px; }
+      #lines button { width: 100%; text-align: left; font-weight: 500; display: flex; gap: 10px; align-items: baseline; }
+      #lines button .n { color: var(--ink-2); font-variant-numeric: tabular-nums; min-width: 1.6em; }
+      #lines button.playing { border-color: var(--p1); background: #2a2410; }
+      #status { font-size: 14px; color: var(--ink-2); text-align: center; min-height: 1.4em; max-width: 900px; line-height: 1.4; }
+      #status b { color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <video id="cam" autoplay muted playsinline></video>
+      <video id="playback" controls playsinline></video>
+      <div id="g-panel" class="guide">área dos gráficos · fique fora daqui</div>
+      <div id="g-lower" class="guide">seu nome (0 a 3 s)</div>
+      <div id="prompt">
+        <div id="bar"></div>
+        <div id="who">Produto em tela cheia · só a sua voz</div>
+        <div id="line"></div>
+        <div id="say"></div>
+        <div id="pt"></div>
+        <div id="next"></div>
+      </div>
+      <div id="count"></div>
+      <div id="rec"><i></i><span id="clock">0:00</span></div>
+    </div>
+
+    <div id="controls">
+      <button id="b-try">Ensaiar</button>
+      <button id="b-rec">● Gravar</button>
+      <button id="b-stop" disabled>Parar</button>
+      <a id="b-save" class="btn" download>Baixar gravação</a>
+      <label><input type="checkbox" id="c-voice" checked /> Voz guia no ensaio</label>
+      <label><input type="checkbox" id="c-say" checked /> Pronúncia</label>
+      <label><input type="checkbox" id="c-pt" /> Tradução</label>
+      <label><input type="checkbox" id="c-mirror" /> Espelhar prévia</label>
+    </div>
+    <div id="status">Permita a câmera e o microfone. <b>Espaço</b> também começa e para a gravação.</div>
+
+    <div id="practice">
+      <h2>Treinar frase por frase</h2>
+      <label style="margin-bottom: 10px"><input type="checkbox" id="c-slow" /> Tocar devagar</label>
+      <ol id="lines"></ol>
+    </div>
+
+    <script>
+      // Cue times match the pitch video (video/index.html and compositions/*). Keep both in sync.
+      const TOTAL = 29;
+      const CUES = [
+        { t: 0.0, en: "Hi! I'm Eduardo.", say: "RÁI! áim edu-ÁR-dou", pt: "Oi! Eu sou o Eduardo." },
+        { t: 2.6, en: "On Mars, help can take twenty minutes.", say: "ón MÁRZ, rélp kén têik TUÉN-ti MÍ-nits", pt: "Em Marte, a ajuda pode levar vinte minutos." },
+        { t: 6.2, en: "This is cheeseOS. It works offline.", say: "dís iz TCHÍIZ-ou-és. it uârks óf-LÁIN", pt: "Este é o cheeseOS. Ele funciona offline." },
+        { t: 9.8, en: "Say how you feel.", say: "sêi ráu iú FÍIL", pt: "Diga como você se sente." },
+        { t: 12.2, en: "Your twin shows where.", say: "iór tuín chôuz UÉR", pt: "O seu gêmeo mostra onde." },
+        { t: 14.6, en: "We check NASA data.", say: "uí tchék NÉ-sa DÊI-ta", pt: "A gente confere os dados da NASA." },
+        { t: 17.0, en: "You get clear steps.", say: "iú guét klíir STÉPS", pt: "Você recebe passos claros." },
+        { t: 19.4, en: "It counts exercise and sleep.", say: "it káunts ÉK-ser-sáiz énd SLÍIP", pt: "Ele conta exercício e sono." },
+        { t: 22.6, en: "It helps anyone far from a doctor.", say: "it rélps É-ni-uân fár fróm â DÓC-tor", pt: "Ele ajuda qualquer pessoa longe de um médico." },
+        { t: 25.9, en: "cheeseOS. Health that goes with you.", say: "TCHÍIZ-ou-és. RÉLF dét gôuz uíf IÚ", pt: "cheeseOS. Saúde que vai com você." },
+      ];
+      // While the product fills the frame you are off screen; the voice keeps going.
+      const COVERED = [[6.0, 9.6], [19.2, 22.5], [25.7, 29]];
+      // Words light up over this share of the cue, leaving a breath before the next one.
+      const SPEAK_SHARE = 0.78;
+
+      const $ = (id) => document.getElementById(id);
+      const stage = $("stage"), cam = $("cam"), playback = $("playback");
+      const els = { who: $("who"), line: $("line"), say: $("say"), pt: $("pt"), next: $("next"), bar: $("bar"), count: $("count"), rec: $("rec"), clock: $("clock"), status: $("status") };
+      const btn = { tryIt: $("b-try"), rec: $("b-rec"), stop: $("b-stop"), save: $("b-save") };
+
+      // Guide voice: one synthetic take per cue (voice/line-01.wav ...), for rehearsal and line practice only.
+      const voices = CUES.map((_, i) => new Audio("voice/line-" + String(i + 1).padStart(2, "0") + ".wav"));
+      voices.forEach((a) => (a.preload = "auto"));
+      let mode = "idle", practiceRaf = 0;
+      let stream = null, recorder = null, chunks = [], raf = 0, startAt = 0, shown = -1, running = false, take = 0, timers = [];
+
+      function showCue(i) {
+        shown = i;
+        const c = CUES[i], n = CUES[i + 1];
+        els.line.replaceChildren(...c.en.split(" ").flatMap((w, k) => {
+          const s = document.createElement("span");
+          s.textContent = w;
+          return k ? [" ", s] : [s];
+        }));
+        els.say.textContent = c.say;
+        els.pt.textContent = c.pt;
+        els.next.replaceChildren();
+        if (n) {
+          els.next.append("Depois: ");
+          const b = document.createElement("b");
+          b.textContent = n.en;
+          els.next.append(b);
+        }
+      }
+
+      function tick() {
+        const t = (performance.now() - startAt) / 1000;
+        if (t >= TOTAL) return finish();
+        let i = 0;
+        while (i + 1 < CUES.length && CUES[i + 1].t <= t) i++;
+        if (i !== shown) {
+          showCue(i);
+          if (mode === "try" && $("c-voice").checked) playVoice(i, 1);
+        }
+        const end = i + 1 < CUES.length ? CUES[i + 1].t : TOTAL;
+        const u = Math.min(1, (t - CUES[i].t) / ((end - CUES[i].t) * SPEAK_SHARE));
+        const words = els.line.querySelectorAll("span");
+        const lit = Math.ceil(u * words.length);
+        words.forEach((w, k) => w.classList.toggle("on", k < lit));
+        els.bar.style.transform = "scaleX(" + (t / TOTAL).toFixed(4) + ")";
+        els.who.classList.toggle("on", COVERED.some(([a, b]) => t >= a && t < b));
+        els.clock.textContent = "0:" + String(Math.floor(t)).padStart(2, "0") + " / 0:" + TOTAL;
+        raf = requestAnimationFrame(tick);
+      }
+
+      function stopVoices() {
+        cancelAnimationFrame(practiceRaf);
+        voices.forEach((a) => a.pause());
+        document.querySelectorAll("#lines button.playing").forEach((b) => b.classList.remove("playing"));
+      }
+
+      function playVoice(i, rate) {
+        const a = voices[i];
+        a.currentTime = 0;
+        a.playbackRate = rate;
+        a.play().catch(() => {});
+        return a;
+      }
+
+      // One line on its own: shows it in the prompter and lights the words along with the voice.
+      function practice(i) {
+        if (running) return;
+        stopVoices();
+        stage.classList.remove("review");
+        playback.pause();
+        showCue(i);
+        els.next.replaceChildren();
+        const button = document.querySelectorAll("#lines button")[i];
+        button.classList.add("playing");
+        const a = playVoice(i, $("c-slow").checked ? 0.75 : 1);
+        const words = els.line.querySelectorAll("span");
+        const follow = () => {
+          const u = a.duration ? a.currentTime / a.duration : 0;
+          const lit = Math.ceil(Math.min(1, u * 1.08) * words.length);
+          words.forEach((w, k) => w.classList.toggle("on", k < lit));
+          if (a.ended || a.paused) {
+            if (a.ended) words.forEach((w) => w.classList.add("on"));
+            button.classList.remove("playing");
+            return;
+          }
+          practiceRaf = requestAnimationFrame(follow);
+        };
+        practiceRaf = requestAnimationFrame(follow);
+        els.status.textContent = "Ouça, repita em voz alta e clique de novo para repetir.";
+      }
+
+      function pickMime() {
+        const options = ["video/mp4;codecs=avc1,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
+        return options.find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || "";
+      }
+
+      function setBusy(busy) {
+        running = busy;
+        btn.tryIt.disabled = busy;
+        btn.rec.disabled = busy || !stream;
+        btn.stop.disabled = !busy;
+      }
+
+      function start(record) {
+        if (running) return;
+        if (record && !stream) return;
+        stopVoices();
+        mode = record ? "rec" : "try";
+        stage.classList.remove("review");
+        playback.pause();
+        btn.save.style.display = "none";
+        setBusy(true);
+        showCue(0);
+        els.line.querySelectorAll("span").forEach((w) => w.classList.remove("on"));
+        els.bar.style.transform = "scaleX(0)";
+        els.status.textContent = record ? "Olhe para a câmera. A gravação começa no fim da contagem." : "Ensaio: nada está sendo gravado. Fale junto com a voz guia.";
+        // 3-2-1, then the clock and the recorder start on the same frame.
+        let n = 3;
+        els.count.textContent = n;
+        els.count.classList.add("on");
+        const step = () => {
+          n -= 1;
+          if (n > 0) {
+            els.count.textContent = n;
+            timers.push(setTimeout(step, 1000));
+            return;
+          }
+          els.count.classList.remove("on");
+          if (record) {
+            chunks = [];
+            const mime = pickMime();
+            recorder = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 12_000_000 } : undefined);
+            recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+            recorder.onstop = saveTake;
+            recorder.start();
+          }
+          els.rec.className = record ? "on" : "on rehearse";
+          shown = -1; // so the first cue fires its voice on the first frame
+          startAt = performance.now();
+          raf = requestAnimationFrame(tick);
+        };
+        timers.push(setTimeout(step, 1000));
+      }
+
+      function finish() {
+        cancelAnimationFrame(raf);
+        timers.forEach(clearTimeout);
+        timers = [];
+        els.count.classList.remove("on");
+        els.rec.className = "";
+        stopVoices();
+        mode = "idle";
+        const wasRecording = recorder && recorder.state === "recording";
+        if (wasRecording) recorder.stop();
+        else els.status.textContent = "Pronto. Ensaie de novo ou grave.";
+        setBusy(false);
+      }
+
+      function saveTake() {
+        const type = recorder.mimeType || "video/webm";
+        const blob = new Blob(chunks, { type });
+        const url = URL.createObjectURL(blob);
+        take += 1;
+        const name = "cheeseos-take-" + take + (type.includes("mp4") ? ".mp4" : ".webm");
+        playback.src = url;
+        stage.classList.add("review");
+        btn.save.href = url;
+        btn.save.download = name;
+        btn.save.style.display = "inline-block";
+        btn.save.textContent = "Baixar " + name;
+        els.status.innerHTML = "Assista acima. Se ficou boa, baixe e salve em <b>video/assets/</b>. Para tentar de novo, é só gravar outra vez.";
+      }
+
+      async function openCamera() {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 }, aspectRatio: 16 / 9 },
+            audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true },
+          });
+          cam.srcObject = stream;
+          const s = stream.getVideoTracks()[0].getSettings();
+          els.status.innerHTML = "Câmera pronta em <b>" + s.width + "×" + s.height + "</b>. Fique na parte livre do quadro. <b>Espaço</b> começa e para a gravação.";
+          btn.rec.disabled = false;
+        } catch (err) {
+          btn.rec.disabled = true;
+          els.status.innerHTML = "Não consegui abrir a câmera (" + err.name + "). Libere a câmera e o microfone para esta página e recarregue. O <b>Ensaiar</b> funciona sem câmera.";
+        }
+      }
+
+      btn.tryIt.onclick = () => start(false);
+      btn.rec.onclick = () => start(true);
+      btn.stop.onclick = finish;
+      $("c-say").onchange = (e) => document.body.classList.toggle("no-say", !e.target.checked);
+      $("c-pt").onchange = (e) => document.body.classList.toggle("no-pt", !e.target.checked);
+      $("c-mirror").onchange = (e) => {
+        cam.style.transform = e.target.checked ? "scaleX(-1)" : "none";
+        // With a mirrored preview the panel guide flips sides, so it still covers the same people.
+        document.body.classList.toggle("mirror", e.target.checked);
+      };
+      addEventListener("keydown", (e) => {
+        // A focused button or checkbox handles Space itself.
+        if (e.code !== "Space" || ["INPUT", "BUTTON", "A"].includes(e.target.tagName)) return;
+        e.preventDefault();
+        running ? finish() : start(true);
+      });
+
+      CUES.forEach((c, i) => {
+        const li = document.createElement("li");
+        const b = document.createElement("button");
+        const n = document.createElement("span");
+        n.className = "n";
+        n.textContent = "▶ " + (i + 1);
+        b.append(n, c.en);
+        b.onclick = () => practice(i);
+        li.append(b);
+        $("lines").append(li);
+      });
+
+      document.body.classList.add("no-pt");
+      btn.rec.disabled = true;
+      showCue(0);
+      openCamera();
+    </script>
+  </body>
+</html>

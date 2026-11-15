@@ -1,0 +1,72 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; }
+    /* Plays over the open dark layer: the twin squats on the left inside a camera frame. */
+    #day-cam { position: absolute; left: 230px; top: 150px; width: 880px; height: 730px; }
+    #day-cam-label { position: absolute; left: 0; top: -52px; font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.12em; color: var(--cheese); display: flex; align-items: center; gap: 12px; }
+    #day-cam-label i { width: 12px; height: 12px; border-radius: 50%; background: var(--cheese); }
+    .day-corner { position: absolute; width: 64px; height: 64px; border: 0 solid var(--cheese); }
+    #day-tl { left: 0; top: 0; border-left-width: 5px; border-top-width: 5px; border-top-left-radius: 14px; }
+    #day-tr { right: 0; top: 0; border-right-width: 5px; border-top-width: 5px; border-top-right-radius: 14px; }
+    #day-bl { left: 0; bottom: 0; border-left-width: 5px; border-bottom-width: 5px; border-bottom-left-radius: 14px; }
+    #day-br { right: 0; bottom: 0; border-right-width: 5px; border-bottom-width: 5px; border-bottom-right-radius: 14px; }
+    #day-reps { position: absolute; right: 44px; bottom: 34px; text-align: right; line-height: 1; color: var(--on-space); }
+    #day-reps-n { font-size: 210px; font-weight: 300; letter-spacing: -0.06em; font-variant-numeric: tabular-nums; }
+    #day-reps-l { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.14em; color: var(--on-space-2); margin-top: 4px; }
+
+    #day-card { position: absolute; left: 1180px; top: 0; width: 548px; height: 1080px; display: flex; flex-direction: column; justify-content: center; color: var(--on-space); }
+    .day-kicker { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.14em; color: var(--on-space-2); }
+    .day-head { font-size: 64px; font-weight: 300; letter-spacing: -0.035em; line-height: 1.04; margin-top: 12px; }
+    .day-head span { color: var(--cheese); font-weight: 500; }
+    #day-sleep { margin-top: 44px; padding: 28px 30px 26px; border-radius: 24px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); }
+    #day-sleep-t { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.12em; color: var(--on-space-2); }
+    #day-bars { display: flex; align-items: flex-end; gap: 12px; height: 110px; margin-top: 20px; }
+    .day-bar { flex: 1; border-radius: 8px; transform-origin: bottom; }
+    .day-ok { background: #36d07a; }
+    .day-warn { background: var(--cheese); }
+    .day-crit { background: #ff4b4b; }
+    #day-avg { font-size: 34px; font-weight: 300; margin-top: 18px; }
+    #day-avg b { font-weight: 600; }
+  </style>
+  <div id="root" data-composition-id="daily" data-width="1920" data-height="1080">
+    <div id="day-cam" class="clip" data-start="0.2" data-duration="2.95">
+      <div id="day-cam-label"><i></i>CAMERA · SQUAT</div>
+      <div id="day-tl" class="day-corner"></div><div id="day-tr" class="day-corner"></div>
+      <div id="day-bl" class="day-corner"></div><div id="day-br" class="day-corner"></div>
+      <div id="day-reps"><div id="day-reps-n">0</div><div id="day-reps-l">REPS</div></div>
+    </div>
+    <div id="day-card" class="clip" data-start="0.2" data-duration="2.95">
+      <div class="day-kicker">EVERY DAY</div>
+      <div class="day-head">It counts <span>exercise</span> and <span>sleep.</span></div>
+      <div id="day-sleep">
+        <div id="day-sleep-t">SLEEP · 7 NIGHTS</div>
+        <div id="day-bars">
+          <div class="day-bar day-ok" style="height: 78%"></div>
+          <div class="day-bar day-ok" style="height: 70%"></div>
+          <div class="day-bar day-warn" style="height: 60%"></div>
+          <div class="day-bar day-crit" style="height: 42%"></div>
+          <div class="day-bar day-warn" style="height: 62%"></div>
+          <div class="day-bar day-ok" style="height: 80%"></div>
+          <div class="day-bar day-ok" style="height: 72%"></div>
+        </div>
+        <div id="day-avg">Average <b>6.7 h</b></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#day-cam", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0.25);
+    tl.fromTo(".day-corner", { scale: 1.5 }, { scale: 1, duration: 0.45, ease: "power3.out" }, 0.25);
+    // A squat lands every 1.45 s from the scene start (SQUAT_AT / SQUAT_SPEED in index.html).
+    const reps = document.getElementById("day-reps-n");
+    const rep = { n: 0 };
+    [1.32, 2.77].forEach((at, i) => {
+      tl.set(rep, { n: i + 1, onUpdate: () => (reps.textContent = rep.n) }, at);
+      tl.fromTo("#day-reps-n", { scale: 1.25, color: "#ffc93c" }, { scale: 1, color: "#f4f6fb", duration: 0.35, ease: "power2.out", transformOrigin: "100% 100%", immediateRender: i === 0 }, at);
+    });
+    tl.fromTo(["#day-card .day-kicker", "#day-card .day-head", "#day-sleep"], { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.09, ease: "power3.out" }, 0.3);
+    tl.fromTo("#day-card .day-bar", { scaleY: 0 }, { scaleY: 1, duration: 0.45, stagger: 0.07, ease: "back.out(1.6)" }, 0.6);
+    tl.to(["#day-cam", "#day-card"], { opacity: 0, duration: 0.22, ease: "power2.in" }, 2.9);
+    window.__timelines["daily"] = tl;
+  </script>
+</template>

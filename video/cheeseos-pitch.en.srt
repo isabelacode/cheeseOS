@@ -1,0 +1,39 @@
+1
+00:00:00,020 --> 00:00:01,650
+Hi! I'm Eduardo.
+
+2
+00:00:02,990 --> 00:00:05,790
+On Mars, help can take twenty minutes.
+
+3
+00:00:06,310 --> 00:00:09,350
+This is cheeseOS. It works offline.
+
+4
+00:00:10,330 --> 00:00:12,190
+Say how you feel.
+
+5
+00:00:12,800 --> 00:00:14,760
+Your twin shows where.
+
+6
+00:00:15,020 --> 00:00:16,810
+We check NASA data.
+
+7
+00:00:17,250 --> 00:00:19,310
+You get clear steps.
+
+8
+00:00:19,960 --> 00:00:22,300
+It counts exercise and sleep.
+
+9
+00:00:23,150 --> 00:00:25,980
+It helps anyone far from a doctor.
+
+10
+00:00:26,190 --> 00:00:28,750
+cheeseOS. Health that goes with you.

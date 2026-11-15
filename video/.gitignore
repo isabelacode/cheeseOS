@@ -6,3 +6,6 @@ renders/
 .waveform-cache/
 # unsliced narration take; the composition uses voice/block-*.wav
 voice/full.wav
+# local proxies of the recording and its whisper transcript
+.transcode-cache/
+assets/transcript.json

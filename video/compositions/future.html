@@ -1,50 +1,46 @@
 <template>
   <style>
     #root { position: absolute; inset: 0; }
-    .fut-box { position: absolute; left: 1180px; top: 604px; width: 548px; height: 366px; padding: 34px 38px; display: flex; flex-direction: column; justify-content: center; }
+    /* Back on camera: Earth as a round photo with ink type under it. */
+    #fut-earth { position: absolute; left: 1180px; top: 150px; width: 360px; height: 360px; border-radius: 50%; overflow: hidden; }
+    #fut-earth img { position: absolute; left: -9.5%; top: -9.5%; width: 119%; height: 119%; display: block; }
+    #fut-text-box { position: absolute; left: 1180px; top: 560px; width: 548px; color: var(--ink); }
     .fut-kicker { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.16em; color: var(--accent); }
-    .fut-text { font-size: 56px; font-weight: 750; letter-spacing: -0.035em; line-height: 1.04; margin-top: 12px; }
-    /* End card replaces the whole column. */
-    #fut-end { position: absolute; left: var(--col-x); top: 110px; width: var(--col-w); height: 860px; border-radius: 28px;
-      background: var(--card); border: 1px solid var(--card-line);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 18px; opacity: 0; }
-    #fut-link { font-family: var(--font-mono); font-size: 28px; letter-spacing: -0.02em; color: var(--cheese); margin-top: 22px; }
-    #fut-mascot { width: 280px; height: auto; }
-    #fut-mark { font-size: 100px; font-weight: 800; letter-spacing: -0.05em; margin-top: 14px; line-height: 1; }
+    .fut-text { font-size: 72px; font-weight: 400; letter-spacing: -0.04em; line-height: 1.02; margin-top: 12px; }
+    /* End lockup, centred on the open dark layer. */
+    #fut-end { position: absolute; inset: 0; padding-bottom: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--on-space); }
+    #fut-mascot { width: 300px; height: auto; }
+    #fut-mark { font-size: 150px; font-weight: 600; letter-spacing: -0.055em; margin-top: 10px; line-height: 1; }
     #fut-mark span { color: var(--cheese); }
-    #fut-tag { font-size: 38px; margin-top: 20px; font-weight: 500; line-height: 1.2; }
-    #fut-meta { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.1em; color: var(--ink-2); margin-top: 30px; line-height: 1.5; }
+    #fut-tag { font-size: 50px; margin-top: 18px; font-weight: 300; line-height: 1.2; }
+    #fut-meta { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.12em; color: var(--on-space-2); margin-top: 40px; }
+    #fut-link { font-family: var(--font-mono); font-size: 28px; color: var(--cheese); margin-top: 12px; }
   </style>
   <div id="root" data-composition-id="future" data-width="1920" data-height="1080">
-    <div id="fut-today" class="fut-box clip" data-start="0.1" data-duration="2.5">
-      <div class="fut-kicker">TODAY</div>
-      <div class="fut-text">A crew in deep space.</div>
-    </div>
-    <div id="fut-tomorrow" class="fut-box clip" data-start="2.6" data-duration="3.1">
-      <div class="fut-kicker">TOMORROW</div>
+    <div id="fut-earth" class="clip" data-start="0.1" data-duration="3.2" data-layout-allow-overflow=""><img src="assets/earth.jpg" alt="Earth, NASA Blue Marble" /></div>
+    <div id="fut-text-box" class="clip" data-start="0.1" data-duration="3.2">
+      <div class="fut-kicker">ON EARTH</div>
       <div class="fut-text">Anyone far from a doctor.</div>
     </div>
-    <div id="fut-end-host" class="clip" data-start="5.3" data-duration="4.7">
+    <div id="fut-end-host" class="clip" data-start="3.3" data-duration="3.1">
       <div id="fut-end">
         <img id="fut-mascot" src="assets/mascot.webp" alt="cheeseOS mascot" />
         <div id="fut-mark"><span>cheese</span>OS</div>
-        <div id="fut-tag">Health that travels<br />as far as we do.</div>
-        <div id="fut-meta">CODE AND CHEESE<br />NASA SPACE APPS 2026</div>
+        <div id="fut-tag">Health that goes with you.</div>
+        <div id="fut-meta">CODE AND CHEESE · NASA SPACE APPS 2026</div>
         <div id="fut-link">github.com/isabelacode/cheeseOS</div>
       </div>
     </div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-    tl.fromTo("#fut-today > *", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.1, ease: "power3.out" }, 0.15);
-    tl.to("#fut-today", { opacity: 0, y: -14, duration: 0.25, ease: "power2.in" }, 2.35);
-    tl.fromTo("#fut-tomorrow > *", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.1, ease: "power3.out" }, 2.65);
-    tl.to("#fut-tomorrow", { opacity: 0, duration: 0.3, ease: "power2.in" }, 5.3);
-    // End card crossfades in over the two cards as they leave.
-    tl.fromTo("#fut-end", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 5.35);
-    tl.fromTo("#fut-mascot", { opacity: 0, y: 50, scale: 0.85, rotation: -8 }, { opacity: 1, y: 0, scale: 1, rotation: 0, duration: 0.7, ease: "back.out(1.6)" }, 5.45);
-    tl.to("#fut-mascot", { y: -12, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: 1 }, 6.3);
-    tl.fromTo(["#fut-mark", "#fut-tag", "#fut-meta", "#fut-link"], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.14, ease: "power3.out" }, 5.7);
+    tl.fromTo("#fut-earth", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 0.2);
+    tl.fromTo("#fut-earth img", { rotation: -8 }, { rotation: 6, duration: 3.1, ease: "none" }, 0.2);
+    tl.fromTo("#fut-text-box > *", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.1, ease: "power3.out" }, 0.35);
+    tl.to(["#fut-earth", "#fut-text-box"], { opacity: 0, duration: 0.25, ease: "power2.in" }, 3.0);
+    tl.fromTo("#fut-mascot", { opacity: 0, y: 50, scale: 0.85, rotation: -8 }, { opacity: 1, y: 0, scale: 1, rotation: 0, duration: 0.7, ease: "back.out(1.6)" }, 3.5);
+    tl.to("#fut-mascot", { y: -12, duration: 0.9, ease: "sine.inOut", yoyo: true, repeat: 1 }, 4.3);
+    tl.fromTo(["#fut-mark", "#fut-tag", "#fut-meta", "#fut-link"], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.12, ease: "power3.out" }, 3.7);
     window.__timelines["future"] = tl;
   </script>
 </template>

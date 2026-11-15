@@ -1,27 +1,29 @@
 <template>
   <style>
     #root { position: absolute; inset: 0; }
-    /* Lower third over your camera. */
-    #intro-card { position: absolute; left: 200px; bottom: 150px; padding-left: 28px; }
-    #intro-bar { position: absolute; left: 0; top: 6px; bottom: 6px; width: 5px; border-radius: 3px; background: var(--cheese); transform-origin: top; }
-    #intro-kicker { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.16em; color: var(--cheese); }
-    #intro-name { font-size: 72px; font-weight: 700; letter-spacing: -0.025em; margin-top: 6px; line-height: 1.05; }
-    #intro-team { font-size: 40px; color: var(--ink-2); margin-top: 6px; }
-    #intro-team b { color: var(--ink); font-weight: 600; }
+    /* Name tag over the camera: a light glass chip, so it reads on a white wall or a dark shirt. */
+    #intro-card { position: absolute; left: 192px; bottom: 196px; padding: 22px 34px 24px 30px; border-radius: 22px;
+      background: rgba(255, 255, 255, 0.82); border: 1px solid rgba(14, 19, 32, 0.08); box-shadow: 0 26px 60px -34px rgba(14, 19, 32, 0.55);
+      display: flex; align-items: center; gap: 22px; }
+    #intro-bar { width: 5px; align-self: stretch; border-radius: 3px; background: var(--cheese); transform-origin: top; }
+    #intro-name { font-size: 54px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.05; color: var(--ink); }
+    #intro-team { font-size: 30px; font-weight: 400; color: var(--ink-2); margin-top: 4px; }
   </style>
   <div id="root" data-composition-id="intro" data-width="1920" data-height="1080">
     <div id="intro-card" class="clip" data-start="0.2" data-duration="2.7">
       <div id="intro-bar"></div>
-      <div id="intro-kicker">NASA SPACE APPS 2026</div>
-      <div id="intro-name">Eduardo</div>
-      <div id="intro-team">Team <b>Code and Cheese</b></div>
+      <div>
+        <div id="intro-name">Eduardo</div>
+        <div id="intro-team">Code and Cheese · NASA Space Apps 2026</div>
+      </div>
     </div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-    tl.fromTo("#intro-bar", { scaleY: 0 }, { scaleY: 1, duration: 0.45, ease: "power3.out" }, 0.2);
-    tl.fromTo(["#intro-kicker", "#intro-name", "#intro-team"], { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, stagger: 0.1, ease: "power3.out" }, 0.3);
-    tl.to("#intro-card", { opacity: 0, x: -30, duration: 0.3, ease: "power2.in" }, 2.55);
+    tl.fromTo("#intro-card", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.25);
+    tl.fromTo("#intro-bar", { scaleY: 0 }, { scaleY: 1, duration: 0.45, ease: "power3.out" }, 0.4);
+    tl.fromTo(["#intro-name", "#intro-team"], { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, stagger: 0.08, ease: "power3.out" }, 0.45);
+    tl.to("#intro-card", { opacity: 0, y: 14, duration: 0.3, ease: "power2.in" }, 2.55);
     window.__timelines["intro"] = tl;
   </script>
 </template>

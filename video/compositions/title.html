@@ -1,23 +1,27 @@
 <template>
   <style>
     #root { position: absolute; inset: 0; }
-    #title-box { position: absolute; left: 1180px; top: 604px; width: 548px; height: 366px; padding: 34px 38px; display: flex; flex-direction: column; justify-content: center; }
-    #title-mark { font-size: 110px; font-weight: 800; letter-spacing: -0.055em; line-height: 0.95; }
+    /* Plays over the open dark layer: the twin fills the left, the name sits on the right. */
+    #title-box { position: absolute; left: 1120px; top: 0; width: 608px; height: 1080px; display: flex; flex-direction: column; justify-content: center; color: var(--on-space); }
+    #title-kicker { font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.16em; color: var(--on-space-2); }
+    #title-mark { font-size: 148px; font-weight: 600; letter-spacing: -0.055em; line-height: 0.95; margin-top: 14px; }
     #title-mark span { color: var(--cheese); }
-    #title-tag { font-size: 36px; line-height: 1.18; margin-top: 22px; font-weight: 500; }
-    #title-tag em { font-style: normal; color: var(--accent); }
+    #title-tag { font-size: 46px; line-height: 1.15; margin-top: 26px; font-weight: 300; }
+    #title-tag em { font-style: normal; font-weight: 500; color: #7fa6ff; }
   </style>
   <div id="root" data-composition-id="title" data-width="1920" data-height="1080">
-    <div id="title-box" class="clip" data-start="0" data-duration="4.8">
+    <div id="title-box" class="clip" data-start="0" data-duration="3.6">
+      <div id="title-kicker">DIGITAL HEALTH TWIN</div>
       <div id="title-mark"><span>cheese</span>OS</div>
-      <div id="title-tag">The health twin that works when <em>Earth goes quiet.</em></div>
+      <div id="title-tag">Your health twin.<br />It works <em>offline.</em></div>
     </div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-    tl.fromTo("#title-mark", { opacity: 0, y: 30, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.6, ease: "power4.out" }, 0.15);
-    tl.fromTo("#title-tag", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.6);
-    tl.to("#title-box", { opacity: 0, y: -16, duration: 0.25, ease: "power2.in" }, 4.5);
+    tl.fromTo("#title-kicker", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.2);
+    tl.fromTo("#title-mark", { opacity: 0, y: 34, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.65, ease: "power4.out" }, 0.3);
+    tl.fromTo("#title-tag", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.75);
+    tl.to("#title-box", { opacity: 0, x: 30, duration: 0.25, ease: "power2.in" }, 3.2);
     window.__timelines["title"] = tl;
   </script>
 </template>
