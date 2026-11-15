@@ -142,13 +142,13 @@ video/              Pitch video (HyperFrames)
 | Route | Screen |
 | --- | --- |
 | `/` | Now: report, alerts, protocol and the day's missions |
-| `/sinais` | Vital signs |
-| `/relatos` | Log and symptom timeline |
-| `/corpo` | 3D twin and per-region details |
-| `/treino` | Training: guided exercises counted by the camera |
-| `/ciencia` | NASA hazards, countermeasures and sources |
-| `/perfil` | Crew member profile |
-| `/ajustes` | AI engine, language, reminders, demo mode and data |
+| `/vitals` | Vital signs |
+| `/log` | Log and symptom timeline |
+| `/body` | 3D twin and per-region details |
+| `/training` | Training: guided exercises counted by the camera |
+| `/science` | NASA hazards, countermeasures and sources |
+| `/profile` | Crew member profile |
+| `/settings` | AI engine, language, reminders, demo mode and data |
 
 The health logic in `src/lib/health/` is made of pure functions with no React dependency. That is why it runs the same way in the app, in the Web Worker and in the tests.
 

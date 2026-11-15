@@ -36,7 +36,7 @@ export function SafetyAlerts() {
               <p className={`mt-1 text-sm leading-relaxed ${crit ? "text-white/90" : "text-ink-2"}`}>{copy.body}</p>
               <p className={`mt-1.5 text-xs ${crit ? "text-white/80" : "text-ink-2"}`}>
                 {m.noAi}{" "}
-                <Link href="/perfil" className="font-semibold underline-offset-2 hover:underline">
+                <Link href="/profile" className="font-semibold underline-offset-2 hover:underline">
                   {m.profileLink}
                 </Link>
               </p>

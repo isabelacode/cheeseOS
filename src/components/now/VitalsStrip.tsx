@@ -40,7 +40,7 @@ export function VitalsStrip({ vitals, plain = false }: { vitals: Vitals; plain?:
           return (
             <li key={key}>
               <Link
-                href={`/sinais?v=${key}`}
+                href={`/vitals?v=${key}`}
                 // The label replaces the tile's text for assistive tech, so it must carry the reading too.
                 aria-label={`${n.openVital(copy.label)} (${formatVital(s, vitals, locale)} ${s.unit}, ${n.vitalState[pos]})`}
                 className="flex h-full flex-col gap-1.5 rounded-2xl bg-sunken px-3 py-2.5 transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"

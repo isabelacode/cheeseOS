@@ -28,7 +28,7 @@ export function SpaceWhy({ finding, className = "" }: { finding: Finding; classN
         <ul className="flex flex-wrap gap-1" aria-label={c.hazardsLabel}>
           {hazards.map((h) => (
             <li key={h}>
-              <Link href={`/ciencia#${h}`} className="inline-flex min-h-6 items-center rounded-md bg-accent-soft px-1.5 text-xs font-medium text-accent-ink hover:underline">
+              <Link href={`/science#${h}`} className="inline-flex min-h-6 items-center rounded-md bg-accent-soft px-1.5 text-xs font-medium text-accent-ink hover:underline">
                 {c.hazards[h].name}
               </Link>
             </li>

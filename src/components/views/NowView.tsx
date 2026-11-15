@@ -58,7 +58,7 @@ export function NowView() {
             setDraft("");
           }}
         />
-        <LastReport logHref="/relatos" />
+        <LastReport logHref="/log" />
         {/* Exercise and streaks contradict "stop the activity". */}
         {s.status !== "critical" && <MissionsCard plain />}
         {s.status !== "critical" && <SleepCard />}

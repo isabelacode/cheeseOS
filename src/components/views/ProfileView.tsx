@@ -60,7 +60,7 @@ export function ProfileView() {
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accent-ink" aria-hidden />
         <span>
           {p.deviceNote}{" "}
-          <Link href="/ajustes" className="inline-flex min-h-11 items-center font-semibold text-accent-ink hover:underline sm:min-h-0">
+          <Link href="/settings" className="inline-flex min-h-11 items-center font-semibold text-accent-ink hover:underline sm:min-h-0">
             {p.settingsLink}
           </Link>
         </span>

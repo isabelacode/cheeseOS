@@ -10,10 +10,10 @@ import { REMINDER_MISSION, dueReminders, ensureSince, markFired, missionsToday, 
 
 const HREF: Record<ReminderId, string> = {
   checkin: "/#report",
-  vitals: "/sinais",
+  vitals: "/vitals",
   exercise: "/",
   hydration: "/",
-  medication: "/perfil",
+  medication: "/profile",
 };
 
 /** The screen a reminder points to, without the hash. */

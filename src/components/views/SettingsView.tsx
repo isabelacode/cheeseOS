@@ -47,7 +47,7 @@ function ProfileLink() {
   const { profile } = useCrewSession();
   return (
     <Link
-      href="/perfil"
+      href="/profile"
       className="flex min-h-16 items-center gap-3 rounded-3xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken sm:px-5"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-ink">
@@ -67,7 +67,7 @@ function ProfileLink() {
 function ScienceLink() {
   const c = scienceMessages[useLocale()];
   return (
-    <Link href="/ciencia" className="flex min-h-16 items-center gap-3 rounded-3xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken sm:px-5">
+    <Link href="/science" className="flex min-h-16 items-center gap-3 rounded-3xl bg-surface p-4 shadow-card transition-colors hover:bg-sunken sm:px-5">
       <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-ink">
         <Orbit className="size-5" aria-hidden />
       </span>

@@ -26,25 +26,25 @@ type PageKey = keyof Pick<Messages["nav"], "vitals" | "log" | "body" | "profile"
  */
 const AREAS: { href: string; key: AreaKey; Icon: LucideIcon; pages: { href: string; key: PageKey }[] }[] = [
   { href: "/", key: "now", Icon: Mic, pages: [] },
-  { href: "/treino", key: "trainer", Icon: Dumbbell, pages: [] },
+  { href: "/training", key: "trainer", Icon: Dumbbell, pages: [] },
   {
-    href: "/relatos",
+    href: "/log",
     key: "history",
     Icon: Activity,
     pages: [
-      { href: "/relatos", key: "log" },
-      { href: "/sinais", key: "vitals" },
-      { href: "/corpo", key: "body" },
+      { href: "/log", key: "log" },
+      { href: "/vitals", key: "vitals" },
+      { href: "/body", key: "body" },
     ],
   },
   {
-    href: "/perfil",
+    href: "/profile",
     key: "me",
     Icon: UserRound,
     pages: [
-      { href: "/perfil", key: "profile" },
-      { href: "/ajustes", key: "settings" },
-      { href: "/ciencia", key: "science" },
+      { href: "/profile", key: "profile" },
+      { href: "/settings", key: "settings" },
+      { href: "/science", key: "science" },
     ],
   },
 ];
@@ -194,7 +194,7 @@ function TopBar() {
           </Link>
         )}
         <Link
-          href="/ajustes"
+          href="/settings"
           aria-label={t.nav.privacyLink}
           title={t.nav.privacyLink}
           className={`flex min-h-11 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-semibold shadow-card transition-colors hover:bg-sunken sm:min-h-0 ${privacy.className}`}
@@ -204,7 +204,7 @@ function TopBar() {
         </Link>
         {demo && (
           <Link
-            href="/ajustes#demo"
+            href="/settings#demo"
             title={demoCopy.badgeTitle}
             aria-label={demoCopy.badgeTitle}
             className="rounded-full bg-mild-soft px-2.5 py-1 text-[11px] font-bold tracking-wide text-mild uppercase"
