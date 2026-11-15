@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/8723f84e-4a90-463c-803c-78e6e2cb4699
+
 <div align="center">
 
 <img src="public/brand/mascot.webp" alt="cheeseOS mascot" width="140" />
@@ -19,7 +23,7 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 
 <div align="center">
 
-[![Watch the cheeseOS explainer video on YouTube](video-explainer/thumbnail.png)](https://www.youtube.com/watch?v=sB1tgoPT1Wg)
+[![Watch the cheeseOS explainer video on YouTube](video-explainer/thumbnail.png)](https://github.com/user-attachments/assets/8723f84e-4a90-463c-803c-78e6e2cb4699)
 
 </div>
 
