@@ -36,6 +36,7 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 - [Tests](#tests)
 - [Videos](#videos)
 - [Sources](#sources)
+- [License](#license)
 
 ## How it works
 
@@ -76,7 +77,7 @@ The core principle is **local rules first**. Symptom recognition, red flags (car
 You need Node.js 20.9 or newer.
 
 ```bash
-git clone git@github.com:isabelacode/cheeseOS.git
+git clone https://github.com/isabelacode/cheeseOS.git
 cd cheeseOS
 npm install
 npm run dev
@@ -176,7 +177,7 @@ There are 189 tests in 14 files, covering symptom recognition, safety alerts, al
 
 **Explainer.** [video-explainer/cheeseos-explainer.mp4](video-explainer/cheeseos-explainer.mp4) walks through how the app works, with narration and sound. Subtitles are available in [English](video-explainer/cheeseos-explainer.en.srt) and [Portuguese](video-explainer/cheeseos-explainer.pt-BR.srt). The source is in [video-explainer/](video-explainer/).
 
-**Pitch.** The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md).
+**Pitch.** The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md). The presenter's recording is not in the repository: to render it, save your own take as `video/assets/me.mp4`.
 
 ```bash
 cd video            # or: cd video-explainer
@@ -191,6 +192,12 @@ npm run render   # render
 - NASA HRP: [Human Research Roadmap](https://humanresearchroadmap.nasa.gov/) and [Evidence Report: SANS](https://humanresearchroadmap.nasa.gov/evidence/reports/SANS%20EB%202022%20FINAL_8-15-22.pdf)
 - NASA OCHMO: [NASA-STD-3001 Vol. 1 Rev. C](https://standards.nasa.gov/sites/default/files/standards/NASA/C/nasa-std-3001-vol-1-rev-c-signature.pdf) and [Technical Brief: Radiation Protection](https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf)
 - NIH MedlinePlus: [Vital signs](https://medlineplus.gov/ency/article/002341.htm) and [Pulse Oximetry](https://medlineplus.gov/lab-tests/pulse-oximetry/)
+
+## License
+
+The code is released under the [MIT License](LICENSE).
+
+Third-party media in the videos keeps its own license: the music is "space music ambient" by evanjones4 ([CC0](https://freesound.org/s/243998/)), and the sound effects are credited in [video/.media/audio/sfx/CREDITS.md](video/.media/audio/sfx/CREDITS.md).
 
 ---
 

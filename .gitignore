@@ -45,3 +45,6 @@ next-env.d.ts
 
 # blender backups
 *.blend1
+
+# local Blender scratch file, not part of the project
+/assets/scratch.blend

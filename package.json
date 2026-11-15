@@ -2,6 +2,7 @@
   "name": "cheese-os",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "pose:assets": "node scripts/copy-pose-wasm.mjs",
     "predev": "npm run pose:assets",
