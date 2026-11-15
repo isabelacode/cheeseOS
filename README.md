@@ -28,6 +28,7 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 ## Contents
 
 - [How it works](#how-it-works)
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Getting started](#getting-started)
 - [Artificial intelligence](#artificial-intelligence)
@@ -48,6 +49,16 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 | **4. Act** | The app shows the next steps of the onboard protocol, with no connection needed. |
 
 The core principle is **local rules first**. Symptom recognition, red flags (cardiac, decompression, hypoxia, radiation and others), the cross-check against the allergies in the profile, and the critical banner all run on the device, instantly and without AI. The AI only complements the answer and is never required for safety.
+
+## Screenshots
+
+![The body map, with the reported symptoms lit up on the 3D twin](docs/screenshots/en/desktop-03-body-map.png)
+
+| Now | Body | Vitals | Training |
+| --- | --- | --- | --- |
+| ![Now screen with active symptoms and the protocol steps](docs/screenshots/en/mobile-02-now-symptoms.png) | ![Body map on a phone](docs/screenshots/en/mobile-03-body-map.png) | ![Vital signs charts](docs/screenshots/en/mobile-04-vitals.png) | ![Guided exercise counted by the camera](docs/screenshots/en/mobile-05-trainer.png) |
+
+Every screen, on desktop and on mobile, is in [docs/screenshots/](docs/screenshots/), in [English](docs/screenshots/en/) and in [Portuguese](docs/screenshots/pt/).
 
 ## Features
 
@@ -141,10 +152,13 @@ src/
 │   ├── session/    Session state and persistence
 │   ├── crew/       Crew member profile
 │   ├── llm/        Browser models and OpenRouter client
+│   ├── text/       Urgency cues in the report text
 │   └── i18n/       Portuguese and English copy
 └── workers/        Web Worker that runs Whisper and the LLM
 assets/             3D model source (Blender)
-public/twin/        Exported 3D model (GLB)
+public/twin/        Exported 3D models (GLB)
+scripts/            Build helpers (pose assets, exercise clips)
+docs/screenshots/   Screenshots of every screen, in both languages
 video/              Pitch video (HyperFrames)
 video-explainer/    Explainer video (HyperFrames)
 ```
@@ -177,7 +191,7 @@ There are 189 tests in 14 files, covering symptom recognition, safety alerts, al
 
 **Explainer.** [video-explainer/cheeseos-explainer.mp4](video-explainer/cheeseos-explainer.mp4) walks through how the app works, with narration and sound. Subtitles are available in [English](video-explainer/cheeseos-explainer.en.srt) and [Portuguese](video-explainer/cheeseos-explainer.pt-BR.srt). The source is in [video-explainer/](video-explainer/).
 
-**Pitch.** The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md). The presenter's recording is not in the repository: to render it, save your own take as `video/assets/me.mp4`.
+**Pitch.** The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md), with subtitles in [English](video/cheeseos-pitch.en.srt) and [Portuguese](video/cheeseos-pitch.pt-BR.srt). The presenter's recording is not in the repository: to render it, save your own take as `video/assets/me.mp4`.
 
 ```bash
 cd video            # or: cd video-explainer
