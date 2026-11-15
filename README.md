@@ -19,9 +19,7 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 
 <div align="center">
 
-[![Watch the cheeseOS explainer video](video-explainer/thumbnail.png)](video-explainer/cheeseos-explainer.mp4)
-
-**[Watch the explainer video](video-explainer/cheeseos-explainer.mp4)** (narrated, with sound). Subtitles: [English](video-explainer/cheeseos-explainer.en.srt) · [Português](video-explainer/cheeseos-explainer.pt-BR.srt)
+[![Watch the cheeseOS explainer video on YouTube](video-explainer/thumbnail.png)](https://www.youtube.com/watch?v=sB1tgoPT1Wg)
 
 </div>
 
@@ -189,7 +187,7 @@ There are 189 tests in 14 files, covering symptom recognition, safety alerts, al
 
 ## Videos
 
-**Explainer.** [video-explainer/cheeseos-explainer.mp4](video-explainer/cheeseos-explainer.mp4) walks through how the app works, with narration and sound. Subtitles are available in [English](video-explainer/cheeseos-explainer.en.srt) and [Portuguese](video-explainer/cheeseos-explainer.pt-BR.srt). The source is in [video-explainer/](video-explainer/).
+**Explainer.** [Watch it on YouTube](https://www.youtube.com/watch?v=sB1tgoPT1Wg). It walks through how the app works, with narration and sound; the file is also in the repository at [video-explainer/cheeseos-explainer.mp4](video-explainer/cheeseos-explainer.mp4). Subtitles are available in [English](video-explainer/cheeseos-explainer.en.srt) and [Portuguese](video-explainer/cheeseos-explainer.pt-BR.srt). The source is in [video-explainer/](video-explainer/).
 
 **Pitch.** The [video/](video/) folder holds the project's 29-second video, made with HyperFrames. The script is in [video/ROTEIRO.md](video/ROTEIRO.md), with subtitles in [English](video/cheeseos-pitch.en.srt) and [Portuguese](video/cheeseos-pitch.pt-BR.srt). The presenter's recording is not in the repository: to render it, save your own take as `video/assets/me.mp4`.
 
