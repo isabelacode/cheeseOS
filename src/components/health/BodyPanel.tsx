@@ -64,7 +64,7 @@ export function BodyPanel({
           femininity={profile.sex === "feminino" ? 1 : profile.sex === "masculino" ? 0 : 0.5}
         />
       </div>
-      <div className="pointer-events-none absolute top-4 left-4 max-w-[260px]">
+      <div className="pointer-events-none absolute top-4 left-4 max-w-[min(260px,calc(100%-10rem))]">
         <div className="pointer-events-auto rounded-2xl bg-surface/90 px-4 py-3 shadow-card backdrop-blur-sm" aria-live="polite">
           {focus ? (
             <>

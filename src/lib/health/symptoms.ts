@@ -47,7 +47,7 @@ const RULES: SymptomRule[] = [
   {
     id: "chest_pain",
     patterns: {
-      pt: [/dor( \w+)? (no|de) peito/, /aperto( \w+)? no peito/, /peito (doendo|apertado|doi)/, /pontada( \w+)? no peito/],
+      pt: [/dor( \w+)? (no|de) peito/, /(aperto|pressao)( \w+)? no peito/, /peito (doendo|apertado|doi)/, /pontada( \w+)? no peito/],
       en: [/chest pain/, /pain in (my |the )?chest/, /chest (hurts|is hurting|is tight|feels tight|tightness)/, /tight(ness)?( \w+)? (in|on) (my |the )?chest/, /pressure (in|on) (my |the )?chest/],
     },
     regions: ["torso"],
@@ -73,7 +73,11 @@ const RULES: SymptomRule[] = [
   },
   {
     id: "bleeding",
-    patterns: { pt: [/sangr/, /sangue/], en: [/bleed/, /blood/] },
+    patterns: {
+      // Not a lab test or a blood-pressure reading.
+      pt: [/sangr/, /(?<!(exame|exames|coleta|amostra|teste|doacao|doar) de )sangue(?! (para|pra) (exame|coleta|teste))/],
+      en: [/bleed/, /(?<!(draw|drew|drawn|draws|drawing|give|gave|giving|donate|donated) )blood(?! (pressure|tests?|work|sugar|draws?|samples?|type|oxygen|counts?|panel|glucose|levels?))/],
+    },
     regions: ["head"],
     severity: 3,
   },
@@ -158,7 +162,7 @@ const RULES: SymptomRule[] = [
         /dor retro ?orbit/,
       ],
       en: [
-        /(pain|ache|aching|pressure)( \w+){0,3} behind (my |the )?eyes?/,
+        /\b(pain|ache|aching|pressure)( \w+){0,3} behind (my |the )?eyes?/,
         /behind (my |the )?eyes?( \w+){0,2} (hurts?|aches?|is hurting|are hurting)/,
         /eyes? (hurts?|aches?)( \w+){0,2} when (i )?(move|moving|look)/,
         /pain (when|on) moving (my )?eyes/,
@@ -479,7 +483,7 @@ const RULES: SymptomRule[] = [
   {
     id: "arm_pain",
     patterns: {
-      pt: [/dor( \w+)? no braco/, /(braco|antebraco|mao)( \w+){0,2} (esta |ta )?(doendo|doi|dolorid)/, /(vai|irradia|desce|corre)( \w+){0,2} (pro|para o|ate o|no) (braco|ombro)/, /dor na mao/],
+      pt: [/dor( \w+)? no braco/, /(braco|antebraco|mao)( \w+){0,2} (esta |ta )?(doendo|doi|dolorid)/, /(vai|indo|irradia\w*|desce\w*|corre\w*)( \w+){0,2} (pro|para o|ate o|no) (braco|ombro)/, /dor na mao/],
       en: [/(arm|forearm|hand)( \w+){0,2} (hurts|is hurting|aches|is aching|is sore)/, /pain in (my |the )?((left|right) )?(arm|forearm|hand)/, /(arm|forearm) pain/, /(radiat|spread|going|goes|moving|shoot)\w*( \w+){0,3} (arm|shoulder)/],
     },
     regions: { limb: "arm" },
@@ -733,6 +737,8 @@ interface Refiners {
   trauma: RegExp;
   /** Self-harm language: always escalate. */
   crisis: RegExp;
+  /** The left arm or shoulder named anywhere (chest pain radiating there). */
+  leftArm: RegExp;
   footWords: RegExp;
 }
 
@@ -780,6 +786,7 @@ const REFINERS: Record<Locale, Refiners> = {
     eva: /caminhada espacial|\beva\b|traje|saida (extraveicular|espacial)|eclusa|airlock|despressuriz|pre ?respira|mudanca de pressao/,
     radiation: /radiacao|radioativ|tempestade solar|evento solar|erupcao solar|particulas solares|dosimetro/,
     trauma: /\bcai\b|\bcaiu\b|queda|bati\b|batida|pancada|impacto|torci|torceu|esmag|trombei|colidi/,
+    leftArm: /(braco|antebraco|ombro|mao) esquerd/,
     crisis: /quero morrer|me matar|tirar (a )?minha (propria )?vida|acabar com (a minha vida|tudo)|nao quero mais viver/,
     handWords: /\bmaos?\b|palma|polegar|dedos? da mao/,
     footWords: /\bpes?\b|dedos? do pe|dedao|calcanhar|tornozelo/,
@@ -826,6 +833,7 @@ const REFINERS: Record<Locale, Refiners> = {
     eva: /spacewalk|\beva\b|suit|airlock|depressuri|pre ?breath|pressure change/,
     radiation: /radiation|radioactive|solar (storm|event|flare|particle)|dosimeter/,
     trauma: /\bfell\b|\bfall\b|\bhit\b|bumped|banged|struck|twisted|crushed|impact|collided/,
+    leftArm: /left (arm|forearm|shoulder|hand)/,
     crisis: /want to die|kill myself|end (it all|my life)|suicid|don t want to (live|be alive)/,
     handWords: /hands?|fingers?|thumbs?|palms?/,
     footWords: /foot|feet|toes?|heels?|soles?/,
@@ -836,6 +844,8 @@ interface Grammar {
   intensifiers: RegExp;
   softeners: RegExp;
   negation: RegExp;
+  /** Phrases with a negation word that do not deny the symptom ("não aguento mais essa dor"). */
+  notNegation: RegExp;
   resolved: RegExp;
   allGood: RegExp;
   clauseBreak: RegExp;
@@ -847,7 +857,8 @@ const GRAMMAR: Record<Locale, Grammar> = {
   pt: {
     intensifiers: /\b(muito|muita|forte|intens|insuportavel|demais|pior|horrivel|terrivel)/,
     softeners: /\b(leve|levinho|pouco|pouquinho|fraco|fraquinha)/,
-    negation: /\b(nao|nem|sem|nenhum|nenhuma)\b/,
+    negation: /\b(nao|nem|sem|nenhum|nenhuma|nunca|jamais)\b/,
+    notNegation: /\bnao (aguento|suporto|para|paro|passa|melhora)\b/g,
     resolved: /\b(passou|melhorou|sumiu|parou|acabou|ja (nao|foi))\b/,
     allGood: /\b(estou|to|tou|me sinto|sinto|tudo) (bem|otim|normal|tranquil|beleza)/,
     clauseBreak: /\b(?:mas|porem|tambem|alem disso|e)\b|[.;!?]/,
@@ -857,7 +868,8 @@ const GRAMMAR: Record<Locale, Grammar> = {
   en: {
     intensifiers: /\b(very|really|severe|intense|unbearable|worse|worst|terrible|awful|strong|so bad|a lot)\b/,
     softeners: /\b(mild|slight|slightly|a bit|a little|minor)\b/,
-    negation: /\b(no|not|don t|dont|never|without|isn t|aren t)\b/,
+    negation: /\b(no|not|don t|dont|never|without|isn t|aren t|didn t|doesn t|haven t|hasn t|wasn t|weren t)\b/,
+    notNegation: /\b(can t|cannot|won t|doesn t|don t) (stop|take|bear|stand)\b/g,
     resolved: /\b(gone|went away|better|stopped|passed|no longer|is over|eased)\b/,
     allGood: /\b(i m|im|i am|i feel|feeling|all) (fine|good|great|ok|okay|well|normal)\b/,
     clauseBreak: /\b(?:but|however|also|plus|and)\b|[.;!?]/,
@@ -874,6 +886,25 @@ export function normalize(text: string): string {
     .replace(/[^\w\s₂]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Speech recognition often mangles the short word "dor" ("door no braço",
+ * "dorno pé", "condor no pé", "do ornum braço"). Repair those before matching
+ * so a voice report still yields its symptom, and fold "num/em um" into the
+ * "no/na" the rules are written with. Expects normalized text.
+ */
+export function repairTranscriptPt(text: string): string {
+  return text
+    .replace(/\bcondor\b/g, "com dor")
+    .replace(/\b(?:door|douro|dour|dorr)\b/g, "dor")
+    .replace(/\bdo or ?(no|na|nos|nas|num|numa)\b/g, "dor $1")
+    .replace(/\bdor(no|na|nos|nas|num|numa)\b/g, "dor $1")
+    // Rules are written with "no/na"; "dor num braço", "dor em uma perna" mean the same.
+    .replace(/\b(?:num|em um)\b/g, "no")
+    .replace(/\b(?:numa|em uma)\b/g, "na")
+    .replace(/\b(?:nuns|em uns)\b/g, "nos")
+    .replace(/\b(?:numas|em umas)\b/g, "nas");
 }
 
 function sideOf(clause: string, g: Grammar): Side {
@@ -953,7 +984,7 @@ function clampSeverity(n: number): Severity {
 export function extractSymptoms(raw: string, locale: Locale, now = Date.now()): Extraction {
   const g = GRAMMAR[locale];
   const r = REFINERS[locale];
-  const text = normalize(raw);
+  const text = locale === "pt" ? repairTranscriptPt(normalize(raw)) : normalize(raw);
   const found = new Map<SymptomId, Finding>();
   const resolved = new Set<SymptomId>();
 
@@ -967,7 +998,9 @@ export function extractSymptoms(raw: string, locale: Locale, now = Date.now()): 
       const match = rule.patterns[locale].map((p) => clause.match(p)).find(Boolean);
       return match && match.index !== undefined ? [{ rule, index: match.index }] : [];
     });
-    const superseded = new Set(matched.flatMap((m) => m.rule.supersedes ?? []));
+    const resolvedHere = isResolved(clause, g);
+    // A negated specific symptom ("headache without pain behind the eyes") must not hide the generic one.
+    const superseded = new Set(matched.filter((m) => resolvedHere || !negatedBefore(clause, m.index, g)).flatMap((m) => m.rule.supersedes ?? []));
 
     for (const { rule, index } of matched) {
       if (superseded.has(rule.id)) continue;
@@ -980,12 +1013,11 @@ export function extractSymptoms(raw: string, locale: Locale, now = Date.now()): 
       else if (id === "nausea" && r.motion.test(text)) id = "space_motion_sickness";
       const variant = VARIANTS[id];
 
-      const before = clause.slice(Math.max(0, index - 24), index);
-      if (g.resolved.test(clause)) {
+      if (resolvedHere) {
         familyOf(id).forEach((x) => resolved.add(x));
         continue;
       }
-      if (g.negation.test(before)) continue;
+      if (negatedBefore(clause, index, g)) continue;
 
       let severity = (variant && id !== rule.id ? variant.severity : rule.severity) as number;
       if (g.intensifiers.test(clause)) severity += 1;
@@ -1026,8 +1058,30 @@ export function extractSymptoms(raw: string, locale: Locale, now = Date.now()): 
   return {
     findings: [...found.values()],
     resolved: [...resolved],
-    allGood: found.size === 0 && g.allGood.test(text),
+    allGood: found.size === 0 && saysAllGood(text, g),
   };
+}
+
+/** A negation word in the few words before `index` ("sem dor", "no fever"), ignoring idioms like "não aguento mais". */
+function negatedBefore(clause: string, index: number, g: Grammar): boolean {
+  const before = clause.slice(Math.max(0, index - 24), index).replace(g.notNegation, " ");
+  return g.negation.test(before);
+}
+
+/** "passou", "is gone": but not "não passou", "isn't better", "hasn't gone away". */
+function isResolved(clause: string, g: Grammar): boolean {
+  const m = clause.match(g.resolved);
+  if (!m || m.index === undefined) return false;
+  const lastWords = clause.slice(0, m.index).trim().split(" ").slice(-2).join(" ");
+  return !g.negation.test(lastWords);
+}
+
+/** "estou bem", "I'm fine": but not "não estou bem", "I'm not feeling well". */
+function saysAllGood(text: string, g: Grammar): boolean {
+  const m = text.match(g.allGood);
+  if (!m || m.index === undefined) return false;
+  // Only a negation right before counts: "sem febre, estou bem" is still all good.
+  return !new RegExp(`(?:${g.negation.source})\\s*$`).test(text.slice(0, m.index));
 }
 
 /** Combinations of findings that call for a specific protocol. */
@@ -1072,6 +1126,8 @@ function applyRedFlags(found: Map<SymptomId, Finding>, text: string, r: Refiners
   const chest = found.get("chest_pain");
   const arm = first(["arm_pain", "numbness", "hand_numbness", "hand_pain", "joint_pain"]);
   if (chest && arm?.regions.includes("leftArm")) flag(arm, "cardiac");
+  // "dor no peito e no braço esquerdo": the arm clause has no pain word of its own.
+  else if (chest && r.leftArm.test(text)) flag(chest, "cardiac");
 
   // Headache or a stiff neck with fever: rule out meningitis.
   const stiff = found.get("stiff_neck");

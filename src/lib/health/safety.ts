@@ -96,11 +96,14 @@ export interface AllergyProfile {
 
 const ALL_CLASSES = Object.keys(CLASS_WORDS) as DrugClass[];
 
+/** "Nenhuma", "none", "NKDA": the field says there is no allergy. */
+const NO_ALLERGY = /^(nenhum|nenhuma|nada|nao|nao tenho|nao possuo|nao ha|sem|sem alergias?( conhecidas?)?|desconhecid[oa]s?|none|nil|no|na|n a|nka|nkda|no known( drug)? allergies|no allergies)$/;
+
 export function allergyProfile(allergies: string): AllergyProfile {
   const p: AllergyProfile = { drugs: new Map(), classes: new Map(), terms: [] };
   for (const raw of allergies.split(/[,;/\n]|\s+e\s+|\s+and\s+/i)) {
     const item = raw.trim();
-    if (!item) continue;
+    if (!item || NO_ALLERGY.test(mapNormalize(item).text)) continue;
     const found = mentionsIn(item, ALL_CLASSES);
     if (!found.length) {
       const norm = mapNormalize(item).text;
@@ -157,14 +160,16 @@ export function allergensIn(text: string, p: AllergyProfile): AllergenMatch[] {
   const add = (m: AllergenMatch) => {
     if (!out.some((x) => same(x.mentioned, m.mentioned) && same(x.allergen, m.allergen))) out.push(m);
   };
-  for (const m of mentionsIn(text, CROSS_REACTIVE)) {
+  // Cross-reactive groups always; other groups only when the allergy list names them directly.
+  for (const m of mentionsIn(text, [...new Set([...CROSS_REACTIVE, ...p.classes.keys()])])) {
     if (m.drug) {
       const a = p.drugs.get(m.drug.id);
       if (a) {
         add({ mentioned: m.word, allergen: a.word, relation: relationOf(m.kind, a.kind, m.word, a.word), drugId: m.drug.id });
         continue;
       }
-      const cls = m.drug.classes.find((c) => CROSS_REACTIVE.includes(c) && p.classes.has(c));
+      // p.classes only holds groups named directly or inferred through a cross-reactive drug.
+      const cls = m.drug.classes.find((c) => p.classes.has(c));
       if (cls) add({ mentioned: m.word, allergen: p.classes.get(cls)!.word, relation: "group", drugId: m.drug.id, cls });
     } else if (m.cls && p.classes.has(m.cls)) {
       const a = p.classes.get(m.cls)!;
@@ -189,6 +194,11 @@ function kitConflicts(advice: string, p: AllergyProfile): AllergenMatch[] {
       const d = DRUGS.find((x) => x.id === id);
       if (d?.classes.includes(m.cls) && !out.some((x) => x.allergen === a.word)) out.push({ mentioned: m.word, allergen: a.word, relation: "kit", drugId: id, cls: m.cls });
     }
+    // An allergy written as a group ("AINEs"): any kit item of the advised kind may belong to it.
+    for (const [cls, a] of p.classes) {
+      const advised = m.cls;
+      if (DRUGS.some((d) => d.classes.includes(cls) && d.classes.includes(advised)) && !out.some((x) => x.allergen === a.word)) out.push({ mentioned: m.word, allergen: a.word, relation: "kit", cls });
+    }
   }
   const latex = p.drugs.get("latex");
   const proc = mapNormalize(advice).text.match(LATEX_PROCEDURE);
@@ -199,7 +209,14 @@ function kitConflicts(advice: string, p: AllergyProfile): AllergenMatch[] {
 /* ---------- Alerts ---------- */
 
 /** Words that mean the drug was actually taken, not just mentioned. */
-const TAKEN = /\b(tomei|tomou|usei|apliquei|ingeri|engoli|tomando|took|taken|taking|used|swallowed|had)\b/;
+const TAKEN = /\b(tomei|tomou|usei|apliquei|ingeri|engoli|tomando|took|taken|taking|used|swallowed|had)\b/g;
+/** A negation right before the intake word: "não tomei", "haven't taken", "never took". */
+const NOT_TAKEN = /\b(nao|nem|nunca|jamais|not|never|haven t|hasn t|didn t|wasn t)( \w+)?\s*$/;
+
+function saysTaken(norm: string) {
+  for (const m of norm.matchAll(TAKEN)) if (!NOT_TAKEN.test(norm.slice(0, m.index))) return true;
+  return false;
+}
 
 /** Symptoms that can be an allergic reaction. */
 const REACTION: SymptomId[] = ["skin_rash", "dyspnea", "fainting", "dizziness", "nausea", "cough", "sore_throat"];
@@ -260,7 +277,7 @@ export function safetyAlerts({ allergies, medications, entries, findings, advice
     if (e.source === "action" || !e.text || now - e.at > REPORT_WINDOW) continue;
     const matches = allergensIn(e.text, p);
     if (!matches.length) continue;
-    const taken = TAKEN.test(mapNormalize(e.text).text);
+    const taken = saysTaken(mapNormalize(e.text).text);
     if (taken && (!exposure || e.at > exposure.at)) exposure = e;
     out.push({ key: `exp-${e.id}`, kind: "exposure", level: taken ? 3 : 2, matches, taken, entryId: e.id, at: e.at });
   }

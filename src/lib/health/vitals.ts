@@ -87,7 +87,10 @@ export function targetVitals(
   /** Multiplies the fade-out time constants; demo mode passes DEMO_SPEED.recoveryScale. */
   recoveryScale = 1,
 ): Vitals {
+  // A missing or corrupt profile value (e.g. resting heart rate) must not turn every reading into NaN.
   const t = { ...base };
+  for (const key of Object.keys(t) as (keyof Vitals)[]) if (!Number.isFinite(t[key])) t[key] = BASELINE[key];
+  base = t;
   const active = new Set(findings.map((f) => f.id));
   let feverTemp = 0;
   const add = (f: Finding, weight: (k: keyof Vitals) => number) => {
@@ -132,7 +135,7 @@ export function kickVitals(current: Vitals, target: Vitals, fast = false): Vital
 export function stepVitals(current: Vitals, target: Vitals, fast = false): Vitals {
   // Demo mode: every vital covers ~55% of the gap per second (in range within ~5 s).
   const ease = (a: number, b: number, k: number, noise: number) =>
-    a + (b - a) * (fast ? Math.max(k, DEMO_SPEED.ease) : k) + (Math.random() - 0.5) * noise;
+    !Number.isFinite(a) ? b : a + (b - a) * (fast ? Math.max(k, DEMO_SPEED.ease) : k) + (Math.random() - 0.5) * noise;
   return {
     heartRate: ease(current.heartRate, target.heartRate, 0.12, 1.6),
     spo2: Math.min(100, ease(current.spo2, target.spo2, 0.1, 0.25)),

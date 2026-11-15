@@ -8,11 +8,14 @@ export type AiRequest =
   | { type: "loadLlm"; model: string }
   | { type: "unloadLlm" }
   | { type: "transcribe"; id: string; audio: Float32Array; locale: Locale }
-  | { type: "feedback"; id: string; context: string; locale: Locale };
+  | { type: "feedback"; id: string; context: string; locale: Locale }
+  /** Stops an in-flight feedback generation (handled out of queue order). */
+  | { type: "cancel"; id: string };
 
 export type AiResponse =
   | { type: "device"; device: "webgpu" | "wasm" }
-  | { type: "status"; model: ModelKey; state: ModelState; error?: string }
+  /** `id` names the model the status is about (for the LLM, the requested model id). */
+  | { type: "status"; model: ModelKey; state: ModelState; error?: string; id?: string }
   | { type: "progress"; model: ModelKey; ratio: number }
   | { type: "transcript"; id: string; text: string }
   | { type: "feedback"; id: string; text: string }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useRef, type ComponentRef } from "react";
+import { Component, Suspense, useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -45,12 +45,48 @@ function HotspotProjector({ onProject }: { onProject: (r: Region, x: number, y: 
   return null;
 }
 
+/** Shown instead of the canvas when WebGL is unavailable or the model fails to load. */
+const UNAVAILABLE = {
+  pt: "A visualização 3D não está disponível neste dispositivo.",
+  en: "The 3D view isn't available on this device.",
+} as const;
+
+class SceneBoundary extends Component<{ fallback: ReactNode; onError: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+/** Render only while the twin is on screen: an offscreen canvas would otherwise redraw 60 times a second. */
+function useOnScreen<T extends Element>() {
+  const ref = useRef<T>(null);
+  const [onScreen, setOnScreen] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return [ref, onScreen] as const;
+}
+
 /** No remote HDRIs or fonts: the scene must render with zero network access. */
 export default function TwinScene(props: TwinSceneProps) {
   const refs = useRef<Partial<Record<Region, HTMLButtonElement | null>>>({});
   const { severity, labels, selected, hovered, onSelect, onHover } = props;
   const t = useT();
-  const b = bodyMessages[useLocale()];
+  const locale = useLocale();
+  const b = bodyMessages[locale];
+  const [box, onScreen] = useOnScreen<HTMLDivElement>();
+  const [failed, setFailed] = useState(false);
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
 
   const project = useCallback((r: Region, x: number, y: number, visible: boolean, centerX: number) => {
@@ -65,79 +101,90 @@ export default function TwinScene(props: TwinSceneProps) {
   }, []);
 
   return (
-    <div className="relative h-full w-full">
-      <Canvas
-        shadows="percentage"
-        dpr={[1, 2]}
-        camera={{ position: [0, 0.9, 3.6], fov: 32 }}
-        onPointerMissed={() => onSelect(null)}
-        gl={{ antialias: true }}
+    <div ref={box} className="relative h-full w-full">
+      <SceneBoundary
+        onError={() => setFailed(true)}
+        fallback={<p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-ink-2">{UNAVAILABLE[locale]}</p>}
       >
-        <hemisphereLight args={["#ffffff", "#cfd6e2", 1]} />
-        <directionalLight position={[2.5, 4, 3]} intensity={1.7} castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-3, 2, -2]} intensity={0.6} color="#dbe6ff" />
-        <group position={BODY_OFFSET.toArray()}>
-          <Suspense fallback={null}>
-            <CrewModel
-              severity={props.severity}
-              selected={selected}
-              hovered={hovered}
-              onSelect={onSelect}
-              onHover={onHover}
-              respiration={props.respiration}
-              femininity={props.femininity}
-            />
-          </Suspense>
-          <ContactShadows position={[0, -0.02, 0]} opacity={0.28} scale={4} blur={2.6} far={2} />
-        </group>
-        <OrbitControls
-          ref={controls}
-          target={[0, 0.05, 0]}
-          enablePan={false}
-          minDistance={1.8}
-          maxDistance={5}
-          minPolarAngle={Math.PI * 0.2}
-          maxPolarAngle={Math.PI * 0.62}
-        />
-        <HotspotProjector onProject={project} />
-      </Canvas>
+        <Canvas
+          frameloop={onScreen ? "always" : "never"}
+          shadows="percentage"
+          dpr={[1, 2]}
+          camera={{ position: [0, 0.9, 3.6], fov: 32 }}
+          onPointerMissed={() => onSelect(null)}
+          gl={{ antialias: true }}
+        >
+          <hemisphereLight args={["#ffffff", "#cfd6e2", 1]} />
+          <directionalLight position={[2.5, 4, 3]} intensity={1.7} castShadow shadow-mapSize={[1024, 1024]} />
+          <directionalLight position={[-3, 2, -2]} intensity={0.6} color="#dbe6ff" />
+          <group position={BODY_OFFSET.toArray()}>
+            <Suspense fallback={null}>
+              <CrewModel
+                severity={props.severity}
+                selected={selected}
+                hovered={hovered}
+                onSelect={onSelect}
+                onHover={onHover}
+                respiration={props.respiration}
+                femininity={props.femininity}
+              />
+            </Suspense>
+            <ContactShadows position={[0, -0.02, 0]} opacity={0.28} scale={4} blur={2.6} far={2} />
+          </group>
+          <OrbitControls
+            ref={controls}
+            target={[0, 0.05, 0]}
+            enablePan={false}
+            minDistance={1.8}
+            maxDistance={5}
+            minPolarAngle={Math.PI * 0.2}
+            maxPolarAngle={Math.PI * 0.62}
+          />
+          <HotspotProjector onProject={project} />
+        </Canvas>
+      </SceneBoundary>
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {REGIONS.map((r) => {
-          const sev = severity[r];
-          const label = sev > 0 ? labels[r] : undefined;
-          const showLabel = Boolean(label) || selected === r || hovered === r;
-          return (
-            <button
-              key={r}
-              ref={(el) => {
-                refs.current[r] = el;
-              }}
-              type="button"
-              className={`hotspot absolute top-0 left-0 transition-opacity duration-200 ${sev ? `hotspot--s${sev}` : ""}`}
-              style={{ opacity: 0 }}
-              aria-pressed={selected === r}
-              aria-label={`${t.regions[r]}${label ? `: ${label}` : ""}`}
-              onClick={() => onSelect(selected === r ? null : r)}
-              onPointerEnter={() => onHover(r)}
-              onPointerLeave={() => onHover(null)}
-              onFocus={() => onHover(r)}
-              onBlur={() => onHover(null)}
-            >
-              {showLabel && <span className="hotspot-label">{label ?? t.regions[r]}</span>}
-            </button>
-          );
-        })}
+        {!failed &&
+          REGIONS.map((r) => {
+            const sev = severity[r];
+            const label = sev > 0 ? labels[r] : undefined;
+            const showLabel = Boolean(label) || selected === r || hovered === r;
+            return (
+              <button
+                key={r}
+                ref={(el) => {
+                  refs.current[r] = el;
+                }}
+                type="button"
+                className={`hotspot absolute top-0 left-0 transition-opacity duration-200 ${sev ? `hotspot--s${sev}` : ""}`}
+                style={{ opacity: 0 }}
+                // Hidden until the projector places it; it sets tabIndex once the hotspot is visible.
+                tabIndex={-1}
+                aria-pressed={selected === r}
+                aria-label={`${t.regions[r]}${label ? `: ${label}` : ""}`}
+                onClick={() => onSelect(selected === r ? null : r)}
+                onPointerEnter={() => onHover(r)}
+                onPointerLeave={() => onHover(null)}
+                onFocus={() => onHover(r)}
+                onBlur={() => onHover(null)}
+              >
+                {showLabel && <span className="hotspot-label">{label ?? t.regions[r]}</span>}
+              </button>
+            );
+          })}
       </div>
 
-      <button
-        type="button"
-        onClick={() => controls.current?.reset()}
-        className="absolute top-4 right-4 flex min-h-11 items-center gap-1.5 rounded-full bg-surface/90 px-3.5 text-xs font-semibold text-ink-2 shadow-card backdrop-blur-sm transition-colors hover:bg-surface hover:text-ink"
-      >
-        <RotateCcw className="size-3.5" aria-hidden />
-        {b.recenter}
-      </button>
+      {!failed && (
+        <button
+          type="button"
+          onClick={() => controls.current?.reset()}
+          className="absolute top-4 right-4 flex min-h-11 items-center gap-1.5 rounded-full bg-surface/90 px-3.5 text-xs font-semibold text-ink-2 shadow-card backdrop-blur-sm transition-colors hover:bg-surface hover:text-ink"
+        >
+          <RotateCcw className="size-3.5" aria-hidden />
+          {b.recenter}
+        </button>
+      )}
     </div>
   );
 }

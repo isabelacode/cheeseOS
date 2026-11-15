@@ -40,7 +40,7 @@ export const profileMessages: Record<Locale, ProfileMessages> = {
   },
   en: {
     age: (n) => `${n} years old`,
-    sections: { health: "Health", body: "Body", identity: "Identification" },
+    sections: { health: "Health", body: "Body", identity: "Identity" },
     sectionHints: {
       health: "What the crew and the AI must know before any treatment.",
       body: "Measurements used by the digital twin.",
@@ -53,7 +53,7 @@ export const profileMessages: Record<Locale, ProfileMessages> = {
     restingHrDefault: "68 bpm (default)",
     edit: "Edit",
     editLabel: (s) => `Edit ${s}`,
-    saved: "Saved.",
+    saved: "Details saved.",
     baselineNote: "Resting heart rate is the simulation baseline: change it and the vitals settle to the new value.",
     deviceNote: "This data stays on this device. It only leaves if you pick OpenRouter as the AI engine.",
     settingsLink: "See privacy settings",

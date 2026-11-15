@@ -67,7 +67,9 @@ function useSize<T extends HTMLElement>() {
   return [ref, size] as const;
 }
 
-export function VitalChart(p: Props) {
+export function VitalChart(props: Props) {
+  // Drop non-finite samples: one NaN would poison Math.min/max and blank the whole chart.
+  const p = { ...props, series: props.series.map((s) => ({ ...s, points: s.points.filter((pt) => Number.isFinite(pt.t) && Number.isFinite(pt.v)) })) };
   const [ref, { w, h }] = useSize<HTMLDivElement>();
   const clipId = useId();
   const [hover, setHover] = useState<number | null>(null);
@@ -91,7 +93,7 @@ export function VitalChart(p: Props) {
   const x = (t: number) => PAD.left + ((t - t0) / Math.max(1, t1 - t0)) * plotW;
   const y = (v: number) => PAD.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
 
-  const step = niceStep(yMax - yMin);
+  const step = niceStep(Math.max(yMax - yMin, 1e-6));
   const yTicks: number[] = [];
   for (let v = Math.ceil(yMin / step) * step; v <= yMax + 1e-9; v += step) yTicks.push(Number(v.toFixed(4)));
 

@@ -29,9 +29,9 @@ export interface Drug {
 
 export const DRUGS: Drug[] = [
   { id: "dipyrone", ingredient: { pt: "dipirona", en: "metamizole (dipyrone)" }, generics: ["dipirona", "dipyrone", "metamizol", "metamizole", "metamizol sodico"], brands: ["novalgina", "anador", "magnopyrol", "dorflex", "neosaldina", "lisador"], classes: ["analgesic"] },
-  { id: "paracetamol", ingredient: { pt: "paracetamol", en: "acetaminophen (paracetamol)" }, generics: ["paracetamol", "acetaminofeno", "acetaminofen", "acetaminophen"], brands: ["tylenol", "panadol", "tylex", "dorico", "excedrin"], classes: ["analgesic"] },
+  { id: "paracetamol", ingredient: { pt: "paracetamol", en: "acetaminophen (paracetamol)" }, generics: ["paracetamol", "acetaminofeno", "acetaminofen", "acetaminophen"], brands: ["tylenol", "panadol", "tylex", "dorico", "excedrin", "buscoduo", "percocet"], classes: ["analgesic"] },
   { id: "ibuprofen", ingredient: { pt: "ibuprofeno", en: "ibuprofen" }, generics: ["ibuprofeno", "ibuprofen"], brands: ["advil", "motrin", "alivium", "buscofem", "nurofen"], classes: ["nsaid", "analgesic"] },
-  { id: "aspirin", ingredient: { pt: "ácido acetilsalicílico", en: "acetylsalicylic acid (aspirin)" }, generics: ["acido acetilsalicilico", "acetylsalicylic acid", "aas"], brands: ["aspirina", "aspirin", "melhoral", "ecotrin", "bufferin"], classes: ["nsaid", "analgesic"] },
+  { id: "aspirin", ingredient: { pt: "ácido acetilsalicílico", en: "acetylsalicylic acid (aspirin)" }, generics: ["acido acetilsalicilico", "acetylsalicylic acid", "aas"], brands: ["aspirina", "aspirin", "melhoral", "ecotrin", "bufferin", "excedrin"], classes: ["nsaid", "analgesic"] },
   { id: "diclofenac", ingredient: { pt: "diclofenaco", en: "diclofenac" }, generics: ["diclofenaco", "diclofenac"], brands: ["voltaren", "cataflam", "biofenac"], classes: ["nsaid", "analgesic"] },
   { id: "naproxen", ingredient: { pt: "naproxeno", en: "naproxen" }, generics: ["naproxeno", "naproxen"], brands: ["aleve", "flanax", "naprosyn"], classes: ["nsaid", "analgesic"] },
   { id: "ketoprofen", ingredient: { pt: "cetoprofeno", en: "ketoprofen" }, generics: ["cetoprofeno", "ketoprofen"], brands: ["profenid"], classes: ["nsaid", "analgesic"] },

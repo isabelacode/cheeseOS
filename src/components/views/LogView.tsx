@@ -149,7 +149,19 @@ export function LogView() {
                         type="button"
                         role="radio"
                         aria-checked={source === o}
+                        tabIndex={source === o ? 0 : -1}
                         onClick={() => setSource(o)}
+                        onKeyDown={(e) => {
+                          // Radio group keyboard model: arrows move and select, one tab stop.
+                          const i = sourceOptions.indexOf(source);
+                          const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+                          if (!step) return;
+                          e.preventDefault();
+                          const next = sourceOptions[(i + step + sourceOptions.length) % sourceOptions.length];
+                          setSource(next);
+                          (e.currentTarget.parentElement?.querySelector(`[data-source="${next}"]`) as HTMLElement | null)?.focus();
+                        }}
+                        data-source={o}
                         className={`h-11 rounded-full px-4 text-sm font-medium transition-colors sm:h-9 ${
                           source === o ? "bg-ink text-white" : "bg-sunken text-ink-2 hover:bg-accent-soft hover:text-accent-ink"
                         }`}

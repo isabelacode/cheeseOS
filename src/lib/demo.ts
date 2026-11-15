@@ -29,6 +29,12 @@ export function setDemoMode(on: boolean) {
   listeners.forEach((l) => l());
 }
 
+/** Forget demo mode (storage is cleared by the caller): drops the in-memory fallback and notifies readers. */
+export function resetDemoMode() {
+  memory = null;
+  listeners.forEach((l) => l());
+}
+
 function subscribe(cb: () => void) {
   listeners.add(cb);
   const onStorage = (e: StorageEvent) => e.key === KEY && cb();

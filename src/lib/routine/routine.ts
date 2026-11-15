@@ -51,21 +51,34 @@ export function dayKey(ms: number) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** The same wall-clock time `n` calendar days earlier (local days are 23-25 h around daylight saving changes). */
+function daysBefore(ms: number, n: number) {
+  const d = new Date(ms);
+  d.setDate(d.getDate() - n);
+  return d.getTime();
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const VALID_TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 const listeners = new Set<() => void>();
 let cachedRaw: string | null | undefined;
 let cached: RoutineState = EMPTY;
 /** Used when storage is blocked: the state lives in memory for the session. */
 let memory: RoutineState | null = null;
 
-function sanitize(v: Partial<RoutineState>): RoutineState {
-  const saved = new Map((v.reminders ?? []).map((r) => [r.id, r]));
+/** Each field is checked on its own, so one old or corrupt field does not wipe the mission history. */
+function sanitize(input: unknown): RoutineState {
+  const v = isRecord(input) ? (input as Partial<RoutineState>) : {};
+  const list: unknown[] = Array.isArray(v.reminders) ? v.reminders : [];
+  const saved = new Map(list.filter(isRecord).map((r) => [r.id, r]));
   return {
-    days: v.days && typeof v.days === "object" ? v.days : {},
+    days: isRecord(v.days) ? (Object.fromEntries(Object.entries(v.days).filter(([, d]) => isRecord(d))) as RoutineState["days"]) : {},
     reminders: DEFAULT_REMINDERS.map((d) => {
       const r = saved.get(d.id);
-      return r && /^\d{2}:\d{2}$/.test(r.time) ? { id: d.id, enabled: Boolean(r.enabled), time: r.time } : d;
+      return r && typeof r.time === "string" && VALID_TIME.test(r.time) ? { id: d.id, enabled: Boolean(r.enabled), time: r.time } : d;
     }),
-    fired: v.fired && typeof v.fired === "object" ? v.fired : {},
+    fired: isRecord(v.fired) ? v.fired : {},
     notify: Boolean(v.notify),
     since: typeof v.since === "number" ? v.since : undefined,
   };
@@ -82,7 +95,7 @@ function read(): RoutineState {
   if (raw === cachedRaw) return cached;
   cachedRaw = raw;
   try {
-    cached = raw ? sanitize(JSON.parse(raw) as Partial<RoutineState>) : EMPTY;
+    cached = raw ? sanitize(JSON.parse(raw)) : EMPTY;
   } catch {
     cached = EMPTY;
   }
@@ -99,6 +112,14 @@ function write(next: RoutineState) {
   } catch {
     memory = value;
   }
+  listeners.forEach((l) => l());
+}
+
+/** Forget the routine (storage is cleared by the caller): drops the in-memory fallback and notifies readers. */
+export function resetRoutine() {
+  memory = null;
+  cachedRaw = undefined;
+  cached = EMPTY;
   listeners.forEach((l) => l());
 }
 
@@ -153,12 +174,9 @@ export function setNotify(notify: boolean) {
 /** Consecutive days with a health check-in, ending today (or yesterday if today is still open). */
 export function checkinStreak(s: RoutineState, now = Date.now()): number {
   const has = (ms: number) => Boolean(s.days[dayKey(ms)]?.checkin);
-  let day = has(now) ? now : now - 86_400_000;
+  const start = has(now) ? 0 : 1;
   let n = 0;
-  while (has(day) && n < KEEP_DAYS) {
-    n++;
-    day -= 86_400_000;
-  }
+  while (n < KEEP_DAYS && has(daysBefore(now, start + n))) n++;
   return n;
 }
 
@@ -166,7 +184,7 @@ export function checkinStreak(s: RoutineState, now = Date.now()): number {
 export function fullDays(s: RoutineState, now = Date.now(), span = 7): number {
   let n = 0;
   for (let i = 0; i < span; i++) {
-    const d = s.days[dayKey(now - i * 86_400_000)] ?? {};
+    const d = s.days[dayKey(daysBefore(now, i))] ?? {};
     if (MISSIONS.every((m) => d[m])) n++;
   }
   return n;
@@ -196,12 +214,15 @@ export function dueReminders(s: RoutineState, now = Date.now()): ReminderId[] {
   const minutes = d.getHours() * 60 + d.getMinutes();
   const day = dayKey(now);
   const done = missionsToday(s, now);
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
   const since = s.since ?? now;
+  /** Epoch ms of a reminder's wall-clock time today (not midnight + minutes, which drifts on daylight saving days). */
+  const timeToday = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m).getTime();
+  };
   return s.reminders
     .filter((r) => r.enabled && minutesOf(r.time) <= minutes && s.fired[r.id] !== day)
-    .filter((r) => start.getTime() + minutesOf(r.time) * 60_000 >= since)
+    .filter((r) => timeToday(r.time) >= since)
     .filter((r) => {
       const m = REMINDER_MISSION[r.id];
       return !m || !done[m];

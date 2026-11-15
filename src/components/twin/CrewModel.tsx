@@ -131,6 +131,15 @@ vec3 extraGlow = heatColor * heat * 0.22 + vec3(0.08, 0.38, 1.0) * focusGlow * 0
     return m;
   }, []);
 
+  // Free the GPU program when the twin unmounts (route change); also reset a hover cursor left behind.
+  useEffect(
+    () => () => {
+      material.dispose();
+      document.body.style.cursor = "";
+    },
+    [material],
+  );
+
   // Tag each vertex with its body region and swap in the region-aware material.
   useEffect(() => {
     scene.traverse((o) => {
@@ -142,6 +151,8 @@ vec3 extraGlow = heatColor * heat * 0.22 + vec3(0.08, 0.38, 1.0) * focusGlow * 0
         for (let i = 0; i < pos.count; i++) region[i] = regionOf(pos.getX(i), pos.getY(i));
         mesh.geometry.setAttribute("region", new THREE.BufferAttribute(region, 1));
       }
+      const prev = mesh.material;
+      if (prev !== material) (Array.isArray(prev) ? prev : [prev]).forEach((m) => m.dispose());
       mesh.material = material;
       if (mesh.morphTargetInfluences?.length) mesh.morphTargetInfluences[0] = femininity;
       mesh.castShadow = true;
@@ -198,6 +209,8 @@ vec3 extraGlow = heatColor * heat * 0.22 + vec3(0.08, 0.38, 1.0) * focusGlow * 0
       }}
       onClick={(e) => {
         e.stopPropagation();
+        // An orbit drag that ends over the body is not a click on a region.
+        if (e.delta > 2) return;
         const r = regionAt(e);
         onSelect(r && r !== selected ? r : null);
       }}

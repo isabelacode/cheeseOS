@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Undo2, X } from "lucide-react";
 import { useCrewSession, type UndoAction } from "@/lib/session/CrewSession";
 import { useT, type Messages } from "@/lib/i18n";
@@ -30,18 +30,21 @@ export function undoMessage(a: UndoAction, t: Messages) {
 export function UndoBar() {
   const t = useT();
   const { lastAction, undo } = useCrewSession();
-  const [hiddenKey, setHiddenKey] = useState<number | null>(null);
-  const [paused, setPaused] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const open = lastAction !== null && hiddenKey !== lastAction.key;
+  // Every bar that already timed out or was closed stays hidden: undoing the newest
+  // correction must not resurface an older one the crew member has already seen go.
+  const [hiddenKeys, setHiddenKeys] = useState<number[]>([]);
+  // Paused per bar: a bar that unmounts while hovered/focused never gets its
+  // mouseleave/blur, so a plain boolean would freeze the next bar's timer.
+  const [pausedKey, setPausedKey] = useState<number | null>(null);
   const key = lastAction?.key ?? null;
+  const open = key !== null && !hiddenKeys.includes(key);
+  const paused = key !== null && pausedKey === key;
+  const hide = (k: number) => setHiddenKeys((cur) => (cur.includes(k) ? cur : [...cur.slice(-19), k]));
 
   useEffect(() => {
     if (!open || paused || key === null) return;
-    timer.current = setTimeout(() => setHiddenKey(key), VISIBLE_MS);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
+    const id = setTimeout(() => setHiddenKeys((cur) => (cur.includes(key) ? cur : [...cur.slice(-19), key])), VISIBLE_MS);
+    return () => clearTimeout(id);
   }, [open, paused, key]);
 
   // ⌘Z / Ctrl+Z outside text fields reverts the last correction.
@@ -63,10 +66,10 @@ export function UndoBar() {
       {open && lastAction && (
         <div
           key={lastAction.key}
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          onFocus={() => setPaused(true)}
-          onBlur={() => setPaused(false)}
+          onMouseEnter={() => setPausedKey(lastAction.key)}
+          onMouseLeave={() => setPausedKey(null)}
+          onFocus={() => setPausedKey(lastAction.key)}
+          onBlur={() => setPausedKey(null)}
           className="entry-in pointer-events-auto flex max-w-[560px] items-center gap-2 rounded-2xl bg-ink py-1.5 pr-1.5 pl-4 text-sm text-white shadow-card"
         >
           <p className="min-w-0 flex-1 py-1">{undoMessage(lastAction, t)}</p>
@@ -81,7 +84,7 @@ export function UndoBar() {
           </button>
           <button
             type="button"
-            onClick={() => setHiddenKey(lastAction.key)}
+            onClick={() => hide(lastAction.key)}
             aria-label={t.nav.undoClose}
             className="grid size-11 shrink-0 place-items-center rounded-xl text-white/80 hover:bg-white/10 hover:text-white sm:size-9"
           >

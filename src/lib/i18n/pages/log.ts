@@ -80,6 +80,8 @@ export interface LogMessages {
     evolution: string;
     noEvolution: string;
     duration: (d: string) => string;
+    /** Long durations in the report, e.g. "3 dias". */
+    days: (n: number) => string;
     state: { active: string; resolved: string; dismissed: string; inactive: string };
     protocol: string;
     hazards: string;
@@ -150,7 +152,7 @@ const pt: LogMessages = {
     allergies: "Alergias",
     medications: "Medicamentos",
     conditions: "Condições",
-    none: "não informado",
+    none: "nenhuma informada",
     unknown: "não informado",
     activeFindings: "SINTOMAS ATIVOS",
     noActive: "Nenhum sintoma ativo.",
@@ -173,6 +175,7 @@ const pt: LogMessages = {
     evolution: "EVOLUÇÃO DOS SINTOMAS",
     noEvolution: "Nenhum sintoma registrado.",
     duration: (d) => `duração ${d}`,
+    days: (n) => `${n} ${n === 1 ? "dia" : "dias"}`,
     state: { active: "ativo", resolved: "resolvido", dismissed: "descartado", inactive: "encerrado" },
     protocol: "Protocolo",
     hazards: "Riscos NASA",
@@ -266,6 +269,7 @@ const en: LogMessages = {
     evolution: "SYMPTOM EVOLUTION",
     noEvolution: "No symptoms recorded.",
     duration: (d) => `lasted ${d}`,
+    days: (n) => `${n} ${n === 1 ? "day" : "days"}`,
     state: { active: "active", resolved: "resolved", dismissed: "dismissed", inactive: "closed" },
     protocol: "Protocol",
     hazards: "NASA hazards",

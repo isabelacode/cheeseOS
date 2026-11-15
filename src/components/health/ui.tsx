@@ -305,7 +305,7 @@ export function HeartRateCard({ history, vitals }: { history: Vitals[]; vitals: 
   const s = spec("heartRate");
   const sev = s.assess(vitals);
   const values = history.map((h) => h.heartRate);
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : vitals.heartRate;
   const ticks = [140, 110, 80, 50];
   const height = 150;
   const toY = (v: number) => height - ((v - 40) / (150 - 40)) * height;

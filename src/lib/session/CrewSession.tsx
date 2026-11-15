@@ -13,6 +13,7 @@ import type { Finding, Region, Severity, Status, SymptomId, TranscriptEntry, Vit
 import { useLocalAi } from "@/hooks/useLocalAi";
 import { useVoiceListener } from "@/hooks/useVoiceListener";
 import { profileContext, type CrewProfile } from "@/lib/crew/profile";
+import { readStore, writeStore, type Snapshot } from "@/lib/session/store";
 import { formatNumber, messages, useLocale, type Locale } from "@/lib/i18n";
 import { alertCopy } from "@/lib/i18n/pages/safety";
 
@@ -54,13 +55,6 @@ interface Stream {
   recovering: boolean;
 }
 
-interface Snapshot {
-  findings: Finding[];
-  entries: TranscriptEntry[];
-  /** Keys of safety alerts the crew member dismissed (each one logged). */
-  dismissedAlerts: string[];
-}
-
 /** Corrections that can be taken back. Reports themselves are not undoable (delete them in the log). */
 export interface UndoAction {
   /** Changes on every correction so the undo bar restarts its timer. */
@@ -76,27 +70,7 @@ interface UndoStep {
   snapshot: Snapshot;
 }
 
-const STORE_KEY = "cheeseos.session.v1";
 const MAX_ENTRIES = 200;
-
-function readStore(): Snapshot | null {
-  try {
-    const raw = window.localStorage.getItem(STORE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<Snapshot>;
-    return { findings: parsed.findings ?? [], entries: parsed.entries ?? [], dismissedAlerts: parsed.dismissedAlerts ?? [] };
-  } catch {
-    return null;
-  }
-}
-
-function writeStore(s: Snapshot) {
-  try {
-    window.localStorage.setItem(STORE_KEY, JSON.stringify(s));
-  } catch {
-    /* storage blocked: the session lives in memory only */
-  }
-}
 
 function buildContext(locale: Locale, profile: CrewProfile, text: string, findings: Finding[], v: Vitals, status: Status, alerts: SafetyAlert[]) {
   const t = messages[locale];
@@ -154,6 +128,9 @@ function useCrewSessionState(profile: CrewProfile) {
   const [transcribing, setTranscribing] = useState(0);
   const [undoStack, setUndoStack] = useState<UndoStep[]>([]);
   const undoRef = useRef<UndoStep[]>([]);
+  const undoKeyRef = useRef(0);
+  /** Bumped per AI request; an answer that arrives after a newer report (or a clear) is ignored. */
+  const requestRef = useRef(0);
   const vitals = stream.current;
 
   // Refs let async callbacks (AI, mic) read the latest values without re-subscribing.
@@ -217,7 +194,8 @@ function useCrewSessionState(profile: CrewProfile) {
   const correct = useCallback(
     (action: Omit<UndoAction, "key">, nextFindings: Finding[], nextEntries: TranscriptEntry[], nextDismissed?: string[]) => {
       const step: UndoStep = {
-        action: { ...action, key: Date.now() },
+        // Strictly increasing, even for two corrections in the same millisecond.
+        action: { ...action, key: (undoKeyRef.current = Math.max(Date.now(), undoKeyRef.current + 1)) },
         snapshot: { findings: findingsRef.current, entries: entriesRef.current, dismissedAlerts: dismissedRef.current },
       };
       undoRef.current = [...undoRef.current, step].slice(-10);
@@ -244,6 +222,11 @@ function useCrewSessionState(profile: CrewProfile) {
         resolved: ex.resolved,
       };
       const nextEntries = [entry, ...entriesRef.current].slice(0, MAX_ENTRIES);
+      // Undo snapshots predate this report: restoring one would silently erase it.
+      if (undoRef.current.length) {
+        undoRef.current = [];
+        setUndoStack([]);
+      }
       apply(next, nextEntries);
       if (source !== "action") setMission("checkin", true, entry.at);
 
@@ -266,8 +249,10 @@ function useCrewSessionState(profile: CrewProfile) {
         adviceFor: (f) => adviceOf(f, t),
       }).filter((a) => !dismissedRef.current.includes(a.key));
       const status = statusOf(Math.max(overallSeverity(next, kicked), safetySeverity(alerts)) as Severity);
+      const request = ++requestRef.current;
       setFeedback({ text: null, engine: null, pending: true, status, dropped: null });
       const res = await feedbackFn(buildContext(lang, profileRef.current, text, next, kicked, status, alerts), lang);
+      if (request !== requestRef.current) return;
       const engine = `${res.engine === "openrouter" ? "OpenRouter" : t.engine.browserLabel} · ${res.model}`;
       // Answers that only restate the report are hidden; ones naming an allergen are dropped with a note.
       const review = res.text ? reviewAiText(res.text, text, profileRef.current.allergies) : null;
@@ -359,6 +344,7 @@ function useCrewSessionState(profile: CrewProfile) {
 
   const clearSession = useCallback(() => {
     correct({ kind: "clear", symptom: null, count: entriesRef.current.length }, [], [], []);
+    requestRef.current++;
     setFeedback({ text: null, engine: null, pending: false, status: null, dropped: null });
   }, [correct]);
 

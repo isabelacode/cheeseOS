@@ -1,6 +1,6 @@
 "use client";
 
-import { LOCALES, setLocale, useLocale, useT } from "@/lib/i18n";
+import { INTL_LOCALE, LOCALES, setLocale, useLocale, useT } from "@/lib/i18n";
 
 export function LanguageToggle({ className = "" }: { className?: string }) {
   const locale = useLocale();
@@ -13,7 +13,7 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
           type="button"
           role="radio"
           aria-checked={locale === l}
-          lang={l === "pt" ? "pt-BR" : "en"}
+          lang={INTL_LOCALE[l]}
           title={t.language.names[l]}
           onClick={() => setLocale(l)}
           className={`rounded-full px-2.5 py-1.5 text-xs font-bold uppercase transition-colors duration-200 ${

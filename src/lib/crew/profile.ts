@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { formatNumber, type Locale } from "@/lib/i18n/locale";
 import { messages } from "@/lib/i18n/messages";
+import { resetRoutine } from "@/lib/routine/routine";
+import { resetDemoMode } from "@/lib/demo";
 
 export type Sex = "feminino" | "masculino" | "outro" | "nao_informado";
 
@@ -32,8 +34,35 @@ const KEY = "cheeseos.crew.v1";
 const listeners = new Set<() => void>();
 let cachedRaw: string | null | undefined;
 let cachedProfile: CrewProfile | null = null;
+/** Set when storage refused the last save: the profile lives in memory for this session. */
+let memory: CrewProfile | null = null;
+
+const text = (v: unknown) => (typeof v === "string" ? v : "");
+const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
+
+/** A stored profile, with fields missing from older saves filled in; `null` when it is not a profile at all. */
+function normalize(v: unknown): CrewProfile | null {
+  if (typeof v !== "object" || v === null || Array.isArray(v)) return null;
+  const p = v as Record<string, unknown>;
+  if (!text(p.name).trim()) return null;
+  return {
+    name: text(p.name),
+    role: text(p.role),
+    mission: text(p.mission),
+    age: num(p.age, 0),
+    sex: SEXES.includes(p.sex as Sex) ? (p.sex as Sex) : "nao_informado",
+    heightCm: num(p.heightCm, 0),
+    weightKg: num(p.weightKg, 0),
+    bloodType: (BLOOD_TYPES as readonly unknown[]).includes(p.bloodType) ? (p.bloodType as BloodType) : "",
+    restingHeartRate: num(p.restingHeartRate, 68),
+    allergies: text(p.allergies),
+    medications: text(p.medications),
+    conditions: text(p.conditions),
+  };
+}
 
 function read(): CrewProfile | null {
+  if (memory) return memory;
   let raw: string | null = null;
   try {
     raw = window.localStorage.getItem(KEY);
@@ -43,7 +72,7 @@ function read(): CrewProfile | null {
   if (raw === cachedRaw) return cachedProfile;
   cachedRaw = raw;
   try {
-    cachedProfile = raw ? (JSON.parse(raw) as CrewProfile) : null;
+    cachedProfile = raw ? normalize(JSON.parse(raw)) : null;
   } catch {
     cachedProfile = null;
   }
@@ -53,10 +82,10 @@ function read(): CrewProfile | null {
 export function saveProfile(profile: CrewProfile) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(profile));
+    memory = null;
   } catch {
-    // Storage blocked: keep it in memory for this session.
-    cachedRaw = JSON.stringify(profile);
-    cachedProfile = profile;
+    // Storage blocked or full: keep it in memory for this session.
+    memory = profile;
   }
   listeners.forEach((l) => l());
 }
@@ -84,6 +113,10 @@ export function deleteProfile() {
   }
   cachedRaw = null;
   cachedProfile = null;
+  memory = null;
+  // Routine and demo mode may also live only in memory when storage is blocked.
+  resetRoutine();
+  resetDemoMode();
   listeners.forEach((l) => l());
 }
 

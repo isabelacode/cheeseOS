@@ -72,7 +72,8 @@ export function VoiceCard(props: {
         className="mt-3 flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (draft.trim()) props.onSubmit(draft);
+          const text = draft.trim();
+          if (text) props.onSubmit(text);
         }}
       >
         <label htmlFor="report" className="sr-only">

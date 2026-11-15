@@ -112,7 +112,7 @@ function VitalsContent() {
     xDomain = [now - 60_000, now];
     xTicks = [60, 45, 30, 15, 0].map((sec) => ({ t: now - sec * 1000, label: sec ? m.secondsAgo(sec) : m.now }));
   } else {
-    samples = [...s.trend.map((p) => ({ t: p.at, v: p as Vitals })), { t: now, v: s.vitals }];
+    samples = [...s.trend.filter((p) => p.at < now).map((p) => ({ t: p.at, v: p as Vitals })), { t: now, v: s.vitals }];
     const first = s.trend[0]?.at ?? now;
     const start = Math.max(now - 3_600_000, Math.min(first, now - 5 * 60_000));
     xDomain = [start, now];
@@ -157,7 +157,7 @@ function VitalsContent() {
         <p className="text-sm text-ink-2">{m.subtitle}</p>
       </header>
 
-      <div role="tablist" aria-label={m.selectorLabel} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      <div role="tablist" aria-label={m.selectorLabel} className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
         {VITAL_ORDER.map((key) => {
           const Icon = VITAL_ICON[key];
           const active = key === selected;

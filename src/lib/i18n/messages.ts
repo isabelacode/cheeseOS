@@ -6,7 +6,7 @@ type SexKey = "feminino" | "masculino" | "outro" | "nao_informado";
 type OrErrorCode = "auth" | "credits" | "model" | "rate" | "network" | "other";
 
 export interface Messages {
-  meta: { title: string };
+  meta: { title: string; description: string };
   brand: { tagline: string };
   common: { cancel: string; save: string; optional: string; back: string; continue: string };
   language: { label: string; names: Record<Locale, string> };
@@ -173,7 +173,7 @@ export interface Messages {
 }
 
 const pt: Messages = {
-  meta: { title: "cheeseOS · Gêmeo digital" },
+  meta: { title: "cheeseOS · Gêmeo digital", description: "Gêmeo digital de saúde do tripulante, com escuta por voz e IA local." },
   brand: { tagline: "Gêmeo digital de saúde" },
   common: { cancel: "Cancelar", save: "Salvar", optional: "opcional", back: "Voltar", continue: "Continuar" },
   language: { label: "Idioma", names: { pt: "Português", en: "English" } },
@@ -473,7 +473,7 @@ Exemplo de boa resposta: "Fique em repouso com a cabeça elevada e reavalie em 3
 };
 
 const en: Messages = {
-  meta: { title: "cheeseOS · Digital twin" },
+  meta: { title: "cheeseOS · Digital twin", description: "Crew health digital twin with voice reporting and on-device AI." },
   brand: { tagline: "Health digital twin" },
   common: { cancel: "Cancel", save: "Save", optional: "optional", back: "Back", continue: "Continue" },
   language: { label: "Language", names: { pt: "Português", en: "English" } },
@@ -513,7 +513,7 @@ const en: Messages = {
     nausea: { label: "Nausea", advice: "Take the kit's antiemetic and move your head slowly; sip water." },
     space_motion_sickness: { label: "Space motion sickness", advice: "Common in the first days and during gravity transitions: keep the head still, look at a fixed point, take the kit's antiemetic and sip water." },
     abdominal_pain: { label: "Abdominal pain", advice: "Locate the pain (quadrant) and monitor it for 30 min." },
-    epigastric_pain: { label: "Epigastric pain", advice: "Pit of the stomach: stomach, oesophagus or pancreas; take the kit's antacid. With cold sweat or breathlessness, run an ECG (a heart attack can hurt here)." },
+    epigastric_pain: { label: "Epigastric pain", advice: "Pit of the stomach: stomach, esophagus or pancreas; take the kit's antacid. With cold sweat or breathlessness, run an ECG (a heart attack can hurt here)." },
     ruq_pain: { label: "Right upper quadrant pain", advice: "Liver and gallbladder area: watch for pain after meals, fever or yellow skin and notify the flight surgeon." },
     luq_pain: { label: "Left upper quadrant pain", advice: "Spleen, stomach and pancreas area: check for recent trauma, palpate gently, log and monitor." },
     periumbilical_pain: { label: "Pain around the navel", advice: "Small intestine; can be early appendicitis. Reassess in 1 h if the pain moves to the lower right." },
@@ -543,7 +543,7 @@ const en: Messages = {
     foot_pain: { label: "Foot pain", advice: "Check footwear and pressure points from the foot restraints; massage the sole and stretch." },
     heel_pain: { label: "Heel pain", advice: "Worse on the first steps: plantar fasciitis. Stretch the calf and sole, ice for 15 min." },
     toe_pain: { label: "Toe pain", advice: "Swollen, hot, red big toe: possible gout. Check for an ingrown nail and rubbing from the foot restraints." },
-    foot_numbness: { label: "Foot numbness", advice: "Check circulation (colour, temperature, foot pulse) and shoe pressure; in both feet, assess for neuropathy." },
+    foot_numbness: { label: "Foot numbness", advice: "Check circulation (color, temperature, foot pulse) and shoe pressure; in both feet, assess for neuropathy." },
     foot_swelling: { label: "Foot/ankle swelling", advice: "Both feet: fluid retention (heart, kidneys). One foot and warm: assess for thrombosis. Raise the legs and measure the circumference." },
     cold_extremities: { label: "Cold/blue extremities", advice: "Warm up and check circulation and capillary refill; fingers turning white then blue in the cold suggest Raynaud's. Check suit temperature." },
     muscle_pain: { label: "Muscle pain", advice: "Normal after resistance training (1.5 h/day target); hydrate and stretch. Growing weakness: log it to compare with the baseline." },
@@ -565,7 +565,7 @@ const en: Messages = {
     decompression: "Symptoms during or after an EVA or a pressure change: suspected decompression sickness. End the EVA, return to the vehicle, give 100% oxygen and prepare for recompression.",
     hypoxia: "Confusion with headache, breathlessness or vision change: possible hypoxia or high CO₂. Put on an oxygen mask and check SpO₂ and cabin air now.",
     radiation: "Nausea or malaise after a solar event or radiation alarm: go to the shielded shelter, read the dosimeter and log the dose.",
-    fracture: "Pain after a fall or impact: bones lose 1–1.5% of density a month in space. Immobilise and assess for a fracture before using the limb.",
+    fracture: "Pain after a fall or impact: bones lose 1–1.5% of density a month in space. Immobilize and assess for a fracture before using the limb.",
     crisis: "Thoughts of hurting yourself: you are not alone. Call a crewmate and the psychological support team now, and don't stay alone.",
     dvt: "One swollen foot or ankle that is warm or with calf pain: suspected thrombosis. Don't massage it; call the flight surgeon.",
   },
@@ -634,7 +634,7 @@ const en: Messages = {
     undoDeleted: "Report deleted from the log.",
     undoCleared: (n) => `Session cleared: ${n} ${n === 1 ? "entry" : "entries"} removed.`,
     undoClose: "Dismiss notice",
-    undoAlert: "Safety alert dismissed. Logged in the journal.",
+    undoAlert: "Safety alert dismissed. Added to the log.",
   },
   dashboard: {
     loadingScene: "Building the digital twin…",

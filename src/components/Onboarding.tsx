@@ -167,7 +167,10 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           className="mt-5 rounded-3xl bg-surface p-5 shadow-card sm:p-6"
           onSubmit={(e) => {
             e.preventDefault();
+            const form = e.currentTarget;
             next();
+            // A step that fails validation stays put: move focus to the first invalid field.
+            requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
           }}
           noValidate
         >
@@ -184,11 +187,11 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           {step === 0 && (
             <div className="grid gap-4">
               <Field label={o.name} error={err("name")}>
-                <input autoFocus autoComplete="name" value={draft.name} onChange={(e) => set("name", e.target.value)} className={input(err("name"))} />
+                <input autoFocus autoComplete="name" value={draft.name} onChange={(e) => set("name", e.target.value)} aria-invalid={err("name") ? true : undefined} className={input(err("name"))} />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label={o.role} error={err("role")}>
-                  <input placeholder={o.rolePlaceholder} value={draft.role} onChange={(e) => set("role", e.target.value)} className={input(err("role"))} />
+                  <input placeholder={o.rolePlaceholder} value={draft.role} onChange={(e) => set("role", e.target.value)} aria-invalid={err("role") ? true : undefined} className={input(err("role"))} />
                 </Field>
                 <Field label={o.mission} optional>
                   <input placeholder={o.missionPlaceholder} value={draft.mission} onChange={(e) => set("mission", e.target.value)} className={input()} />
@@ -201,7 +204,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
             <div className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label={o.age} suffix={o.years} error={err("age")}>
-                  <input autoFocus inputMode="numeric" value={draft.age} onChange={(e) => set("age", e.target.value)} className={input(err("age"))} />
+                  <input autoFocus inputMode="numeric" value={draft.age} onChange={(e) => set("age", e.target.value)} aria-invalid={err("age") ? true : undefined} className={input(err("age"))} />
                 </Field>
                 <Field label={o.sex}>
                   <select value={draft.sex} onChange={(e) => set("sex", e.target.value as Sex)} className={input()}>
@@ -215,10 +218,10 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label={o.height} suffix="cm" error={err("heightCm")}>
-                  <input inputMode="numeric" value={draft.heightCm} onChange={(e) => set("heightCm", e.target.value)} className={input(err("heightCm"))} />
+                  <input inputMode="numeric" value={draft.heightCm} onChange={(e) => set("heightCm", e.target.value)} aria-invalid={err("heightCm") ? true : undefined} className={input(err("heightCm"))} />
                 </Field>
                 <Field label={o.weight} suffix="kg" error={err("weightKg")}>
-                  <input inputMode="decimal" value={draft.weightKg} onChange={(e) => set("weightKg", e.target.value)} className={input(err("weightKg"))} />
+                  <input inputMode="decimal" value={draft.weightKg} onChange={(e) => set("weightKg", e.target.value)} aria-invalid={err("weightKg") ? true : undefined} className={input(err("weightKg"))} />
                 </Field>
                 <Field label={o.bloodType} optional>
                   <select value={draft.bloodType} onChange={(e) => set("bloodType", e.target.value as Draft["bloodType"])} className={input()}>
@@ -237,7 +240,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           {step === 2 && (
             <div className="grid gap-4">
               <Field label={o.restingHr} suffix="bpm" optional error={err("restingHeartRate")} hint={o.restingHrHint}>
-                <input autoFocus inputMode="numeric" placeholder="68" value={draft.restingHeartRate} onChange={(e) => set("restingHeartRate", e.target.value)} className={input(err("restingHeartRate"))} />
+                <input autoFocus inputMode="numeric" placeholder="68" value={draft.restingHeartRate} onChange={(e) => set("restingHeartRate", e.target.value)} aria-invalid={err("restingHeartRate") ? true : undefined} className={input(err("restingHeartRate"))} />
               </Field>
               <Field label={o.allergies} optional>
                 <input placeholder={o.allergiesPlaceholder} value={draft.allergies} onChange={(e) => set("allergies", e.target.value)} className={input()} />

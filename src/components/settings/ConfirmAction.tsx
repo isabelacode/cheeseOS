@@ -51,7 +51,16 @@ export function ConfirmAction({
         </p>
       </div>
       {step === "confirm" ? (
-        <div className="flex shrink-0 flex-col gap-2 rounded-2xl bg-crit-soft p-3 sm:max-w-[280px]">
+        <div
+          className="flex shrink-0 flex-col gap-2 rounded-2xl bg-crit-soft p-3 sm:max-w-[280px]"
+          onKeyDown={(e) => {
+            // Escape backs out of the destructive step, like a dialog would.
+            if (e.key !== "Escape") return;
+            e.stopPropagation();
+            returnFocus.current = true;
+            setStep("idle");
+          }}
+        >
           <p className="flex items-start gap-1.5 text-[13px] font-semibold text-crit">
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             {confirmText}

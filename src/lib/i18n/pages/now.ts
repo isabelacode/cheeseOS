@@ -71,7 +71,7 @@ export const nowMessages: Record<Locale, NowMessages> = {
     diastolic: "diastolic",
     aiSuggestion: "AI suggestion",
     aiEscalates: (status) => `The AI suggests escalating — the computed status is ${status}. Follow the guidance above.`,
-    resolve: "Gone",
+    resolve: "It's gone",
     dismiss: "Not this",
     resolveLabel: (s) => `Mark ${s} as resolved`,
     dismissLabel: (s) => `${s} was recognized by mistake`,

@@ -1,14 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createVad } from "./vad";
 
 const TARGET_RATE = 16000;
-/** Silence needed to close an utterance. */
-const HANGOVER_MS = 900;
-const MIN_SPEECH_MS = 450;
-const MAX_UTTERANCE_MS = 15000;
-/** Audio kept before speech onset so the first syllable isn't clipped. */
-const PREROLL_MS = 300;
 
 export type MicState = "off" | "requesting" | "listening" | "denied" | "error";
 
@@ -18,11 +13,26 @@ function downsample(input: Float32Array, from: number): Float32Array {
   const out = new Float32Array(Math.floor(input.length / ratio));
   for (let i = 0; i < out.length; i++) {
     const start = Math.floor(i * ratio);
-    const end = Math.min(input.length, Math.floor((i + 1) * ratio));
+    // max(): below 16 kHz (ratio < 1) a window could be empty and yield silence.
+    const end = Math.min(input.length, Math.max(start + 1, Math.floor((i + 1) * ratio)));
     let sum = 0;
     for (let j = start; j < end; j++) sum += input[j];
     out[i] = sum / Math.max(1, end - start);
   }
+  return out;
+}
+
+/**
+ * Scales the utterance so its peak sits near full scale. Whisper does much
+ * worse on quiet input, and the mic gain varies a lot between devices.
+ */
+export function normalize(audio: Float32Array): Float32Array {
+  let peak = 0;
+  for (let i = 0; i < audio.length; i++) peak = Math.max(peak, Math.abs(audio[i]));
+  if (peak < 1e-4 || peak >= 0.9) return audio;
+  const gain = Math.min(0.9 / peak, 20);
+  const out = new Float32Array(audio.length);
+  for (let i = 0; i < audio.length; i++) out[i] = audio[i] * gain;
   return out;
 }
 
@@ -63,8 +73,11 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
       nodeRef.current.disconnect();
       nodeRef.current = null;
     }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    ctxRef.current?.close();
+    streamRef.current?.getTracks().forEach((t) => {
+      t.onended = null;
+      t.stop();
+    });
+    ctxRef.current?.close().catch(() => {});
     streamRef.current = null;
     ctxRef.current = null;
     setState("off");
@@ -76,20 +89,40 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
     if (ctxRef.current) return;
     const session = ++sessionRef.current;
     setState("requesting");
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    // Release the mic and audio graph of an attempt that won't become the live session.
+    const discard = () => {
+      stream?.getTracks().forEach((t) => t.stop());
+      ctx?.close().catch(() => {});
+    };
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      if (!navigator.mediaDevices?.getUserMedia || typeof AudioWorkletNode === "undefined") {
+        throw new Error("Microphone capture is not supported in this browser");
+      }
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
-      const ctx = new AudioContext();
+      // Let the browser resample the mic to Whisper's 16 kHz: it low-pass filters
+      // properly, unlike averaging samples, which aliases and garbles speech.
+      // Firefox can't connect a mic to a context at a different rate, so fall back.
+      try {
+        ctx = new AudioContext({ sampleRate: TARGET_RATE });
+        ctx.createMediaStreamSource(stream).disconnect();
+      } catch {
+        await ctx?.close().catch(() => {});
+        ctx = new AudioContext();
+      }
       await ctx.audioWorklet.addModule("/capture-worklet.js");
+      // Created after an await, the context may start suspended (autoplay policy): no frames would ever arrive.
+      if (ctx.state === "suspended") await ctx.resume().catch(() => {});
       const source = ctx.createMediaStreamSource(stream);
       const node = new AudioWorkletNode(ctx, "capture-processor");
       source.connect(node);
 
       // Stopped while the permission prompt or worklet load was pending.
       if (session !== sessionRef.current) {
-        stream.getTracks().forEach((t) => t.stop());
-        ctx.close();
+        discard();
         return;
       }
       nodeRef.current = node;
@@ -97,70 +130,40 @@ export function useVoiceListener(onUtterance: (audio: Float32Array) => void) {
       ctxRef.current = ctx;
       setState("listening");
 
-      const rate = ctx.sampleRate;
-      const preroll: Float32Array[] = [];
-      let prerollSamples = 0;
-      let speech: Float32Array[] = [];
-      let speechSamples = 0;
-      let inSpeech = false;
-      let silenceMs = 0;
-      let noiseFloor = 0.01;
-      let lastLevelUpdate = 0;
+      // Mic unplugged or permission revoked mid-session: don't sit in "listening" forever.
+      for (const track of stream.getAudioTracks()) {
+        track.onended = () => {
+          if (session !== sessionRef.current) return;
+          stop();
+          setState("error");
+        };
+      }
 
-      const flush = () => {
-        const ms = (speechSamples / rate) * 1000;
-        if (ms >= MIN_SPEECH_MS && session === sessionRef.current) callbackRef.current(downsample(concat(speech), rate));
-        speech = [];
-        speechSamples = 0;
-        inSpeech = false;
-        silenceMs = 0;
-        setSpeaking(false);
-      };
+      const rate = ctx.sampleRate;
+      let lastLevelUpdate = 0;
+      const vad = createVad(rate, {
+        onUtterance: (chunks) => {
+          if (session === sessionRef.current) callbackRef.current(normalize(downsample(concat(chunks), rate)));
+        },
+        onSpeaking: setSpeaking,
+      });
 
       node.port.onmessage = (e: MessageEvent<Float32Array>) => {
         if (session !== sessionRef.current) return;
-        const frame = e.data;
-        let sum = 0;
-        for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
-        const rms = Math.sqrt(sum / frame.length);
-        const frameMs = (frame.length / rate) * 1000;
-
-        // Track ambient noise only while nobody is talking.
-        if (!inSpeech) noiseFloor = noiseFloor * 0.995 + rms * 0.005;
-        const threshold = Math.max(0.012, noiseFloor * 3);
-        const voiced = rms > threshold;
-
+        const rms = vad(e.data);
         const now = performance.now();
         if (now - lastLevelUpdate > 60) {
           lastLevelUpdate = now;
           setLevel(Math.min(1, rms / 0.12));
         }
-
-        if (inSpeech) {
-          speech.push(frame);
-          speechSamples += frame.length;
-          silenceMs = voiced ? 0 : silenceMs + frameMs;
-          const durMs = (speechSamples / rate) * 1000;
-          if (silenceMs >= HANGOVER_MS || durMs >= MAX_UTTERANCE_MS) flush();
-        } else if (voiced) {
-          inSpeech = true;
-          setSpeaking(true);
-          speech = [...preroll, frame];
-          speechSamples = prerollSamples + frame.length;
-        } else {
-          preroll.push(frame);
-          prerollSamples += frame.length;
-          while (prerollSamples > (PREROLL_MS / 1000) * rate && preroll.length) {
-            prerollSamples -= preroll.shift()!.length;
-          }
-        }
       };
     } catch (err) {
+      discard();
       if (session !== sessionRef.current) return;
-      const denied = err instanceof DOMException && err.name === "NotAllowedError";
+      const denied = err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "SecurityError");
       setState(denied ? "denied" : "error");
     }
-  }, []);
+  }, [stop]);
 
   useEffect(() => stop, [stop]);
 

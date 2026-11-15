@@ -20,7 +20,10 @@ export function dayKey(ms: number) {
 export function dayLabel(ms: number, now: number, locale: Locale, l: LogMessages) {
   const key = dayKey(ms);
   if (key === dayKey(now)) return l.today;
-  if (key === dayKey(now - 86_400_000)) return l.yesterday;
+  // Calendar arithmetic, not "now - 24 h": DST days are 23 or 25 hours long.
+  const y = new Date(now);
+  y.setDate(y.getDate() - 1);
+  if (key === dayKey(y.getTime())) return l.yesterday;
   return new Date(ms).toLocaleDateString(INTL_LOCALE[locale], { weekday: "long", day: "numeric", month: "long" });
 }
 
@@ -73,7 +76,8 @@ export function symptomSpans(entries: TranscriptEntry[], findings: Finding[], no
     const lastReport = reports.at(-1)!.at;
     const finding = findings.find((f) => f.id === id);
     const resolvedAt = sorted.find((e) => e.at >= lastReport && e.resolved.includes(id))?.at;
-    const dismissed = reports.some((e) => e.dismissed?.includes(id));
+    // Only the latest episode counts: a symptom dismissed once, then genuinely re-reported, is not "dismissed".
+    const dismissed = Boolean(reports.at(-1)!.dismissed?.includes(id));
     if (finding) spans.push({ id, start, end: now, state: "active", finding });
     else if (dismissed) spans.push({ id, start, end: lastReport, state: "dismissed" });
     else if (resolvedAt) spans.push({ id, start, end: resolvedAt, state: "resolved" });
@@ -109,13 +113,13 @@ interface Section {
   tone?: "crit" | "warn";
 }
 
-function duration(ms: number, locale: Locale) {
+function duration(ms: number, f: LogMessages["file"]) {
   const min = Math.max(1, Math.round(ms / 60_000));
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
   const rest = min % 60;
   if (h < 48) return rest ? `${h} h ${rest} min` : `${h} h`;
-  return locale === "pt" ? `${Math.round(h / 24)} dias` : `${Math.round(h / 24)} days`;
+  return f.days(Math.round(h / 24));
 }
 
 /** The report as sections, rendered to text or HTML. */
@@ -176,7 +180,7 @@ export function buildReport(a: ReportArgs): { heading: string; generated: string
   sections.push({
     title: f.evolution,
     lines: spans.length
-      ? spans.map((sp) => `${label(sp.id)}: ${f.state[sp.state]} · ${when(sp.start)} → ${sp.state === "active" ? l.timelineNow : when(sp.end)} · ${f.duration(duration(sp.end - sp.start, locale))}`)
+      ? spans.map((sp) => `${label(sp.id)}: ${f.state[sp.state]} · ${when(sp.start)} → ${sp.state === "active" ? l.timelineNow : when(sp.end)} · ${f.duration(duration(sp.end - sp.start, f))}`)
       : [f.noEvolution],
   });
 

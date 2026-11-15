@@ -53,6 +53,8 @@ export function useLocalAi() {
   const requestedRef = useRef<string | null>(null);
   // Saved choices are read on mount; nothing is downloaded before that.
   const [booted, setBooted] = useState(false);
+  /** Bumped on every engine pick, so a slow OpenRouter reply can't set a stale error. */
+  const choiceGen = useRef(0);
 
   useEffect(() => {
     const worker = new Worker(new URL("../workers/ai.worker.ts", import.meta.url), { type: "module" });
@@ -66,8 +68,10 @@ export function useLocalAi() {
           setDevice(msg.device);
           break;
         case "status":
-          if (msg.model === "llm" && msg.state === "error" && requestedRef.current) {
-            const id = requestedRef.current;
+          // Pin the failure on the model that actually failed, not on whichever
+          // model was requested last (the user may have switched meanwhile).
+          if (msg.model === "llm" && msg.state === "error" && (msg.id ?? requestedRef.current)) {
+            const id = (msg.id ?? requestedRef.current)!;
             setFailed((f) => (f.includes(id) ? f : [...f, id]));
           }
           setModels((m) => ({
@@ -95,6 +99,8 @@ export function useLocalAi() {
 
     return () => {
       worker.terminate();
+      // Settle every in-flight request so awaiting callers don't hang forever.
+      waiting.forEach((resolve) => resolve(""));
       waiting.clear();
     };
   }, []);
@@ -104,10 +110,22 @@ export function useLocalAi() {
   }, []);
 
   const request = useCallback(
-    (build: (id: string) => AiRequest, transfer: Transferable[] = []) =>
+    (build: (id: string) => AiRequest, transfer: Transferable[] = [], timeoutMs?: number) =>
       new Promise<string>((resolve) => {
         const id = crypto.randomUUID();
-        pending.current.set(id, resolve);
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        pending.current.set(id, (text) => {
+          clearTimeout(timer);
+          resolve(text);
+        });
+        if (timeoutMs !== undefined) {
+          timer = setTimeout(() => {
+            if (!pending.current.delete(id)) return;
+            // Stop the generation too, or it keeps the worker queue (and Whisper) blocked.
+            send({ type: "cancel", id });
+            resolve("");
+          }, timeoutMs);
+        }
         send(build(id), transfer);
       }),
     [send],
@@ -151,6 +169,7 @@ export function useLocalAi() {
   }, []);
 
   const choose = useCallback((id: EngineId) => {
+    choiceGen.current++;
     setChoice(id);
     setError(null);
     try {
@@ -168,22 +187,20 @@ export function useLocalAi() {
   const feedback = useCallback(
     async (context: string, locale: Locale): Promise<{ text: string; engine: EngineId; model: string }> => {
       if (active === "openrouter") {
+        const gen = choiceGen.current;
         try {
           const text = await openRouterFeedback(openrouter, messages[locale].prompt, context);
-          setError(null);
+          if (gen === choiceGen.current) setError(null);
           return { text, engine: "openrouter", model: openrouter.model };
         } catch (e) {
-          setError(e instanceof OpenRouterError ? e.code : "other");
+          if (gen === choiceGen.current) setError(e instanceof OpenRouterError ? e.code : "other");
           return { text: "", engine: "openrouter", model: openrouter.model };
         }
       }
       if (active === "off") return { text: "", engine: "off", model: "" };
       if (models.llm.state !== "ready" || !activeModel) return { text: "", engine: "browser", model: activeModel?.label ?? browserModel.label };
       // The rules already answered; a slow device must not leave the card "refining" forever.
-      const text = await Promise.race([
-        request((id) => ({ type: "feedback", id, context, locale })),
-        new Promise<string>((resolve) => setTimeout(() => resolve(""), BROWSER_TIMEOUT_MS)),
-      ]);
+      const text = await request((id) => ({ type: "feedback", id, context, locale }), [], BROWSER_TIMEOUT_MS);
       return { text, engine: "browser", model: activeModel.label };
     },
     [active, openrouter, models.llm.state, request, browserModel.label, activeModel],

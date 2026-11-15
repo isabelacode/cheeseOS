@@ -22,8 +22,10 @@ export function SymptomTimeline({ spans, now, t, l, locale }: { spans: SymptomSp
   if (!spans.length) return <p className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-sm text-ink-3">{l.timelineEmpty}</p>;
 
   const min = Math.min(...spans.map((s) => s.start));
-  const range = Math.max(now - min, 60_000);
-  const pos = (ms: number) => ((ms - min) / range) * 100;
+  // `now` ticks coarsely (and may lag a fresh report), so the axis must also cover every span end.
+  const max = Math.max(now, ...spans.map((s) => Math.max(s.start, s.end)));
+  const range = Math.max(max - min, 60_000);
+  const pos = (ms: number) => Math.min(100, Math.max(0, ((ms - min) / range) * 100));
 
   return (
     <div>
@@ -31,7 +33,7 @@ export function SymptomTimeline({ spans, now, t, l, locale }: { spans: SymptomSp
         {spans.map((s) => {
           const active = s.state === "active" && s.finding;
           const left = pos(s.start);
-          const width = Math.max(pos(s.end) - left, 2);
+          const width = Math.min(Math.max(pos(s.end) - left, 2), 100 - Math.min(left, 98));
           const fill = active ? SEVERITY_FILL[s.finding!.severity] : BAR_FILL[s.state as Exclude<SpanState, "active">];
           return (
             <li key={s.id}>

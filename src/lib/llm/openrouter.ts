@@ -74,13 +74,21 @@ export class OpenRouterError extends Error {
   }
 }
 
+function statusCode(s: number): OpenRouterErrorCode {
+  return s === 401 ? "auth" : s === 402 ? "credits" : s === 400 || s === 404 ? "model" : s === 429 ? "rate" : "other";
+}
+
 export async function openRouterFeedback(settings: OpenRouterSettings, systemPrompt: string, context: string): Promise<string> {
+  const apiKey = settings.apiKey.trim();
+  // A missing key, or one with characters no HTTP header can carry (fetch would
+  // throw a TypeError that looks like a network failure), is an auth problem.
+  if (!/^[\x21-\x7e]+$/.test(apiKey)) throw new OpenRouterError("auth");
   let res: Response;
   try {
     res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${settings.apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "X-Title": "cheeseOS",
     },
@@ -98,10 +106,17 @@ export async function openRouterFeedback(settings: OpenRouterSettings, systemPro
   } catch {
     throw new OpenRouterError("network");
   }
-  if (!res.ok) {
-    const s = res.status;
-    throw new OpenRouterError(s === 401 ? "auth" : s === 402 ? "credits" : s === 400 || s === 404 ? "model" : s === 429 ? "rate" : "other");
+  if (!res.ok) throw new OpenRouterError(statusCode(res.status));
+  let data: { error?: { code?: unknown }; choices?: { message?: { content?: unknown }; error?: { code?: unknown } }[] };
+  try {
+    data = await res.json();
+  } catch {
+    // Truncated body, HTML error page, or the timeout firing mid-read.
+    throw new OpenRouterError("other");
   }
-  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return cleanModelText(data.choices?.[0]?.message?.content ?? "");
+  // OpenRouter can answer 200 and report an upstream failure in the body.
+  const bodyError = data?.error ?? data?.choices?.[0]?.error;
+  if (bodyError) throw new OpenRouterError(typeof bodyError.code === "number" ? statusCode(bodyError.code) : "other");
+  const content = data?.choices?.[0]?.message?.content;
+  return cleanModelText(typeof content === "string" ? content : "");
 }

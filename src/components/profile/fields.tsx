@@ -138,6 +138,8 @@ export function EditableCard({
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
+            // A rejected save keeps the form open: send focus to the first invalid field.
+            requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
           }}
           onKeyDown={(e) => {
             if (e.key === "Escape") onCancel();
