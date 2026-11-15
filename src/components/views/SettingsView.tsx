@@ -18,19 +18,26 @@ import { useCrewSession } from "@/lib/session/CrewSession";
 export function SettingsView() {
   const s = settingsMessages[useLocale()];
   return (
-    <div className="flex w-full max-w-[720px] flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-4">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">{s.title}</h1>
         <p className="mt-1 text-[15px] text-ink-2">{s.intro}</p>
       </header>
-      <ProfileLink />
-      <ScienceLink />
-      <AiSection />
-      <RemindersSection />
-      <LanguageSection />
-      <VoiceSection />
-      <DemoSection />
-      <DataSection />
+      {/* Two balanced columns on wide screens; on phones the DOM order is the reading order. */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div className="flex min-w-0 flex-col gap-4">
+          <ProfileLink />
+          <ScienceLink />
+          <LanguageSection />
+          <AiSection />
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">
+          <VoiceSection />
+          <RemindersSection />
+          <DemoSection />
+          <DataSection />
+        </div>
+      </div>
     </div>
   );
 }
@@ -103,7 +110,7 @@ function RemindersSection() {
           {r.settings.title}
         </span>
       </SectionTitle>
-      <p className="-mt-1 mb-3 max-w-[64ch] text-[13px] text-ink-2">{r.settings.intro}</p>
+      <p className="-mt-1 mb-3 max-w-[60ch] text-[13px] text-ink-2">{r.settings.intro}</p>
       <ul className="grid gap-2">
         {REMINDER_IDS.map((id) => {
           const rem = routine.reminders.find((x) => x.id === id)!;
@@ -142,16 +149,15 @@ function RemindersSection() {
             checked={routine.notify && permission === "granted"}
             disabled={permission === "denied" || permission === "unsupported"}
             onChange={(e) => toggleNotify(e.target.checked)}
+            aria-describedby="notify-hint"
             className="size-4 shrink-0 accent-accent"
           />
           <BellRing className="size-4 shrink-0 text-accent-ink" aria-hidden />
-          <span>
-            {r.settings.notify}
-            <span className="block text-xs font-normal text-ink-3">
-              {permission === "denied" ? r.settings.notifyDenied : permission === "unsupported" ? r.settings.notifyUnsupported : r.settings.notifyHint}
-            </span>
-          </span>
+          {r.settings.notify}
         </label>
+        <p id="notify-hint" className="max-w-[60ch] pl-14 text-xs text-ink-3">
+          {permission === "denied" ? r.settings.notifyDenied : permission === "unsupported" ? r.settings.notifyUnsupported : r.settings.notifyHint}
+        </p>
       </div>
       <p className="mt-2 text-xs text-ink-3">{r.settings.openOnly}</p>
     </Card>
@@ -170,13 +176,18 @@ function AiSection() {
       <p className="-mt-1 mb-4 text-[13px] text-ink-2">{s.ai.intro}</p>
       <div className="grid gap-4">
         <EngineStatusPanel ai={ai} />
-        <EngineRadioGroup ai={ai} onNeedKey={() => keyRef.current?.focus()} />
-        <div className="border-t border-line pt-4">
-          <BrowserModelList ai={ai} />
-        </div>
-        <div className="border-t border-line pt-4">
-          <OpenRouterForm ai={ai} keyInputRef={keyRef} />
-        </div>
+        {/* The form mounts after the pick, so focus it on the next frame. */}
+        <EngineRadioGroup ai={ai} onNeedKey={() => requestAnimationFrame(() => keyRef.current?.focus())} />
+        {ai.choice === "browser" && (
+          <div className="border-t border-line pt-4">
+            <BrowserModelList ai={ai} />
+          </div>
+        )}
+        {ai.choice === "openrouter" && (
+          <div className="border-t border-line pt-4">
+            <OpenRouterForm ai={ai} keyInputRef={keyRef} />
+          </div>
+        )}
         <div className="border-t border-line pt-4">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold">
             <ShieldCheck className="size-4 text-accent-ink" aria-hidden /> {s.privacy.title}
@@ -238,12 +249,12 @@ function VoiceSection() {
       <SectionTitle>
         <span id="voice">{s.title}</span>
       </SectionTitle>
-      <p className="max-w-[64ch] text-[13px] text-ink-2">
+      <p className="max-w-[60ch] text-[13px] text-ink-2">
         {s.howTo[0]}
         <kbd className="rounded-md border border-line bg-sunken px-1.5 py-0.5 font-sans text-xs font-semibold text-ink">{s.howTo[1]}</kbd>
         {s.howTo[2]}
       </p>
-      <p className="mt-2 max-w-[64ch] text-[13px] text-ink-2">{s.onDemand}</p>
+      <p className="mt-2 max-w-[60ch] text-[13px] text-ink-2">{s.onDemand}</p>
       <div className={`mt-4 flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 ${stt.state === "error" ? "bg-crit-soft" : "bg-sunken"}`}>
         <Mic className={`size-4 shrink-0 ${stt.state === "error" ? "text-crit" : "text-ink-2"}`} aria-hidden />
         <p role="status" className={`min-w-0 flex-1 text-sm font-semibold ${stt.state === "error" ? "text-crit" : ""}`}>
@@ -283,16 +294,14 @@ function DemoSection() {
       <SectionTitle>
         <span id="demo">{s.title}</span>
       </SectionTitle>
-      <label className="flex min-h-11 cursor-pointer items-start gap-3">
-        <input type="checkbox" role="switch" checked={demo} onChange={(e) => setDemoMode(e.target.checked)} className="mt-1 size-4 shrink-0 accent-accent" />
-        <span className="min-w-0">
-          <span className="flex items-center gap-1.5 text-sm font-semibold">
-            <Gauge className="size-4 text-accent-ink" aria-hidden />
-            {s.label}
-          </span>
-          <span className="mt-0.5 block max-w-[64ch] text-[13px] text-ink-2">{s.hint}</span>
-        </span>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold">
+        <input type="checkbox" checked={demo} onChange={(e) => setDemoMode(e.target.checked)} aria-describedby="demo-hint" className="size-4 shrink-0 accent-accent" />
+        <Gauge className="size-4 shrink-0 text-accent-ink" aria-hidden />
+        {s.label}
       </label>
+      <p id="demo-hint" className="max-w-[60ch] pl-7 text-[13px] text-ink-2">
+        {s.hint}
+      </p>
     </Card>
   );
 }

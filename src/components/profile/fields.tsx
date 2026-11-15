@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Check, Pencil } from "lucide-react";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
+import { profileMessages } from "@/lib/i18n/pages/profile";
 
 /** Same ranges as onboarding. */
 export function numberIn(v: string, min: number, max: number) {
@@ -49,7 +50,8 @@ export function Field({
       </label>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": note ? noteId : undefined })}
       {note && (
-        <span id={noteId} className={`mt-1 block text-xs ${error ? "text-crit" : "text-ink-2"}`} role={error ? "alert" : undefined}>
+        // Errors are announced once, as a count, by EditableCard; each note is read with its field.
+        <span id={noteId} className={`mt-1 block text-xs ${error ? "font-medium text-crit" : "text-ink-2"}`}>
           {note}
         </span>
       )}
@@ -74,6 +76,7 @@ export function EditableCard({
   onSubmit,
   view,
   form,
+  editBlocked,
 }: {
   id: string;
   title: string;
@@ -87,15 +90,22 @@ export function EditableCard({
   onSubmit: () => void;
   view: ReactNode;
   form: ReactNode;
+  /** Set while another section is open: Edit stays visible but inert, so no draft is silently dropped. */
+  editBlocked?: string | null;
 }) {
   const t = useT();
+  const p = profileMessages[useLocale()];
+  const [errorSummary, setErrorSummary] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const editRef = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(editing);
 
   useEffect(() => {
     if (editing && !wasEditing.current) formRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
-    if (!editing && wasEditing.current) editRef.current?.focus();
+    if (!editing && wasEditing.current) {
+      editRef.current?.focus();
+      setErrorSummary(null);
+    }
     wasEditing.current = editing;
   }, [editing]);
 
@@ -110,7 +120,8 @@ export function EditableCard({
           <p className="mt-0.5 text-[13px] text-ink-2">{hint}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span role="status" className="flex items-center gap-1 text-xs font-semibold text-ok empty:hidden">
+          {/* Always in the layout: a live region that appears from display:none is often not announced. */}
+          <span role="status" className="flex items-center gap-1 text-xs font-semibold text-ok">
             {saved && (
               <>
                 <Check className="size-3.5" aria-hidden /> {saved}
@@ -121,9 +132,13 @@ export function EditableCard({
             <button
               ref={editRef}
               type="button"
-              onClick={onEdit}
+              onClick={editBlocked ? undefined : onEdit}
               aria-label={editLabel}
-              className="flex min-h-11 items-center gap-1.5 rounded-full bg-sunken px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-accent-soft hover:text-accent-ink"
+              aria-disabled={editBlocked ? true : undefined}
+              title={editBlocked ?? undefined}
+              className={`flex min-h-11 items-center gap-1.5 rounded-full bg-sunken px-4 py-2 text-sm font-semibold transition-colors ${
+                editBlocked ? "cursor-not-allowed text-ink-3" : "text-ink hover:bg-accent-soft hover:text-accent-ink"
+              }`}
             >
               <Pencil className="size-3.5" aria-hidden />
               {editText}
@@ -138,14 +153,21 @@ export function EditableCard({
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
-            // A rejected save keeps the form open: send focus to the first invalid field.
-            requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+            // A rejected save keeps the form open: announce how many fields need fixing, then focus the first.
+            requestAnimationFrame(() => {
+              const invalid = formRef.current?.querySelectorAll<HTMLElement>('[aria-invalid="true"]');
+              setErrorSummary(invalid?.length ? p.fixFields(invalid.length) : null);
+              invalid?.[0]?.focus();
+            });
           }}
           onKeyDown={(e) => {
             if (e.key === "Escape") onCancel();
           }}
         >
           {form}
+          <p role="alert" className="mt-4 text-[13px] font-semibold text-crit empty:mt-0">
+            {errorSummary}
+          </p>
           <div className="mt-5 flex flex-wrap justify-end gap-2">
             <button type="button" onClick={onCancel} className="min-h-11 rounded-full px-4 py-2 text-sm font-semibold text-ink-2 transition-colors hover:bg-sunken">
               {t.common.cancel}

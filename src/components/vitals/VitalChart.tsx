@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { MessageSquareText } from "lucide-react";
 import type { VitalKey } from "@/lib/i18n/pages/vitals";
 import { VITAL_BANDS, thresholdLines } from "./thresholds";
@@ -37,11 +37,17 @@ interface Props {
   colValue: string;
   tags: { attention: string; critical: string };
   emptyText: string;
+  /** Fill of the latest primary reading: shows an out-of-range value on the line itself. */
+  lastFill?: string;
 }
 
 const PAD = { top: 26, right: 12, bottom: 26, left: 40 };
-const ATTENTION = "#b45309";
-const CRITICAL = "#c81e1e";
+// Chart marks follow the design tokens (globals.css), so they never drift from the chips.
+const ATTENTION = "var(--warn)";
+const CRITICAL = "var(--crit)";
+const GRID = "var(--line)";
+const AXIS = "var(--ink-3)";
+const INK = "var(--ink)";
 
 function niceStep(span: number, target = 5) {
   const raw = span / target;
@@ -112,6 +118,23 @@ export function VitalChart(props: Props) {
     setHover(best);
   }
 
+  function onKey(e: KeyboardEvent<SVGSVGElement>) {
+    if (!primary.length) return;
+    const last = primary.length - 1;
+    let next: number | null = null;
+    if (e.key === "ArrowLeft") next = hover === null ? last : Math.max(0, hover - 1);
+    else if (e.key === "ArrowRight") next = hover === null ? last : Math.min(last, hover + 1);
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = last;
+    else if (e.key === "Escape") {
+      setHover(null);
+      return;
+    }
+    if (next === null) return;
+    e.preventDefault();
+    setHover(next);
+  }
+
   const hoverPt = hover !== null ? primary[hover] : undefined;
   const hoverValues = hoverPt
     ? p.series.map((s) => ({ s, pt: s.points.find((q) => q.t === hoverPt.t) ?? s.points[hover!] })).filter((r) => r.pt)
@@ -130,9 +153,12 @@ export function VitalChart(props: Props) {
           viewBox={`0 0 ${w} ${h}`}
           role="img"
           aria-label={p.summary}
-          className="block touch-pan-y select-none"
+          tabIndex={hasData ? 0 : -1}
+          className="block touch-pan-y rounded-xl select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           onPointerMove={onMove}
           onPointerLeave={() => setHover(null)}
+          onKeyDown={onKey}
+          onBlur={() => setHover(null)}
         >
           <defs>
             <clipPath id={clipId}>
@@ -141,12 +167,12 @@ export function VitalChart(props: Props) {
           </defs>
 
           {/* Normal band */}
-          <rect x={PAD.left} y={bandTop} width={plotW} height={Math.max(0, bandBottom - bandTop)} fill="#e8efff" />
+          <rect x={PAD.left} y={bandTop} width={plotW} height={Math.max(0, bandBottom - bandTop)} fill="var(--accent-soft)" />
 
           {/* Grid + y ticks */}
           {yTicks.map((v) => (
             <g key={v}>
-              <line x1={PAD.left} x2={PAD.left + plotW} y1={y(v)} y2={y(v)} stroke="#e4e6eb" strokeWidth={1} />
+              <line x1={PAD.left} x2={PAD.left + plotW} y1={y(v)} y2={y(v)} stroke={GRID} strokeWidth={1} />
               <text x={PAD.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="tabular fill-ink-3 text-[11px]">
                 {p.format(v)}
               </text>
@@ -158,14 +184,14 @@ export function VitalChart(props: Props) {
             const anchor = i === 0 ? "start" : i === p.xTicks.length - 1 ? "end" : "middle";
             return (
               <g key={tk.t}>
-                <line x1={x(tk.t)} x2={x(tk.t)} y1={PAD.top + plotH} y2={PAD.top + plotH + 4} stroke="#c9cfd8" />
+                <line x1={x(tk.t)} x2={x(tk.t)} y1={PAD.top + plotH} y2={PAD.top + plotH + 4} stroke={AXIS} strokeOpacity={0.5} />
                 <text x={x(tk.t)} y={h - 6} textAnchor={anchor} className="tabular fill-ink-3 text-[11px]">
                   {tk.label}
                 </text>
               </g>
             );
           })}
-          <line x1={PAD.left} x2={PAD.left + plotW} y1={PAD.top + plotH} y2={PAD.top + plotH} stroke="#c9cfd8" />
+          <line x1={PAD.left} x2={PAD.left + plotW} y1={PAD.top + plotH} y2={PAD.top + plotH} stroke={AXIS} strokeOpacity={0.5} />
 
           {/* Thresholds: dash pattern and text label distinguish attention from critical, not only colour */}
           {lines
@@ -198,7 +224,7 @@ export function VitalChart(props: Props) {
               x2={x(m.at)}
               y1={PAD.top - 2}
               y2={PAD.top + plotH}
-              stroke={activeMarker === m.id ? "#111827" : "#5c6370"}
+              stroke={activeMarker === m.id ? INK : AXIS}
               strokeWidth={1}
               strokeDasharray="1 3"
             />
@@ -206,31 +232,34 @@ export function VitalChart(props: Props) {
 
           {/* Series */}
           <g clipPath={`url(#${clipId})`}>
-            {p.series.map((s) =>
+            {/* Secondary series (diastolic) are dashed reference lines: the thresholds belong to the first. */}
+            {p.series.map((s, i) =>
               s.points.length > 1 ? (
                 <path
                   key={s.id}
-                  d={s.points.map((pt, i) => `${i ? "L" : "M"}${x(pt.t).toFixed(1)},${y(pt.v).toFixed(1)}`).join("")}
+                  d={s.points.map((pt, j) => `${j ? "L" : "M"}${x(pt.t).toFixed(1)},${y(pt.v).toFixed(1)}`).join("")}
                   fill="none"
                   stroke={s.color}
-                  strokeWidth={2}
+                  strokeWidth={i === 0 ? 2 : 1.5}
+                  strokeDasharray={i === 0 ? undefined : "4 3"}
                   strokeLinejoin="round"
                   strokeLinecap="round"
                 />
               ) : null,
             )}
           </g>
-          {p.series.map((s) => {
+          {p.series.map((s, i) => {
             const last = s.points.at(-1);
-            return last ? <circle key={s.id} cx={x(last.t)} cy={y(last.v)} r={4} fill={s.color} stroke="#fff" strokeWidth={2} /> : null;
+            const fill = i === 0 && p.lastFill ? p.lastFill : s.color;
+            return last ? <circle key={s.id} cx={x(last.t)} cy={y(last.v)} r={i === 0 ? 4.5 : 3.5} fill={fill} stroke="var(--surface)" strokeWidth={2} /> : null;
           })}
 
           {/* Hover crosshair */}
           {hoverPt && (
             <g pointerEvents="none">
-              <line x1={x(hoverPt.t)} x2={x(hoverPt.t)} y1={PAD.top} y2={PAD.top + plotH} stroke="#111827" strokeOpacity={0.35} />
+              <line x1={x(hoverPt.t)} x2={x(hoverPt.t)} y1={PAD.top} y2={PAD.top + plotH} stroke={INK} strokeOpacity={0.35} />
               {hoverValues.map(({ s, pt }) => (
-                <circle key={s.id} cx={x(pt.t)} cy={y(pt.v)} r={3.5} fill="#fff" stroke={s.color} strokeWidth={2} />
+                <circle key={s.id} cx={x(pt.t)} cy={y(pt.v)} r={3.5} fill="var(--surface)" stroke={s.color} strokeWidth={2} />
               ))}
             </g>
           )}
@@ -242,10 +271,16 @@ export function VitalChart(props: Props) {
 
         {hoverPt && (
           <div
+            aria-hidden
             className="pointer-events-none absolute z-10 rounded-xl bg-ink px-2.5 py-1.5 text-xs text-white shadow-card"
             style={{
               left: Math.min(Math.max(x(hoverPt.t), PAD.left + 50), w - 60),
-              top: PAD.top + 4,
+              // Float above the reading (below it when the reading is near the top), clear of the threshold labels.
+              top: (() => {
+                const py = y(hoverPt.v);
+                const boxH = 22 + hoverValues.length * 16;
+                return py - boxH - 10 >= 2 ? py - boxH - 10 : Math.min(h - boxH - 2, py + 12);
+              })(),
               transform: "translateX(-50%)",
             }}
           >

@@ -43,7 +43,7 @@ export function VitalsStrip({ vitals }: { vitals: Vitals }) {
                 className="flex h-full flex-col gap-1.5 rounded-2xl bg-sunken px-3 py-2.5 transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <span className="flex items-center gap-1.5 text-xs text-ink-2">
-                  <Icon className={`size-3.5 shrink-0 ${sev >= 2 ? "text-warn" : "text-ink-3"}`} aria-hidden />
+                  <Icon className={`size-3.5 shrink-0 ${sev >= 3 ? "text-crit" : sev >= 2 ? "text-warn" : "text-ink-3"}`} aria-hidden />
                   <span className="leading-tight">{copy.label}</span>
                 </span>
                 <span className="flex items-baseline gap-1">

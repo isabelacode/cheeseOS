@@ -21,11 +21,18 @@ export function NowView() {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* When something is wrong the health state leads; the greeting steps back. */}
       <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-[28px]">{d.hello(firstName(profile))}</h1>
-        <p className="text-sm text-balance break-words text-ink-2">
-          {[profile.role, profile.mission, d.years(profile.age), profile.bloodType].filter(Boolean).join(" · ")}
-        </p>
+        {s.status === "nominal" ? (
+          <>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-[28px]">{d.hello(firstName(profile))}</h1>
+            <p className="text-sm text-balance break-words text-ink-2">
+              {[profile.role, profile.mission, d.years(profile.age), profile.bloodType].filter(Boolean).join(" · ")}
+            </p>
+          </>
+        ) : (
+          <h1 className="text-lg font-semibold tracking-tight text-ink-2">{d.hello(firstName(profile))}</h1>
+        )}
       </header>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:items-start lg:gap-6">
         <div className="flex min-w-0 flex-col gap-5">
@@ -58,7 +65,8 @@ export function NowView() {
             }}
           />
           <VitalsStrip vitals={s.vitals} />
-          <MissionsCard />
+          {/* Exercise and streaks contradict "stop the activity". */}
+          {s.status !== "critical" && <MissionsCard />}
         </div>
         <BodyPanel className="h-[420px] lg:sticky lg:top-6 lg:h-[calc(100vh-140px)] lg:min-h-[560px]" />
       </div>

@@ -6,6 +6,7 @@ export interface RoutineMessages {
   aside: (done: number, total: number) => string;
   missions: Record<Mission, { label: string; hint: string }>;
   auto: string;
+  doneTag: string;
   markDone: (label: string) => string;
   streak: (n: number) => string;
   streakLabel: string;
@@ -39,6 +40,7 @@ const pt: RoutineMessages = {
     hydration: { label: "Hidratação", hint: "Beber água ao longo do dia reduz risco de cálculo renal." },
   },
   auto: "automático",
+  doneTag: "concluída",
   markDone: (l) => `Marcar “${l}” como feita`,
   streak: (n) => `${n} ${n === 1 ? "dia" : "dias"}`,
   streakLabel: "sequência de check-ins",
@@ -63,7 +65,7 @@ const pt: RoutineMessages = {
     notifyHint: "Também mostra o lembrete como notificação do navegador.",
     notifyDenied: "Notificações bloqueadas no navegador. Os lembretes continuam aparecendo dentro do app.",
     notifyUnsupported: "Este navegador não oferece notificações. Os lembretes aparecem dentro do app.",
-    openOnly: "Sem servidor nem conta: nada sai do aparelho.",
+    openOnly: "Sem servidor nem conta: os lembretes ficam só neste aparelho.",
   },
   toast: { title: "Lembrete", dismiss: "Dispensar", open: "Abrir" },
 };
@@ -78,6 +80,7 @@ const en: RoutineMessages = {
     hydration: { label: "Hydration", hint: "Drinking water through the day lowers kidney stone risk." },
   },
   auto: "automatic",
+  doneTag: "done",
   markDone: (l) => `Mark “${l}” as done`,
   streak: (n) => `${n} ${n === 1 ? "day" : "days"}`,
   streakLabel: "check-in streak",
@@ -102,7 +105,7 @@ const en: RoutineMessages = {
     notifyHint: "Also show reminders as browser notifications.",
     notifyDenied: "Notifications are blocked in the browser. Reminders still show inside the app.",
     notifyUnsupported: "This browser has no notifications. Reminders show inside the app.",
-    openOnly: "No server or account: nothing leaves the device.",
+    openOnly: "No server or account: reminders stay on this device only.",
   },
   toast: { title: "Reminder", dismiss: "Dismiss", open: "Open" },
 };

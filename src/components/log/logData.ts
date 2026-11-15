@@ -45,12 +45,34 @@ export function groupByDay(entries: TranscriptEntry[]) {
   return groups;
 }
 
-/** Every symptom mentioned in the log (recognized or resolved), in first-seen order. */
+/**
+ * The improvements each entry should show. "A dor de cabeça passou" resolves the
+ * whole headache family (migraine, cluster…) so none lingers; the diary keeps
+ * only the ones the crew member had actually reported. Naming a symptom that was
+ * never reported would misstate the record, so an unmatched "passou" shows nothing.
+ */
+export function shownResolved(entries: TranscriptEntry[]): Map<string, SymptomId[]> {
+  const out = new Map<string, SymptomId[]>();
+  const reported = new Set<SymptomId>();
+  for (const e of [...entries].sort((a, b) => a.at - b.at)) {
+    if (e.resolved.length) {
+      // Button presses resolve exactly the symptom pressed; keep those as they are.
+      const kept = e.source === "action" ? e.resolved : e.resolved.filter((id) => reported.has(id));
+      if (kept.length) out.set(e.id, kept);
+    }
+    e.findings.forEach((f) => reported.add(f));
+  }
+  return out;
+}
+
+/** Every symptom mentioned in the log (recognized, resolved or cleared), in first-seen order. */
 export function symptomsInLog(entries: TranscriptEntry[]): SymptomId[] {
   const seen = new Set<SymptomId>();
+  const resolved = shownResolved(entries);
   for (const e of [...entries].sort((a, b) => a.at - b.at)) {
     e.findings.forEach((f) => seen.add(f));
-    e.resolved.forEach((f) => seen.add(f));
+    (resolved.get(e.id) ?? []).forEach((f) => seen.add(f));
+    e.cleared?.forEach((f) => seen.add(f));
   }
   return [...seen];
 }
@@ -75,7 +97,8 @@ export function symptomSpans(entries: TranscriptEntry[], findings: Finding[], no
     const start = reports[0].at;
     const lastReport = reports.at(-1)!.at;
     const finding = findings.find((f) => f.id === id);
-    const resolvedAt = sorted.find((e) => e.at >= lastReport && e.resolved.includes(id))?.at;
+    // Named as gone, or closed by a general "I'm fine".
+    const resolvedAt = sorted.find((e) => e.at >= lastReport && (e.resolved.includes(id) || e.cleared?.includes(id)))?.at;
     // Only the latest episode counts: a symptom dismissed once, then genuinely re-reported, is not "dismissed".
     const dismissed = Boolean(reports.at(-1)!.dismissed?.includes(id));
     if (finding) spans.push({ id, start, end: now, state: "active", finding });
@@ -113,7 +136,7 @@ interface Section {
   tone?: "crit" | "warn";
 }
 
-function duration(ms: number, f: LogMessages["file"]) {
+export function duration(ms: number, f: LogMessages["file"]) {
   const min = Math.max(1, Math.round(ms / 60_000));
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
@@ -211,6 +234,7 @@ export function buildReport(a: ReportArgs): { heading: string; generated: string
   sections.push({ title: f.routine, lines: [f.streak(a.streak), f.missions(a.missionsDone, a.missionsTotal)] });
 
   const log: string[] = [];
+  const shown = shownResolved(entries);
   for (const e of [...entries].sort((x, y) => y.at - x.at)) {
     const src = e.source === "voice" ? l.sourceVoice : e.source === "typed" ? l.sourceTyped : l.sourceAction;
     if (e.source === "action") {
@@ -227,7 +251,9 @@ export function buildReport(a: ReportArgs): { heading: string; generated: string
     const kept = e.findings.filter((id) => !e.dismissed?.includes(id));
     if (kept.length) log.push(`  ${f.recognized}: ${kept.map(label).join(", ")}`);
     if (e.dismissed?.length) log.push(`  ${f.dismissed}: ${e.dismissed.map(label).join(", ")}`);
-    if (e.resolved.length) log.push(`  ${f.resolved}: ${e.resolved.map(label).join(", ")}`);
+    const resolved = shown.get(e.id) ?? [];
+    if (resolved.length) log.push(`  ${f.resolved}: ${resolved.map(label).join(", ")}`);
+    if (e.cleared?.length) log.push(`  ${f.cleared}: ${e.cleared.map(label).join(", ")}`);
   }
   sections.push({ title: f.log, lines: log.length ? log : [f.noEntries] });
 

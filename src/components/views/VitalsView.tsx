@@ -3,18 +3,19 @@
 import { setMission } from "@/lib/routine/routine";
 import { Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Info } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
 import { useCrewSession } from "@/lib/session/CrewSession";
 import { formatNumber, INTL_LOCALE, useLocale, useT } from "@/lib/i18n";
 import { vitalsMessages, type VitalKey } from "@/lib/i18n/pages/vitals";
 import type { Severity, Vitals } from "@/lib/health/types";
-import { Card, SEVERITY_CHIP, SectionTitle, VITAL_ICON, formatVital, spec, timeOf } from "@/components/health/ui";
+import { Card, SEVERITY_CHIP, SEVERITY_FILL, SectionTitle, VITAL_ICON, formatVital, spec, timeOf } from "@/components/health/ui";
 import { VitalChart, type ChartMarker, type ChartSeries } from "@/components/vitals/VitalChart";
 import { DEFAULT_VITAL, VITAL_BANDS, VITAL_ORDER, directionOf, isVitalKey } from "@/components/vitals/thresholds";
 
 type Window = "minute" | "hour";
 
-const SERIES_COLOR = { primary: "#1462ff", diastolic: "#0f766e" };
+/** Primary series uses the accent token; diastolic is a dashed teal reference line (no token for a second series). */
+const SERIES_COLOR = { primary: "var(--accent)", diastolic: "#0f766e" };
 
 export function VitalsView() {
   // Opening this screen completes today's "review vital signs" mission.
@@ -73,6 +74,11 @@ function VitalsContent() {
   const tabRefs = useRef<Partial<Record<VitalKey, HTMLButtonElement | null>>>({});
 
   const select = (key: VitalKey) => router.replace(`${pathname}?v=${key}`, { scroll: false });
+
+  // On phones the tab strip scrolls: keep the selected tab in view (the default, heart rate, is 4th).
+  useEffect(() => {
+    tabRefs.current[selected]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [selected]);
 
   function onTabKey(e: KeyboardEvent<HTMLButtonElement>) {
     const i = VITAL_ORDER.indexOf(selected);
@@ -157,10 +163,15 @@ function VitalsContent() {
         <p className="text-sm text-ink-2">{m.subtitle}</p>
       </header>
 
-      <div role="tablist" aria-label={m.selectorLabel} className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      <div
+        role="tablist"
+        aria-label={m.selectorLabel}
+        className="-mx-3 flex [scrollbar-width:none] gap-2 overflow-x-auto px-3 pb-1 [mask-image:linear-gradient(to_right,#000_85%,transparent)] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:[mask-image:none]"
+      >
         {VITAL_ORDER.map((key) => {
           const Icon = VITAL_ICON[key];
           const active = key === selected;
+          const sev = spec(key).assess(s.vitals) as Severity;
           return (
             <button
               key={key}
@@ -176,17 +187,26 @@ function VitalsContent() {
               onClick={() => select(key)}
               onKeyDown={onTabKey}
               className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold motion-safe:transition-colors ${
-                active ? "bg-ink text-white" : "bg-surface text-ink-2 shadow-card hover:text-ink"
+                active ? "bg-accent text-white shadow-card" : "bg-surface text-ink-2 shadow-card hover:text-ink"
               }`}
             >
               <Icon className="size-4" aria-hidden />
               {m.short[key]}
+              {sev > 0 && (
+                <>
+                  <span
+                    className={`size-2 rounded-full ring-2 ${sev === 3 ? "bg-crit" : sev === 2 ? "bg-warn" : "bg-mild"} ${active ? "ring-white/80" : "ring-surface"}`}
+                    aria-hidden
+                  />
+                  <span className="sr-only">, {t.severity[sev]}</span>
+                </>
+              )}
             </button>
           );
         })}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
         <Card id="vital-panel" role="tabpanel" aria-labelledby={`vital-tab-${selected}`} className="min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -220,9 +240,16 @@ function VitalsContent() {
             </div>
           </div>
 
-          <p className="mt-3 max-w-[68ch] text-sm leading-relaxed text-ink-2">
-            <span className="font-semibold text-ink">{t.dashboard.range(t.vitals[selected].range)} {vs.unit}.</span> {explanation}
+          <p className="mt-3 text-sm font-semibold text-ink">
+            {t.dashboard.range(t.vitals[selected].range)} {vs.unit}.
           </p>
+          <details className="group mt-1">
+            <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1 text-[13px] font-semibold text-accent-ink [&::-webkit-details-marker]:hidden">
+              {m.howToRead}
+              <ChevronDown className="size-3.5 motion-safe:transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <p className="max-w-[68ch] text-sm leading-relaxed text-ink-2">{explanation}</p>
+          </details>
 
           <div className="mt-4">
             <VitalChart
@@ -237,39 +264,54 @@ function VitalsContent() {
               tableCaption={m.tableCaption(label, windowLabel)}
               colTime={m.colTime}
               colValue={`${m.colValue} (${vs.unit})`}
-              tags={m.thresholdTag}
+              tags={
+                isBp
+                  ? { attention: `${m.legend.systolic} · ${m.thresholdTag.attention}`, critical: `${m.legend.systolic} · ${m.thresholdTag.critical}` }
+                  : m.thresholdTag
+              }
               emptyText={m.noData}
+              lastFill={status.sev >= 2 ? SEVERITY_FILL[status.sev] : undefined}
             />
+            <p className="mt-1 hidden text-xs text-ink-3 sm:block">{m.chartKeys}</p>
           </div>
 
           <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-2" aria-hidden>
             {series.map((se) => (
               <li key={se.id} className="flex items-center gap-1.5">
                 <svg width="18" height="8">
-                  <line x1="1" x2="17" y1="4" y2="4" stroke={se.color} strokeWidth="2.5" strokeLinecap="round" />
+                  <line
+                    x1="1"
+                    x2="17"
+                    y1="4"
+                    y2="4"
+                    stroke={se.color}
+                    strokeWidth={se.id === "diastolic" ? 2 : 2.5}
+                    strokeDasharray={se.id === "diastolic" ? "4 3" : undefined}
+                    strokeLinecap="round"
+                  />
                 </svg>
                 {se.label}
               </li>
             ))}
             <li className="flex items-center gap-1.5">
               <span className="h-2.5 w-[18px] rounded-sm bg-accent-soft ring-1 ring-accent/20" />
-              {m.legend.normal}
+              {isBp ? m.legend.normalSystolic : m.legend.normal}
             </li>
             <li className="flex items-center gap-1.5">
               <svg width="18" height="8">
-                <line x1="0" x2="18" y1="4" y2="4" stroke="#b45309" strokeWidth="1.5" strokeDasharray="6 4" />
+                <line x1="0" x2="18" y1="4" y2="4" stroke="var(--warn)" strokeWidth="1.5" strokeDasharray="6 4" />
               </svg>
               {m.legend.attention}
             </li>
             <li className="flex items-center gap-1.5">
               <svg width="18" height="8">
-                <line x1="0" x2="18" y1="4" y2="4" stroke="#c81e1e" strokeWidth="1.5" strokeDasharray="2 3" />
+                <line x1="0" x2="18" y1="4" y2="4" stroke="var(--crit)" strokeWidth="1.5" strokeDasharray="2 3" />
               </svg>
               {m.legend.critical}
             </li>
             <li className="flex items-center gap-1.5">
               <svg width="12" height="12">
-                <line x1="6" x2="6" y1="0" y2="12" stroke="#5c6370" strokeDasharray="1 3" />
+                <line x1="6" x2="6" y1="0" y2="12" stroke="var(--ink-3)" strokeDasharray="1 3" />
               </svg>
               {m.legend.report}
             </li>

@@ -15,7 +15,11 @@ export interface VitalsPageMessages {
   lastHour: string;
   now: string;
   secondsAgo: (s: number) => string;
-  legend: { normal: string; attention: string; critical: string; report: string; systolic: string; diastolic: string };
+  legend: { normal: string; normalSystolic: string; attention: string; critical: string; report: string; systolic: string; diastolic: string };
+  /** Toggle for the plain-language range explanation. */
+  howToRead: string;
+  /** Hint under the chart for keyboard inspection. */
+  chartKeys: string;
   thresholdTag: { attention: string; critical: string };
   chartSummary: (p: { label: string; window: string; min: string; max: string; current: string; unit: string; reports: number }) => string;
   chartSummaryBp: (p: { window: string; sysMin: string; sysMax: string; diaMin: string; diaMax: string; current: string; reports: number }) => string;
@@ -50,7 +54,7 @@ export const vitalsMessages: Record<Locale, VitalsPageMessages> = {
       spo2: (n) =>
         `${n.lo}% ou mais indica boa oxigenação do sangue. Abaixo de ${n.lo}% pede atenção; abaixo de ${n.critLo}% é crítico.`,
       temperature: (n) =>
-        `Até ${n.hi} °C é considerado normal. Acima de ${n.hi} °C indica febre e pede atenção; a partir de ${n.critHi} °C ou abaixo de ${n.critLo} °C é crítico.`,
+        `Entre ${n.lo} e ${n.hi} °C é considerado normal. Acima de ${n.hi} °C indica febre e pede atenção; a partir de ${n.critHi} °C ou abaixo de ${n.critLo} °C é crítico.`,
       respiration: (n) =>
         `Até ${n.hi} respirações por minuto é o esperado. Acima de ${n.hi} pede atenção; acima de ${n.critHi} ou abaixo de ${n.critLo} é crítico.`,
       systolic: (n) =>
@@ -63,6 +67,7 @@ export const vitalsMessages: Record<Locale, VitalsPageMessages> = {
     secondsAgo: (s) => `−${s} s`,
     legend: {
       normal: "Faixa normal",
+      normalSystolic: "Faixa normal (sistólica)",
       attention: "Limite de atenção",
       critical: "Limite crítico",
       report: "Relato com sintoma",
@@ -70,6 +75,8 @@ export const vitalsMessages: Record<Locale, VitalsPageMessages> = {
       diastolic: "Diastólica",
     },
     thresholdTag: { attention: "Atenção", critical: "Crítico" },
+    howToRead: "Como ler esta faixa",
+    chartKeys: "Setas ← → no gráfico percorrem as leituras.",
     chartSummary: ({ label, window, min, max, current, unit, reports }) =>
       `${label}, ${window.toLowerCase()}: mínimo ${min}, máximo ${max}, atual ${current} ${unit}.${reports ? ` ${reports} ${reports === 1 ? "relato com sintoma" : "relatos com sintomas"} no período.` : ""}`,
     chartSummaryBp: ({ window, sysMin, sysMax, diaMin, diaMax, current, reports }) =>
@@ -104,7 +111,7 @@ export const vitalsMessages: Record<Locale, VitalsPageMessages> = {
       spo2: (n) =>
         `${n.lo}% or higher means the blood is well oxygenated. Below ${n.lo}% needs attention; below ${n.critLo}% is critical.`,
       temperature: (n) =>
-        `Up to ${n.hi} °C is considered normal. Above ${n.hi} °C indicates fever and needs attention; ${n.critHi} °C or higher, or below ${n.critLo} °C, is critical.`,
+        `Between ${n.lo} and ${n.hi} °C is considered normal. Above ${n.hi} °C indicates fever and needs attention; ${n.critHi} °C or higher, or below ${n.critLo} °C, is critical.`,
       respiration: (n) =>
         `Up to ${n.hi} breaths per minute is expected. Above ${n.hi} needs attention; above ${n.critHi} or below ${n.critLo} is critical.`,
       systolic: (n) =>
@@ -117,6 +124,7 @@ export const vitalsMessages: Record<Locale, VitalsPageMessages> = {
     secondsAgo: (s) => `−${s} s`,
     legend: {
       normal: "Normal range",
+      normalSystolic: "Normal range (systolic)",
       attention: "Attention limit",
       critical: "Critical limit",
       report: "Report with symptom",
@@ -124,6 +132,8 @@ export const vitalsMessages: Record<Locale, VitalsPageMessages> = {
       diastolic: "Diastolic",
     },
     thresholdTag: { attention: "Attention", critical: "Critical" },
+    howToRead: "How to read this range",
+    chartKeys: "Arrow keys ← → on the chart step through readings.",
     chartSummary: ({ label, window, min, max, current, unit, reports }) =>
       `${label}, ${window.toLowerCase()}: minimum ${min}, maximum ${max}, current ${current} ${unit}.${reports ? ` ${reports} ${reports === 1 ? "report with a symptom" : "reports with symptoms"} in this period.` : ""}`,
     chartSummaryBp: ({ window, sysMin, sysMax, diaMin, diaMax, current, reports }) =>

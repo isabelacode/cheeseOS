@@ -103,17 +103,18 @@ input::placeholder {
   grid-area: 1 / 1;
   border-radius: 999px;
 }
+/* No complaint: a quiet neutral marker. Blue is kept for focus and selection only. */
 .hotspot::before {
   width: 30px;
   height: 30px;
-  background: rgb(20 98 255 / 0.14);
+  background: rgb(17 24 39 / 0.07);
   transition: background-color 200ms, box-shadow 200ms;
 }
 .hotspot::after {
   width: 12px;
   height: 12px;
-  background: var(--accent);
-  box-shadow: 0 0 0 2px #fff, 0 2px 6px rgb(17 24 39 / 0.25);
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--ink-3), 0 2px 6px rgb(17 24 39 / 0.25);
   transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .hotspot:hover::after,
@@ -121,16 +122,22 @@ input::placeholder {
 .hotspot[aria-pressed="true"]::after {
   transform: scale(1.3);
 }
-.hotspot:focus-visible::before {
+.hotspot:focus-visible::before,
+.hotspot[aria-pressed="true"]::before {
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
 }
+.hotspot[aria-pressed="true"]:not([class*="hotspot--s"])::after {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px #fff, 0 2px 6px rgb(17 24 39 / 0.25);
+}
 .hotspot--s1::before { background: rgb(232 181 74 / 0.22); }
-.hotspot--s1::after { background: #d9a21f; }
+.hotspot--s1::after { background: #e8b54a; box-shadow: 0 0 0 2px #fff, 0 2px 6px rgb(17 24 39 / 0.25); }
 .hotspot--s2::before { background: rgb(224 123 46 / 0.22); }
-.hotspot--s2::after { background: #e07b2e; }
+.hotspot--s2::after { background: #e07b2e; box-shadow: 0 0 0 2px #fff, 0 2px 6px rgb(17 24 39 / 0.25); }
 .hotspot--s3::before { background: rgb(214 59 59 / 0.22); animation: hotspot-alert 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
-.hotspot--s3:focus-visible::before { animation: none; }
-.hotspot--s3::after { background: #d63b3b; }
+.hotspot--s3:focus-visible::before,
+.hotspot--s3[aria-pressed="true"]::before { animation: none; }
+.hotspot--s3::after { background: #d63b3b; box-shadow: 0 0 0 2px #fff, 0 2px 6px rgb(17 24 39 / 0.25); }
 
 .hotspot-label {
   position: absolute;

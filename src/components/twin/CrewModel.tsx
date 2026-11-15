@@ -6,6 +6,7 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { Region, Severity } from "@/lib/health/types";
 import { REGIONS } from "@/lib/health/types";
+import { HEAT_COLORS } from "./heat";
 
 /**
  * Rigged in Blender (assets/crew-body.blend) from Blender Studio's CC0 "Human Base
@@ -49,10 +50,10 @@ function regionOf(x: number, y: number): number {
 }
 
 const SEVERITY_RGB: Record<Severity, THREE.Color> = {
-  0: new THREE.Color("#e3e6eb"),
-  1: new THREE.Color("#e8b54a"),
-  2: new THREE.Color("#e07b2e"),
-  3: new THREE.Color("#d63b3b"),
+  0: new THREE.Color(HEAT_COLORS[0]),
+  1: new THREE.Color(HEAT_COLORS[1]),
+  2: new THREE.Color(HEAT_COLORS[2]),
+  3: new THREE.Color(HEAT_COLORS[3]),
 };
 
 /** One body on screen at a time, so the shader state lives at module scope. */
@@ -124,7 +125,7 @@ for (int i = 0; i < ${REGIONS.length}; i++) {
   if (i == uFocus) focusGlow = max(focusGlow, w);
 }
 diffuseColor.rgb = mix(diffuseColor.rgb, heatColor, min(1.0, heat * 1.1));
-vec3 extraGlow = heatColor * heat * 0.22 + vec3(0.08, 0.38, 1.0) * focusGlow * 0.14;`,
+vec3 extraGlow = heatColor * heat * 0.22 + vec3(0.08, 0.38, 1.0) * focusGlow * 0.35;`,
         )
         .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += extraGlow;");
     };

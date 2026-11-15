@@ -118,6 +118,8 @@ export interface TranscriptEntry {
   source: "voice" | "typed" | "action";
   findings: SymptomId[];
   resolved: SymptomId[];
+  /** Active findings this report closed without naming them (a general "I'm fine"). */
+  cleared?: SymptomId[];
   /** Findings from this entry the crew member marked as misrecognized. */
   dismissed?: SymptomId[];
   /** Action: a safety alert the crew member dismissed (its key, and its headline as shown). */

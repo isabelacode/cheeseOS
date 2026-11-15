@@ -63,7 +63,7 @@ export function MissionsCard() {
           return (
             <li key={m}>
               {auto ? (
-                <Link href={MISSION_HREF[m] ?? "/"} className={cls} aria-label={`${copy.label}${on ? " ✓" : ""}`}>
+                <Link href={MISSION_HREF[m] ?? "/"} className={cls} aria-label={on ? `${copy.label}, ${r.doneTag}` : copy.label}>
                   {box}
                   {text}
                 </Link>

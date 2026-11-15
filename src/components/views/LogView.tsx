@@ -1,18 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, MessageSquareText, Mic, Search, Send, X } from "lucide-react";
+import { Download, FileText, MessageSquareText, Mic, Search, Send, X } from "lucide-react";
 import { useCrewSession } from "@/lib/session/CrewSession";
 import { useLocale, useT } from "@/lib/i18n";
 import { logMessages } from "@/lib/i18n/pages/log";
 import { Card, SectionTitle } from "@/components/health/ui";
 import { LogEntryItem } from "@/components/log/LogEntryItem";
 import { SymptomTimeline } from "@/components/log/SymptomTimeline";
-import { buildExport, buildHtml, dayKey, dayLabel, downloadText, groupByDay, symptomSpans, symptomsInLog, type SourceFilter } from "@/components/log/logData";
+import {
+  buildExport,
+  buildHtml,
+  dayKey,
+  dayLabel,
+  downloadText,
+  groupByDay,
+  shownResolved,
+  symptomSpans,
+  symptomsInLog,
+  type SourceFilter,
+} from "@/components/log/logData";
 import type { SymptomId } from "@/lib/health/types";
 import { MISSIONS, checkinStreak, missionsToday, useRoutine } from "@/lib/routine/routine";
-import { FileText } from "lucide-react";
-
 
 export function LogView() {
   const s = useCrewSession();
@@ -36,6 +45,7 @@ export function LogView() {
   const { entries, findings } = s;
   const reportCount = entries.filter((e) => e.source !== "action").length;
   const logSymptoms = useMemo(() => symptomsInLog(entries), [entries]);
+  const resolvedById = useMemo(() => shownResolved(entries), [entries]);
   const spans = useMemo(() => symptomSpans(entries, findings, now), [entries, findings, now]);
   // A symptom filter pointing at a symptom no longer in the log falls back to "all".
   const symptomFilter = symptom !== "all" && logSymptoms.includes(symptom) ? symptom : "all";
@@ -44,12 +54,14 @@ export function LogView() {
     const q = query.trim().toLocaleLowerCase(locale);
     return entries.filter((e) => {
       if (source !== "all" && e.source !== source) return false;
-      if (symptomFilter !== "all" && !e.findings.includes(symptomFilter) && !e.resolved.includes(symptomFilter) && !e.dismissed?.includes(symptomFilter)) return false;
+      const resolved = resolvedById.get(e.id) ?? [];
+      const mentioned = [...e.findings, ...resolved, ...(e.cleared ?? []), ...(e.dismissed ?? [])];
+      if (symptomFilter !== "all" && !mentioned.includes(symptomFilter)) return false;
       if (!q) return true;
-      const labels = [...e.findings, ...e.resolved].map((id) => t.symptoms[id].label).join(" ");
+      const labels = [...e.findings, ...resolved, ...(e.cleared ?? [])].map((id) => t.symptoms[id].label).join(" ");
       return `${e.text} ${labels}`.toLocaleLowerCase(locale).includes(q);
     });
-  }, [entries, source, symptomFilter, query, locale, t]);
+  }, [entries, source, symptomFilter, query, locale, t, resolvedById]);
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
   const filtering = source !== "all" || symptomFilter !== "all" || query.trim() !== "";
 
@@ -129,7 +141,7 @@ export function LogView() {
             </p>
           </Card>
 
-          <Card aria-label={l.title}>
+          <Card>
             {entries.length === 0 ? (
               <div className="flex flex-col items-center px-4 py-10 text-center">
                 <span className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent-ink">
@@ -228,14 +240,19 @@ export function LogView() {
                   <div className="mt-5 flex flex-col gap-5">
                     {groups.map((g) => (
                       <section key={g.key} aria-labelledby={`day-${g.key}`}>
-                        <h2 id={`day-${g.key}`} className="mb-2 text-sm font-semibold first-letter:uppercase text-ink-2">
+                        <h2
+                          id={`day-${g.key}`}
+                          className="sticky top-0 z-10 -mx-1 mb-2 flex items-baseline gap-1.5 bg-surface/95 px-1 py-1.5 text-[13px] font-bold tracking-wide text-ink uppercase backdrop-blur-sm"
+                        >
                           {dayLabel(g.at, now, locale, l)}
+                          <span className="tabular text-xs font-medium tracking-normal text-ink-3 normal-case">· {l.dayCount(g.entries.length)}</span>
                         </h2>
                         <ol className="space-y-2">
                           {g.entries.map((e) => (
                             <LogEntryItem
                               key={e.id}
                               entry={e}
+                              resolved={resolvedById.get(e.id) ?? []}
                               findings={findings}
                               confirming={confirmId === e.id}
                               onAskDelete={() => setConfirmId(e.id)}
@@ -257,28 +274,33 @@ export function LogView() {
         </div>
 
         <aside className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6 lg:self-start">
-          <Card aria-label={l.timelineTitle}>
+          <Card>
             <SectionTitle>{l.timelineTitle}</SectionTitle>
             <SymptomTimeline spans={spans} now={now} t={t} l={l} locale={locale} />
           </Card>
-          <Card aria-label={l.exportTitle}>
+          <Card>
             <SectionTitle>{l.exportTitle}</SectionTitle>
-            <p className="text-sm leading-relaxed text-ink-2">{l.exportBody}</p>
+            <p className="text-sm leading-relaxed text-ink-2">{entries.length ? l.exportBody : l.exportEmpty}</p>
             <button
               type="button"
               onClick={exportReport}
-              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-ink"
+              disabled={!entries.length}
+              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent"
             >
               <Download className="size-4" aria-hidden /> {l.exportButton}
             </button>
             <button
               type="button"
               onClick={exportHtml}
-              title={l.exportHtmlHint}
-              className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent-soft px-4 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent hover:text-white"
+              disabled={!entries.length}
+              aria-describedby="export-html-hint"
+              className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-accent-soft px-4 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent-soft disabled:hover:text-accent-ink"
             >
               <FileText className="size-4" aria-hidden /> {l.exportHtml}
             </button>
+            <p id="export-html-hint" className="mt-1.5 text-center text-xs text-ink-3">
+              {l.exportHtmlHint}
+            </p>
             <p className="mt-2 min-h-4 text-center text-xs text-ink-3" aria-live="polite">
               {exported ? l.exportDone : ""}
             </p>

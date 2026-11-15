@@ -121,7 +121,36 @@ export function allergyProfile(allergies: string): AllergyProfile {
   return p;
 }
 
-const hasAllergies = (p: AllergyProfile) => p.drugs.size > 0 || p.classes.size > 0 || p.terms.length > 0;
+export const hasAllergies = (p: AllergyProfile) => p.drugs.size > 0 || p.classes.size > 0 || p.terms.length > 0;
+
+/**
+ * What the allergy field says, as the safety checker reads it:
+ * "unverified" = left empty (never asked), "none" = explicitly no allergy
+ * ("Nenhuma", "NKDA"), "listed" = at least one allergen to cross-check.
+ */
+export type AllergyState = "unverified" | "none" | "listed";
+
+export function allergyState(allergies: string): AllergyState {
+  if (!allergies.trim()) return "unverified";
+  return hasAllergies(allergyProfile(allergies)) ? "listed" : "none";
+}
+
+/** The allergens as parsed: dictionary drugs/groups are `recognized`; anything else is compared as plain text. */
+export function allergyItems(allergies: string): { word: string; recognized: boolean }[] {
+  const p = allergyProfile(allergies);
+  const out: { word: string; recognized: boolean }[] = [];
+  const seen = new Set<string>();
+  const add = (word: string, recognized: boolean) => {
+    const key = mapNormalize(word).text;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ word, recognized });
+  };
+  for (const n of p.drugs.values()) add(n.word, true);
+  for (const n of p.classes.values()) add(n.word, true);
+  for (const t of p.terms) add(t.word, false);
+  return out;
+}
 
 /* ---------- Matching ---------- */
 

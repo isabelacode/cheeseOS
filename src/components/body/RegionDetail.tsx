@@ -1,5 +1,6 @@
 "use client";
 
+import type { Ref } from "react";
 import { Check, Keyboard, Mic, X } from "lucide-react";
 import type { Finding, Region, SymptomId, TranscriptEntry } from "@/lib/health/types";
 import { useCrewSession } from "@/lib/session/CrewSession";
@@ -25,7 +26,7 @@ function pastReports(region: Region, entries: TranscriptEntry[], findings: Findi
   return out;
 }
 
-export function RegionDetail({ region }: { region: Region }) {
+export function RegionDetail({ region, onClear, headingRef }: { region: Region; onClear?: () => void; headingRef?: Ref<HTMLHeadingElement> }) {
   const s = useCrewSession();
   const t = useT();
   const locale = useLocale();
@@ -44,10 +45,24 @@ export function RegionDetail({ region }: { region: Region }) {
   return (
     <Card aria-labelledby="region-detail-title">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 id="region-detail-title" className="text-lg font-bold tracking-tight">
-          {t.regions[region]}
-        </h2>
-        <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[sev]}`}>{t.severity[sev]}</span>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <h2 id="region-detail-title" ref={headingRef} tabIndex={-1} className="text-lg font-bold tracking-tight outline-none">
+            {t.regions[region]}
+          </h2>
+          {/* With one finding its own chip already says the severity. */}
+          {active.length > 1 && <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[sev]}`}>{t.severity[sev]}</span>}
+        </div>
+        {onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="-mr-2 flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold text-ink-2 transition-colors hover:bg-sunken hover:text-ink sm:min-h-9"
+            aria-keyshortcuts="Escape"
+          >
+            <X className="size-3.5" aria-hidden />
+            {b.clear}
+          </button>
+        )}
       </div>
 
       <SectionTitle>{b.activeTitle}</SectionTitle>
@@ -59,20 +74,14 @@ export function RegionDetail({ region }: { region: Region }) {
                 <span className="font-semibold">{t.symptoms[f.id].label}</span>
                 <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${SEVERITY_CHIP[f.severity]}`}>{t.severity[f.severity]}</span>
               </div>
-              <p className="mt-1 text-[13px] leading-snug text-ink">{adviceOf(f, t)}</p>
-              <SpaceWhy finding={f} className="mt-1" />
-              <p className="mt-2 text-xs text-ink-2">
+              {/* The crew's own words live in "Past reports" below; the matched clause is normalised text, not a quote. */}
+              <p className="text-xs text-ink-2">
                 <time dateTime={new Date(f.reportedAt).toISOString()} title={timeOf(f.reportedAt, locale)}>
                   {b.reported(now ? relativeTime(f.reportedAt, now, locale) : timeOf(f.reportedAt, locale))}
                 </time>
-                {f.evidence && (
-                  <>
-                    {" · "}
-                    <span className="sr-only">{b.evidence}: </span>
-                    <q className="italic">{f.evidence}</q>
-                  </>
-                )}
               </p>
+              <p className="mt-1.5 text-[13px] leading-snug text-ink">{adviceOf(f, t)}</p>
+              <SpaceWhy finding={f} className="mt-1" />
               <div className="mt-2.5 flex flex-wrap gap-2">
                 <button
                   type="button"

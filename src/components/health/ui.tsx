@@ -1,6 +1,6 @@
 "use client";
 
-import type { HTMLAttributes, ReactNode } from "react";
+import { useEffect, useState, type HTMLAttributes, type ReactNode } from "react";
 import { Activity, AlertTriangle, Check, CheckCircle2, Gauge, HeartPulse, Loader2, ShieldAlert, Sparkles, Thermometer, Undo2, Wind, X, type LucideIcon } from "lucide-react";
 import { VITAL_SPECS, type VitalSpec } from "@/lib/health/vitals";
 import { adviceOf } from "@/lib/health/advice";
@@ -127,7 +127,15 @@ export function StatusCard({
       })
     : [];
 
-  const primary = findings.length === 0 && status !== "nominal" && !drivers.length ? n.vitalsOnly : quickAdvice(findings, t);
+  // With findings, each card carries its own advice (and the shell banner the top action): no repeat here.
+  const primary = findings.length > 0 ? null : status !== "nominal" && !drivers.length ? n.vitalsOnly : quickAdvice(findings, t);
+  // A severe symptom needs a second tap to be marked gone; the first arms it for a few seconds.
+  const [confirming, setConfirming] = useState<SymptomId | null>(null);
+  useEffect(() => {
+    if (!confirming) return;
+    const id = setTimeout(() => setConfirming(null), 4000);
+    return () => clearTimeout(id);
+  }, [confirming]);
   const aiText = feedback.text;
   const escalates = aiText ? soundsMoreUrgent(aiText, feedback.status ?? status) : false;
   const hasActions = Boolean(onResolve || onDismiss);
@@ -139,13 +147,11 @@ export function StatusCard({
           <style.Icon className="size-6" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2.5">
+          <div className="flex flex-wrap items-baseline gap-x-2.5" aria-live="polite">
             <span className={`text-xl font-bold ${style.text}`}>{copy.label}</span>
             <span className="text-sm text-ink-2">{copy.summary}</span>
           </div>
-          <p className="mt-1.5 max-w-[68ch] text-[15px] leading-relaxed text-ink" aria-live="polite">
-            {primary}
-          </p>
+          {primary && <p className="mt-1.5 max-w-[68ch] text-[15px] leading-relaxed text-ink">{primary}</p>}
           {drivers.length > 0 && vitals && (
             <p className="mt-1.5 max-w-[68ch] text-[14px] leading-relaxed text-ink-2">
               {n.heldBy(
@@ -210,11 +216,20 @@ export function StatusCard({
                     {onResolve && (
                       <button
                         type="button"
-                        onClick={() => onResolve(f.id)}
-                        aria-label={n.resolveLabel(label)}
-                        className="flex min-h-11 items-center gap-1.5 rounded-full bg-surface px-3 text-xs font-semibold text-ink transition-colors hover:bg-ok-soft hover:text-ok sm:min-h-8"
+                        onClick={() => {
+                          if (f.severity >= 3 && confirming !== f.id) {
+                            setConfirming(f.id);
+                            return;
+                          }
+                          setConfirming(null);
+                          onResolve(f.id);
+                        }}
+                        aria-label={confirming === f.id ? n.resolveConfirmLabel(label) : n.resolveLabel(label)}
+                        className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors sm:min-h-8 ${
+                          confirming === f.id ? "bg-ok-soft text-ok ring-1 ring-ok/40" : "bg-surface text-ink hover:bg-ok-soft hover:text-ok"
+                        }`}
                       >
-                        <Check className="size-3.5" aria-hidden /> {n.resolve}
+                        <Check className="size-3.5" aria-hidden /> {confirming === f.id ? n.resolveConfirm : n.resolve}
                       </button>
                     )}
                     {onDismiss && (

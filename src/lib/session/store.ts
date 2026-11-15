@@ -32,6 +32,7 @@ function entry(v: Obj): TranscriptEntry {
     findings: symptoms(v.findings),
     resolved: symptoms(v.resolved),
     ...(v.dismissed !== undefined ? { dismissed: symptoms(v.dismissed) } : {}),
+    ...(v.cleared !== undefined ? { cleared: symptoms(v.cleared) } : {}),
   };
 }
 

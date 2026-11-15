@@ -111,7 +111,7 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
     privacy: {
       title: "O que sai do aparelho",
       voice: "O áudio da voz é transcrito neste aparelho e nunca sai dele.",
-      local: "Com Navegador ou Desligada, nada sai do aparelho.",
+      local: "Com “Neste aparelho” ou “Desligada”, nada sai do aparelho.",
       cloud: "Com OpenRouter, o texto do relato, os sinais vitais e o seu perfil (nome, idade, alergias, medicações e condições) vão para o OpenRouter e para o provedor do modelo escolhido.",
       key: "A chave fica salva só neste navegador e vai direto para o OpenRouter, sem passar por nenhum servidor nosso.",
     },
@@ -193,7 +193,7 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
     privacy: {
       title: "What leaves the device",
       voice: "Voice audio is transcribed on this device and never leaves it.",
-      local: "With Browser or Off, nothing leaves the device.",
+      local: "With “On this device” or “Off”, nothing leaves the device.",
       cloud: "With OpenRouter, the report text, the vitals and your profile (name, age, allergies, medications and conditions) go to OpenRouter and to the chosen model's provider.",
       key: "The key is stored only in this browser and goes straight to OpenRouter, never through a server of ours.",
     },

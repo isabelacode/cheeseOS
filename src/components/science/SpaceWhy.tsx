@@ -12,7 +12,9 @@ export function SpaceWhy({ finding, className = "" }: { finding: Finding; classN
   const hazards = hazardsOf(finding);
   const why = whyInSpace(finding, c);
   if (!why || !hazards.length) return null;
-  const source = SOURCES[c.hazards[hazards[0]].sources[0]];
+  // The most specific reference for the main hazard, not the general HRP overview.
+  const ids = c.hazards[hazards[0]].sources;
+  const source = SOURCES[ids.find((id) => id !== "hrpHazards") ?? ids[0]];
 
   return (
     <details className={`group ${className}`}>
@@ -26,7 +28,7 @@ export function SpaceWhy({ finding, className = "" }: { finding: Finding; classN
         <ul className="flex flex-wrap gap-1" aria-label={c.hazardsLabel}>
           {hazards.map((h) => (
             <li key={h}>
-              <Link href={`/ciencia#${h}`} className="inline-block rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-medium text-accent-ink hover:underline">
+              <Link href={`/ciencia#${h}`} className="inline-flex min-h-6 items-center rounded-md bg-accent-soft px-1.5 text-xs font-medium text-accent-ink hover:underline">
                 {c.hazards[h].name}
               </Link>
             </li>
@@ -36,6 +38,7 @@ export function SpaceWhy({ finding, className = "" }: { finding: Finding; classN
           {c.sourcesLabel}:{" "}
           <a href={source.url} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-ink-2">
             {source.org} · {source.title}
+            <span className="sr-only"> {c.newTab}</span>
           </a>
         </p>
       </div>

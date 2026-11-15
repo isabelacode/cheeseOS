@@ -45,12 +45,6 @@ function HotspotProjector({ onProject }: { onProject: (r: Region, x: number, y: 
   return null;
 }
 
-/** Shown instead of the canvas when WebGL is unavailable or the model fails to load. */
-const UNAVAILABLE = {
-  pt: "A visualização 3D não está disponível neste dispositivo.",
-  en: "The 3D view isn't available on this device.",
-} as const;
-
 class SceneBoundary extends Component<{ fallback: ReactNode; onError: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -83,8 +77,7 @@ export default function TwinScene(props: TwinSceneProps) {
   const refs = useRef<Partial<Record<Region, HTMLButtonElement | null>>>({});
   const { severity, labels, selected, hovered, onSelect, onHover } = props;
   const t = useT();
-  const locale = useLocale();
-  const b = bodyMessages[locale];
+  const b = bodyMessages[useLocale()];
   const [box, onScreen] = useOnScreen<HTMLDivElement>();
   const [failed, setFailed] = useState(false);
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
@@ -104,7 +97,7 @@ export default function TwinScene(props: TwinSceneProps) {
     <div ref={box} className="relative h-full w-full">
       <SceneBoundary
         onError={() => setFailed(true)}
-        fallback={<p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-ink-2">{UNAVAILABLE[locale]}</p>}
+        fallback={<p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-ink-2">{b.unavailable}</p>}
       >
         <Canvas
           frameloop={onScreen ? "always" : "never"}
@@ -162,7 +155,7 @@ export default function TwinScene(props: TwinSceneProps) {
                 // Hidden until the projector places it; it sets tabIndex once the hotspot is visible.
                 tabIndex={-1}
                 aria-pressed={selected === r}
-                aria-label={`${t.regions[r]}${label ? `: ${label}` : ""}`}
+                aria-label={`${t.regions[r]}${label ? `: ${label}` : ""}, ${sev > 0 ? t.severity[sev] : b.noFindings}`}
                 onClick={() => onSelect(selected === r ? null : r)}
                 onPointerEnter={() => onHover(r)}
                 onPointerLeave={() => onHover(null)}

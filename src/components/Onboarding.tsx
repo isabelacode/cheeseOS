@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, type ReactNode } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useState, type ReactElement, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, HeartPulse, IdCard, PersonStanding } from "lucide-react";
 import { BLOOD_TYPES, SEXES, saveProfile, type CrewProfile, type Sex } from "@/lib/crew/profile";
 import { useT, type Messages } from "@/lib/i18n";
@@ -47,6 +47,30 @@ function numberIn(v: string, min: number, max: number) {
   return Number.isFinite(n) && n >= min && n <= max;
 }
 
+/** In-progress first-run draft: survives a reload or a killed tab, cleared once the profile is saved. */
+const DRAFT_KEY = "cheeseos.onboarding.draft";
+
+function loadDraft(): { step: number; draft: Draft } | null {
+  try {
+    const raw = window.sessionStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw) as { step?: unknown; draft?: unknown };
+    if (typeof v.step !== "number" || typeof v.draft !== "object" || v.draft === null) return null;
+    return { step: Math.min(Math.max(0, Math.round(v.step)), 2), draft: { ...EMPTY, ...(v.draft as Partial<Draft>) } };
+  } catch {
+    return null;
+  }
+}
+
+function storeDraft(value: { step: number; draft: Draft } | null) {
+  try {
+    if (value) window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(value));
+    else window.sessionStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // Storage blocked: the draft simply lives in memory.
+  }
+}
+
 type ErrorKey = keyof Messages["onboarding"]["errors"];
 type Errors = Partial<Record<keyof Draft, ErrorKey>>;
 
@@ -69,11 +93,18 @@ function validate(step: number, d: Draft): Errors {
 }
 
 export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; onDone?: () => void }) {
-  const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<Draft>(initial ? toDraft(initial) : EMPTY);
+  // Only mounted on the client (CrewApp waits for device storage), so the saved draft can seed state directly.
+  const [saved] = useState(() => (initial ? null : loadDraft()));
+  const [step, setStep] = useState(saved?.step ?? 0);
+  const [draft, setDraft] = useState<Draft>(initial ? toDraft(initial) : (saved?.draft ?? EMPTY));
   const [errors, setErrors] = useState<Errors>({});
   const editing = Boolean(initial);
   const t = useT();
+
+  // Mirror the first-run draft so a reload or killed tab doesn't lose it.
+  useEffect(() => {
+    if (!editing) storeDraft({ step, draft });
+  }, [editing, step, draft]);
   const o = t.onboarding;
   const err = (k: keyof Draft) => (errors[k] ? o.errors[errors[k]] : undefined);
 
@@ -101,6 +132,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
       weightKg: num(draft.weightKg),
       restingHeartRate: draft.restingHeartRate ? num(draft.restingHeartRate) : 68,
     });
+    storeDraft(null);
     onDone?.();
   };
 
@@ -108,7 +140,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
   const CurrentIcon = STEP_ICONS[step];
 
   return (
-    <div className="grid min-h-screen place-items-center px-4 py-10">
+    <main className="grid min-h-screen place-items-center px-4 py-10">
       <div className="w-full max-w-[560px]">
         <div className="mb-6 flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-surface shadow-card" role="img" aria-label="cheeseOS">
@@ -203,7 +235,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           {step === 1 && (
             <div className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={o.age} suffix={o.years} error={err("age")}>
+                <Field label={o.age} suffix={o.years} error={err("age")} hint="18–80">
                   <input autoFocus inputMode="numeric" value={draft.age} onChange={(e) => set("age", e.target.value)} aria-invalid={err("age") ? true : undefined} className={input(err("age"))} />
                 </Field>
                 <Field label={o.sex}>
@@ -217,10 +249,10 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
                 </Field>
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label={o.height} suffix="cm" error={err("heightCm")}>
+                <Field label={o.height} suffix="cm" error={err("heightCm")} hint="140–215">
                   <input inputMode="numeric" value={draft.heightCm} onChange={(e) => set("heightCm", e.target.value)} aria-invalid={err("heightCm") ? true : undefined} className={input(err("heightCm"))} />
                 </Field>
-                <Field label={o.weight} suffix="kg" error={err("weightKg")}>
+                <Field label={o.weight} suffix="kg" error={err("weightKg")} hint="40–160">
                   <input inputMode="decimal" value={draft.weightKg} onChange={(e) => set("weightKg", e.target.value)} aria-invalid={err("weightKg") ? true : undefined} className={input(err("weightKg"))} />
                 </Field>
                 <Field label={o.bloodType} optional>
@@ -240,7 +272,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           {step === 2 && (
             <div className="grid gap-4">
               <Field label={o.restingHr} suffix="bpm" optional error={err("restingHeartRate")} hint={o.restingHrHint}>
-                <input autoFocus inputMode="numeric" placeholder="68" value={draft.restingHeartRate} onChange={(e) => set("restingHeartRate", e.target.value)} aria-invalid={err("restingHeartRate") ? true : undefined} className={input(err("restingHeartRate"))} />
+                <input autoFocus inputMode="numeric" value={draft.restingHeartRate} onChange={(e) => set("restingHeartRate", e.target.value)} aria-invalid={err("restingHeartRate") ? true : undefined} className={input(err("restingHeartRate"))} />
               </Field>
               <Field label={o.allergies} optional>
                 <input placeholder={o.allergiesPlaceholder} value={draft.allergies} onChange={(e) => set("allergies", e.target.value)} className={input()} />
@@ -280,7 +312,7 @@ export function Onboarding({ initial, onDone }: { initial?: CrewProfile | null; 
           </div>
         </form>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -310,23 +342,34 @@ function Field({
   suffix?: string;
   hint?: string;
 }) {
+  const id = useId();
+  const noteId = `${id}-note`;
+  const note = error ?? hint;
+  // The error/hint is a description of the control, not part of its name.
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement<Record<string, unknown>>, { id, "aria-describedby": note ? noteId : undefined })
+    : children;
   return (
-    <label className="block">
-      <span className="mb-1.5 flex items-baseline justify-between text-[13px] font-semibold">
+    <div>
+      <label htmlFor={id} className="mb-1.5 flex items-baseline justify-between text-[13px] font-semibold">
         <span>
           {label}
-          {suffix && <span className="font-normal text-ink-3"> ({suffix})</span>}
+          {suffix && <span className="font-normal text-ink-2"> ({suffix})</span>}
         </span>
         {optional && <OptionalTag />}
-      </span>
-      {children}
+      </label>
+      {control}
       {error ? (
-        <span className="mt-1 block text-xs text-crit" role="alert">
+        <p id={noteId} className="mt-1 text-xs font-medium text-crit">
           {error}
-        </span>
+        </p>
       ) : (
-        hint && <span className="mt-1 block text-xs text-ink-3">{hint}</span>
+        hint && (
+          <p id={noteId} className="mt-1 text-xs text-ink-3">
+            {hint}
+          </p>
+        )
       )}
-    </label>
+    </div>
   );
 }

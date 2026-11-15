@@ -11,6 +11,8 @@ export interface NowMessages {
   resolve: string;
   dismiss: string;
   resolveLabel: (symptom: string) => string;
+  resolveConfirm: string;
+  resolveConfirmLabel: (symptom: string) => string;
   dismissLabel: (symptom: string) => string;
   heldBy: (vitals: string, status: string, hasSymptoms: boolean) => string;
   undo: string;
@@ -40,6 +42,8 @@ export const nowMessages: Record<Locale, NowMessages> = {
     resolve: "Passou",
     dismiss: "Não é isso",
     resolveLabel: (s) => `Marcar ${s} como resolvido`,
+    resolveConfirm: "Confirmar: passou?",
+    resolveConfirmLabel: (s) => `${s} é um sinal de alerta. Toque de novo para confirmar que passou`,
     dismissLabel: (s) => `${s} foi reconhecido por engano`,
     heldBy: (v, st, has) =>
       has
@@ -74,6 +78,8 @@ export const nowMessages: Record<Locale, NowMessages> = {
     resolve: "It's gone",
     dismiss: "Not this",
     resolveLabel: (s) => `Mark ${s} as resolved`,
+    resolveConfirm: "Confirm: it's gone?",
+    resolveConfirmLabel: (s) => `${s} is a warning sign. Tap again to confirm it's gone`,
     dismissLabel: (s) => `${s} was recognized by mistake`,
     heldBy: (v, st, has) =>
       has

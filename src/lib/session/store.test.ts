@@ -30,6 +30,19 @@ describe("saved session parsing", () => {
     expect(s.findings.map((f) => f.id)).toEqual(["fever"]);
   });
 
+  it("keeps the findings a general all-clear closed, and leaves older entries without the field", () => {
+    const s = parseSnapshot(
+      JSON.stringify({
+        entries: [
+          { id: "a", text: "estou bem", at: 2, source: "typed", findings: [], resolved: [], cleared: ["nausea", "old_symptom"] },
+          { id: "b", text: "enjoo", at: 1, source: "typed", findings: ["nausea"], resolved: [] },
+        ],
+      }),
+    )!;
+    expect(s.entries[0].cleared).toEqual(["nausea"]);
+    expect(s.entries[1]).not.toHaveProperty("cleared");
+  });
+
   it("drops symptoms this version no longer knows, which have no labels", () => {
     const s = parseSnapshot(
       JSON.stringify({

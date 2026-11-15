@@ -39,6 +39,18 @@ export interface LogMessages {
   timelineNow: string;
   timelineState: { active: string; resolved: string; dismissed: string; inactive: string };
   timelineRange: (from: string, to: string) => string;
+  /** Active span: start and how long it has lasted. */
+  timelineSince: (from: string, duration: string) => string;
+  /** Ended span: "08:33 · lasted 4 min", or "from 08:33 to 09:10 · lasted 37 min". */
+  timelineLasted: (when: string, duration: string) => string;
+  /** One line under the timeline: what each state means. */
+  timelineLegend: string;
+  cleared: (labels: string) => string;
+  noneRecognized: string;
+  showMore: string;
+  showLess: string;
+  dayCount: (n: number) => string;
+  exportEmpty: string;
   exportTitle: string;
   exportBody: string;
   exportButton: string;
@@ -68,6 +80,7 @@ export interface LogMessages {
     recognized: string;
     resolved: string;
     dismissed: string;
+    cleared: string;
     footer: string;
     fileName: string;
     summary: string;
@@ -98,7 +111,7 @@ const pt: LogMessages = {
   title: "Diário",
   counts: (r, a) => `${r} ${r === 1 ? "relato" : "relatos"} · ${a} ${a === 1 ? "sintoma ativo" : "sintomas ativos"}`,
   composerLabel: "Novo relato",
-  placeholder: "Descreva como está se sentindo…",
+  placeholder: "Como você está?",
   send: "Enviar",
   micHint: "Ou fale: ligue o microfone no topo da tela (atalho: Espaço).",
   filtersLabel: "Filtrar relatos",
@@ -133,7 +146,16 @@ const pt: LogMessages = {
   timelineEmpty: "Os sintomas reconhecidos nos relatos aparecem aqui, do primeiro relato até a melhora.",
   timelineNow: "agora",
   timelineState: { active: "ativo", resolved: "resolvido", dismissed: "descartado", inactive: "encerrado" },
-  timelineRange: (from, to) => `${from} → ${to}`,
+  timelineRange: (from, to) => `das ${from} às ${to}`,
+  timelineSince: (from, d) => `desde ${from} · há ${d}`,
+  timelineLasted: (w, d) => `${w} · durou ${d}`,
+  timelineLegend: "Resolvido: você relatou melhora ou disse que está bem. Encerrado: saiu sem melhora específica registrada. Descartado: reconhecido por engano.",
+  cleared: (ls) => `encerrado pelo “estou bem”: ${ls}`,
+  noneRecognized: "nenhum sintoma reconhecido",
+  showMore: "ver mais",
+  showLess: "ver menos",
+  dayCount: (n) => `${n} ${n === 1 ? "registro" : "registros"}`,
+  exportEmpty: "Faça um relato para gerar o relatório.",
   exportTitle: "Exportar",
   exportBody: "Reúne perfil, alertas de segurança, sintomas ativos com protocolo, evolução dos sintomas, sinais vitais simulados da última hora e o diário completo.",
   exportButton: "Exportar para o médico de voo",
@@ -163,6 +185,7 @@ const pt: LogMessages = {
     recognized: "Reconhecido",
     resolved: "Melhora",
     dismissed: "Descartado",
+    cleared: "Encerrado pelo “estou bem”",
     footer: "Sintomas reconhecidos por regras locais; não substitui avaliação médica.",
     fileName: "relatorio-medico-de-voo",
     summary: "RESUMO",
@@ -192,7 +215,7 @@ const en: LogMessages = {
   title: "Log",
   counts: (r, a) => `${r} ${r === 1 ? "report" : "reports"} · ${a} active ${a === 1 ? "symptom" : "symptoms"}`,
   composerLabel: "New report",
-  placeholder: "Describe how you feel…",
+  placeholder: "How are you feeling?",
   send: "Send",
   micHint: "Or speak: turn on the microphone at the top of the screen (shortcut: Space).",
   filtersLabel: "Filter reports",
@@ -227,7 +250,16 @@ const en: LogMessages = {
   timelineEmpty: "Symptoms recognized in your reports show up here, from the first report until they improve.",
   timelineNow: "now",
   timelineState: { active: "active", resolved: "resolved", dismissed: "dismissed", inactive: "closed" },
-  timelineRange: (from, to) => `${from} → ${to}`,
+  timelineRange: (from, to) => `from ${from} to ${to}`,
+  timelineSince: (from, d) => `since ${from} · ${d} so far`,
+  timelineLasted: (w, d) => `${w} · lasted ${d}`,
+  timelineLegend: "Resolved: you reported it improved or said you're fine. Closed: ended without a specific improvement on record. Dismissed: recognized by mistake.",
+  cleared: (ls) => `closed by “I'm fine”: ${ls}`,
+  noneRecognized: "no symptom recognized",
+  showMore: "show more",
+  showLess: "show less",
+  dayCount: (n) => `${n} ${n === 1 ? "entry" : "entries"}`,
+  exportEmpty: "Make a report to generate the file.",
   exportTitle: "Export",
   exportBody: "Gathers profile, safety alerts, active symptoms with protocol, symptom evolution, the last hour of simulated vitals and the full log.",
   exportButton: "Export for the flight surgeon",
@@ -257,6 +289,7 @@ const en: LogMessages = {
     recognized: "Recognized",
     resolved: "Improved",
     dismissed: "Dismissed",
+    cleared: "Closed by “I'm fine”",
     footer: "Symptoms recognized by local rules; not a substitute for medical assessment.",
     fileName: "flight-surgeon-report",
     summary: "SUMMARY",

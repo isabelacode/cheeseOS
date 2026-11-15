@@ -24,9 +24,9 @@ const BROWSER_TIMEOUT_MS = 30_000;
 function readChoice(): EngineId {
   try {
     const v = window.localStorage.getItem(CHOICE_KEY);
-    return v === "browser" || v === "off" ? v : "openrouter";
+    return v === "openrouter" || v === "off" ? v : "browser";
   } catch {
-    return "openrouter";
+    return "browser";
   }
 }
 
@@ -44,7 +44,7 @@ export function useLocalAi() {
     llm: { state: "idle", progress: 0 },
   });
   const openrouter = useOpenRouterSettings();
-  const [choice, setChoice] = useState<EngineId>("openrouter");
+  const [choice, setChoice] = useState<EngineId>("browser");
   const [error, setError] = useState<OpenRouterErrorCode | null>(null);
   const [browserModel, setBrowserModel] = useState<BrowserModel>(DEFAULT_BROWSER_MODEL);
   /** Models that failed to load on this device during this session. */

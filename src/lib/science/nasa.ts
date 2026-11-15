@@ -126,6 +126,13 @@ export interface ScienceCopy {
   sourcesLabel: string;
   activeNow: (n: number) => string;
   noneNow: string;
+  /** Jump-strip label and the empty-day prompt above the hazard cards. */
+  jumpLabel: string;
+  emptyToday: string;
+  emptyCta: string;
+  countermeasureLabel: string;
+  newTab: string;
+  simShort: string;
   limitsTitle: string;
   limitsIntro: string;
   cols: { item: string; value: string; kind: string; source: string };
@@ -217,6 +224,12 @@ const pt: ScienceCopy = {
   sourcesLabel: "Fontes",
   activeNow: (n) => `${n} ${n === 1 ? "sintoma ativo ligado" : "sintomas ativos ligados"} a este risco`,
   noneNow: "Nenhum sintoma ativo ligado a este risco",
+  jumpLabel: "Ir para o risco",
+  emptyToday: "Nenhum sintoma ativo agora. Relate como você está para ver o risco espacial por trás de cada sintoma.",
+  emptyCta: "Fazer um relato",
+  countermeasureLabel: "Contramedida",
+  newTab: "(abre em nova aba)",
+  simShort: "os sinais vitais na tela vêm do gêmeo digital e reagem aos relatos; não são medições de sensores.",
   limitsTitle: "Limites e referências",
   cols: { item: "Item", value: "Valor usado", kind: "Tipo", source: "Fonte" },
   limitsIntro: "O que é valor publicado e o que é simulação do cheeseOS. Os limites dos sinais vitais são referências clínicas gerais para adultos em repouso.",
@@ -317,6 +330,12 @@ const en: ScienceCopy = {
   sourcesLabel: "Sources",
   activeNow: (n) => `${n} active ${n === 1 ? "symptom" : "symptoms"} linked to this hazard`,
   noneNow: "No active symptom linked to this hazard",
+  jumpLabel: "Jump to hazard",
+  emptyToday: "No active symptoms right now. Report how you feel to see the space hazard behind each symptom.",
+  emptyCta: "Make a report",
+  countermeasureLabel: "Countermeasure",
+  newTab: "(opens in a new tab)",
+  simShort: "the vitals on screen come from the digital twin and react to your reports; they are not sensor readings.",
   limitsTitle: "Limits and references",
   cols: { item: "Item", value: "Value used", kind: "Type", source: "Source" },
   limitsIntro: "What is a published value and what is a cheeseOS simulation. Vital sign limits are general clinical references for adults at rest.",

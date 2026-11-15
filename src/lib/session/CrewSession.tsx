@@ -213,6 +213,10 @@ function useCrewSessionState(profile: CrewProfile) {
       const lang = localeRef.current;
       const ex = extractSymptoms(text, lang);
       const next = mergeFindings(findingsRef.current, ex);
+      // A general "I'm fine" closes milder findings without naming them: record which, so the diary can say why they ended.
+      const kept = new Set(next.map((f) => f.id));
+      const named = new Set(ex.resolved);
+      const cleared = ex.allGood ? findingsRef.current.filter((f) => !kept.has(f.id) && !named.has(f.id)).map((f) => f.id) : [];
       const entry: TranscriptEntry = {
         id: crypto.randomUUID(),
         text,
@@ -220,6 +224,7 @@ function useCrewSessionState(profile: CrewProfile) {
         source,
         findings: ex.findings.map((f) => f.id),
         resolved: ex.resolved,
+        ...(cleared.length ? { cleared } : {}),
       };
       const nextEntries = [entry, ...entriesRef.current].slice(0, MAX_ENTRIES);
       // Undo snapshots predate this report: restoring one would silently erase it.

@@ -49,6 +49,7 @@ export interface Messages {
   };
   nav: {
     label: string;
+    skip: string;
     now: string;
     vitals: string;
     log: string;
@@ -281,9 +282,9 @@ const pt: Messages = {
     ],
     name: "Nome completo",
     role: "Função a bordo",
-    rolePlaceholder: "Engenheira de voo",
+    rolePlaceholder: "Ex.: engenheira de voo",
     mission: "Missão",
-    missionPlaceholder: "Ares III",
+    missionPlaceholder: "Ex.: Ares III",
     age: "Idade",
     years: "anos",
     sex: "Sexo",
@@ -312,6 +313,7 @@ const pt: Messages = {
   },
   nav: {
     label: "Navegação principal",
+    skip: "Pular para o conteúdo",
     now: "Agora",
     vitals: "Sinais",
     log: "Diário",
@@ -365,7 +367,7 @@ const pt: Messages = {
     now: "agora",
   },
   voice: {
-    off: "Escuta desligada. Ligue no botão acima ou digite abaixo.",
+    off: "Escuta desligada. Toque no microfone no topo da tela ou digite abaixo.",
     requesting: "Pedindo acesso ao microfone…",
     denied: "Microfone bloqueado. Libere o acesso nas permissões do navegador.",
     error: "Não foi possível abrir o microfone.",
@@ -407,7 +409,7 @@ const pt: Messages = {
     openrouterHint: "Modelos na nuvem com a sua chave",
     openrouterNoKey: "Informe sua chave do OpenRouter",
     browserHint: "Modelo pequeno rodando neste aparelho",
-    browserLabel: "Navegador",
+    browserLabel: "Neste aparelho",
     configure: "Configurar IA",
     settingsTitle: "Configurar IA",
     browserSection: "Modelo no navegador",
@@ -415,7 +417,7 @@ const pt: Messages = {
     noGpu: " Sem GPU disponível: os modelos maiores ficam lentos.",
     openrouterIntro:
       "Modelos maiores na nuvem com a sua chave. Ela fica salva só neste navegador e vai direto para o OpenRouter. Com esta opção ativa, os relatos e o perfil saem do aparelho.",
-    apiKey: "Chave da API",
+    apiKey: "Chave do OpenRouter",
     model: "Modelo",
     createKey: "Criar uma chave no OpenRouter",
     removeKey: "Remover chave",
@@ -581,9 +583,9 @@ const en: Messages = {
     ],
     name: "Full name",
     role: "Role on board",
-    rolePlaceholder: "Flight engineer",
+    rolePlaceholder: "E.g. flight engineer",
     mission: "Mission",
-    missionPlaceholder: "Ares III",
+    missionPlaceholder: "E.g. Ares III",
     age: "Age",
     years: "years",
     sex: "Sex",
@@ -612,6 +614,7 @@ const en: Messages = {
   },
   nav: {
     label: "Main navigation",
+    skip: "Skip to content",
     now: "Now",
     vitals: "Vitals",
     log: "Log",
@@ -664,7 +667,7 @@ const en: Messages = {
     now: "now",
   },
   voice: {
-    off: "Listening is off. Turn it on above or type below.",
+    off: "Listening is off. Tap the mic at the top of the screen or type below.",
     requesting: "Requesting microphone access…",
     denied: "Microphone blocked. Allow access in the browser permissions.",
     error: "Couldn't open the microphone.",
@@ -706,7 +709,7 @@ const en: Messages = {
     openrouterHint: "Cloud models with your own key",
     openrouterNoKey: "Add your OpenRouter key",
     browserHint: "Small model running on this device",
-    browserLabel: "Browser",
+    browserLabel: "On this device",
     configure: "Configure AI",
     settingsTitle: "Configure AI",
     browserSection: "Browser model",
@@ -714,7 +717,7 @@ const en: Messages = {
     noGpu: " No GPU available: larger models will be slow.",
     openrouterIntro:
       "Larger cloud models with your own key. It's stored only in this browser and goes straight to OpenRouter. With this option on, reports and the profile leave the device.",
-    apiKey: "API key",
+    apiKey: "OpenRouter key",
     model: "Model",
     createKey: "Create an OpenRouter key",
     removeKey: "Remove key",

@@ -61,7 +61,11 @@ export function EngineStatusPanel({ ai }: { ai: Ai }) {
   const noKeyText = browserServing ? s.noKeyFallback(current.label) : active === "browser" && activeModel && llm.state !== "error" ? s.noKeyLoading : s.noKeyRules;
 
   return (
-    <div className={`rounded-2xl px-4 py-3 ${tone === "error" ? "bg-crit-soft" : "bg-sunken"}`} role="status" aria-live="polite">
+    <div className={`rounded-2xl px-4 py-3 ${tone === "error" ? "bg-crit-soft" : "bg-sunken"}`}>
+      {/* Announce state changes only, not every download percentage. */}
+      <p className="sr-only" role="status">
+        {llm.state === "loading" && active === "browser" ? e.browserWaiting(current.label) : text}
+      </p>
       <p className="text-xs font-semibold text-ink-2">{s.inUse}</p>
       <p className={`mt-0.5 flex items-center gap-2 text-sm font-semibold ${tone === "error" ? "text-crit" : "text-ink"}`}>
         {tone === "error" ? (
@@ -71,7 +75,9 @@ export function EngineStatusPanel({ ai }: { ai: Ai }) {
         ) : (
           <Icon className="size-4 shrink-0" aria-hidden />
         )}
-        <span className="min-w-0 break-words">{text}</span>
+        <span className="min-w-0 break-words" aria-hidden>
+          {text}
+        </span>
       </p>
       {active === "browser" && llm.state === "loading" && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line" aria-hidden>
@@ -81,8 +87,11 @@ export function EngineStatusPanel({ ai }: { ai: Ai }) {
       {active === "browser" && fellBack && activeModel && (
         <p className="mt-1 text-[13px] font-semibold text-warn">{s.fellBack(browserModel.label, activeModel.label)}</p>
       )}
-      {hint && <p className="mt-1 text-[13px] text-ink-2">{hint}</p>}
-      {choice === "openrouter" && !hasKey && <p className="mt-1 text-[13px] text-ink-2">{noKeyText}</p>}
+      {choice === "openrouter" && !hasKey ? (
+        <p className="mt-1 text-[13px] text-ink-2">{noKeyText}</p>
+      ) : (
+        hint && <p className="mt-1 text-[13px] text-ink-2">{hint}</p>
+      )}
       <p className={`mt-1.5 text-xs font-semibold ${active === "openrouter" ? "text-warn" : "text-accent-ink"}`}>
         {active === "openrouter" ? e.cloudBadge : e.localBadge}
       </p>

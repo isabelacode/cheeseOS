@@ -63,12 +63,12 @@ function RailLink({ href, label, Icon, active }: { href: string; label: string; 
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`group flex w-full flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-semibold transition-colors duration-200 ${
+      className={`group flex w-full flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-semibold transition-colors duration-200 [@media(max-height:760px)]:py-1 ${
         active ? "text-accent-ink" : "text-ink-2 hover:text-ink"
       }`}
     >
       <span
-        className={`grid size-10 place-items-center rounded-full transition-colors duration-200 ${
+        className={`grid size-10 place-items-center rounded-full transition-colors duration-200 [@media(max-height:760px)]:size-9 ${
           active ? "bg-accent text-white shadow-card" : "bg-surface shadow-card group-hover:bg-accent-soft group-hover:text-accent-ink"
         }`}
       >
@@ -84,9 +84,21 @@ function Rail() {
   const locale = useLocale();
   const pathname = usePathname();
   return (
-    <nav aria-label={t.nav.label} className="sticky top-6 hidden h-[calc(100vh-48px)] w-[76px] shrink-0 flex-col items-center sm:flex">
-      <Link href="/" className="flex flex-col items-center gap-1 text-[11px] font-bold tracking-tight text-ink" aria-label="cheeseOS">
-        <Image src="/brand/mascot.webp" alt="" width={480} height={539} priority className="h-auto w-[60px] select-none" draggable={false} />
+    <nav
+      aria-label={t.nav.label}
+      className="sticky top-6 hidden h-[calc(100dvh-48px)] w-[76px] shrink-0 flex-col items-center gap-3 overflow-y-auto overscroll-contain [scrollbar-width:none] sm:flex lg:top-6"
+    >
+      <Link href="/" className="flex shrink-0 flex-col items-center gap-1 text-[11px] font-bold tracking-tight text-ink" aria-label="cheeseOS">
+        <Image
+          src="/brand/mascot.webp"
+          alt=""
+          width={480}
+          height={539}
+          priority
+          className="h-auto w-[60px] select-none [@media(max-height:760px)]:hidden"
+          draggable={false}
+        />
+        <BrandMark size={36} className="hidden [@media(max-height:760px)]:block" />
         cheeseOS
       </Link>
       <ul className="my-auto flex w-full flex-col gap-1">
@@ -95,11 +107,11 @@ function Rail() {
             <RailLink href={href} label={t.nav[key]} Icon={Icon} active={isActive(pathname, href)} />
           </li>
         ))}
-      </ul>
-      <ul className="flex w-full flex-col gap-1">
         <li>
           <RailLink href="/ciencia" label={scienceMessages[locale].navLabel} Icon={Orbit} active={isActive(pathname, "/ciencia")} />
         </li>
+      </ul>
+      <ul className="flex w-full shrink-0 flex-col gap-1">
         {UTILITY.map(({ href, key, Icon }) => (
           <li key={href}>
             <RailLink href={href} label={t.nav[key]} Icon={Icon} active={isActive(pathname, href)} />
@@ -155,15 +167,15 @@ function TopBar() {
         ? { label: t.nav.privacyOff, Icon: PowerOff, className: "text-ink-2" }
         : { label: t.nav.privacyLocal, Icon: Cpu, className: "text-accent-ink" };
   return (
-    <div className="flex items-center justify-between gap-2">
+    <header className="flex items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-2">
-        <Link href="/" aria-label="cheeseOS" className="shrink-0 sm:hidden">
+        <Link href="/" aria-label="cheeseOS" className="-m-1 shrink-0 p-1 sm:hidden">
           <BrandMark size={34} />
         </Link>
         <Link
           href="/"
           aria-label={t.nav.statusLink(t.status[status].label)}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors duration-500 ${pill.className}`}
+          className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors duration-500 sm:min-h-0 ${pill.className}`}
         >
           <pill.Icon className="size-4" aria-hidden />
           {t.status[status].label}
@@ -172,10 +184,10 @@ function TopBar() {
           href="/ajustes"
           aria-label={t.nav.privacyLink}
           title={t.nav.privacyLink}
-          className={`flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-semibold shadow-card transition-colors hover:bg-sunken ${privacy.className}`}
+          className={`flex min-h-11 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-semibold shadow-card transition-colors hover:bg-sunken sm:min-h-0 ${privacy.className}`}
         >
           <privacy.Icon className="size-3.5" aria-hidden />
-          <span className="hidden min-[400px]:inline">{privacy.label}</span>
+          <span className="hidden min-[360px]:inline">{privacy.label}</span>
         </Link>
         {demo && (
           <Link
@@ -205,7 +217,7 @@ function TopBar() {
         </span>
         <span className="sr-only sm:not-sr-only">{live ? t.dashboard.micOn : t.dashboard.micOff}</span>
       </button>
-    </div>
+    </header>
   );
 }
 
@@ -262,13 +274,20 @@ function useMicShortcut() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   useMicShortcut();
+  const t = useT();
   return (
     <div className="flex min-h-screen gap-4 p-3 pb-24 sm:p-4 lg:gap-6 lg:p-6 sm:pb-4 lg:pb-6">
+      <a
+        href="#conteudo"
+        className="sr-only rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+      >
+        {t.nav.skip}
+      </a>
       <Rail />
       <div className="flex min-w-0 flex-1 flex-col gap-4 lg:gap-5">
         <TopBar />
         <CriticalBanner />
-        <main id="conteudo" className="flex min-w-0 flex-1 flex-col">
+        <main id="conteudo" tabIndex={-1} className="flex min-w-0 flex-1 flex-col scroll-mt-4 outline-none">
           {children}
         </main>
       </div>
