@@ -4,3 +4,5 @@ renders/
 *.mp4
 .thumbnails/
 .waveform-cache/
+# the finished film is tracked so the README can link to it
+!cheeseos-explainer.mp4

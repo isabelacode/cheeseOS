@@ -1,0 +1,131 @@
+1
+00:00:00,120 --> 00:00:02,350
+Este é o cheeseOS:
+
+2
+00:00:02,370 --> 00:00:04,160
+o gêmeo de saúde que continua funcionando
+
+3
+00:00:04,180 --> 00:00:05,900
+quando a Terra fica em silêncio.
+
+4
+00:00:06,060 --> 00:00:09,460
+Primeiro, diga ou digite como você se sente.
+
+5
+00:00:09,480 --> 00:00:10,720
+A sua fala é transcrita
+
+6
+00:00:10,740 --> 00:00:11,950
+no próprio aparelho,
+
+7
+00:00:11,970 --> 00:00:14,040
+em inglês ou português.
+
+8
+00:00:14,350 --> 00:00:16,530
+O seu gêmeo 3D acende.
+
+9
+00:00:16,550 --> 00:00:17,690
+Cada sintoma é mapeado
+
+10
+00:00:17,710 --> 00:00:19,440
+em uma de sete regiões do corpo,
+
+11
+00:00:19,460 --> 00:00:21,660
+e colorido conforme a gravidade.
+
+12
+00:00:24,350 --> 00:00:26,030
+Depois você recebe próximos passos claros,
+
+13
+00:00:26,050 --> 00:00:27,290
+sem conexão.
+
+14
+00:00:27,310 --> 00:00:29,370
+Tudo roda com regras locais.
+
+15
+00:00:29,390 --> 00:00:32,260
+A IA é opcional, nunca obrigatória.
+
+16
+00:00:34,250 --> 00:00:35,920
+Os seus sinais vitais são comparados
+
+17
+00:00:35,940 --> 00:00:37,380
+com faixas de referência
+
+18
+00:00:37,400 --> 00:00:39,950
+de fontes da NASA e do NIH.
+
+19
+00:00:39,970 --> 00:00:40,640
+Nesta demonstração,
+
+20
+00:00:40,660 --> 00:00:42,950
+as leituras são simuladas.
+
+21
+00:00:43,340 --> 00:00:45,840
+Os sinais de alerta vêm sempre primeiro.
+
+22
+00:00:45,860 --> 00:00:47,600
+Dor no peito com falta de ar
+
+23
+00:00:47,620 --> 00:00:49,120
+deixa a tela em estado crítico
+
+24
+00:00:49,140 --> 00:00:51,580
+e mostra o que fazer agora.
+
+25
+00:00:52,820 --> 00:00:54,000
+E tem mais.
+
+26
+00:00:54,020 --> 00:00:56,000
+Treino: a câmera conta
+
+27
+00:00:56,020 --> 00:00:57,990
+as suas repetições, no aparelho.
+
+28
+00:00:58,010 --> 00:00:59,900
+Um registro e relatório completos,
+
+29
+00:00:59,920 --> 00:01:01,790
+prontos para o médico de voo.
+
+30
+00:01:01,810 --> 00:01:03,400
+E a ciência da missão:
+
+31
+00:01:03,420 --> 00:01:06,440
+os cinco riscos da NASA, com fontes.
+
+32
+00:01:07,060 --> 00:01:08,670
+cheeseOS.
+
+33
+00:01:08,690 --> 00:01:11,600
+Saúde que vai tão longe quanto a gente.
