@@ -28,7 +28,7 @@
         --win-x: 700px;
         --win-y: 110px;
         --win-w: 1124px;
-        --view-h: 800px;
+        --view-h: 740px;
       }
       * {
         margin: 0;
@@ -270,8 +270,12 @@
       }
 
       /* ---------- End card ---------- */
+      /* Lifted so the caption line has the bottom of the frame. */
+      #end {
+        padding-bottom: 110px;
+      }
       #end-mascot {
-        width: 190px;
+        width: 160px;
         height: auto;
       }
       #end-head {
@@ -302,19 +306,19 @@
         background: var(--accent);
         padding: 20px 40px;
         border-radius: 22px;
-        margin-top: 50px;
+        margin-top: 40px;
       }
       #end-note {
         font-size: 28px;
         color: var(--ink-2);
-        margin-top: 40px;
+        margin-top: 30px;
         max-width: 1200px;
         line-height: 1.35;
       }
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-duration="70" data-width="1920" data-height="1080">
+    <div id="root" data-composition-id="main" data-start="0" data-duration="74" data-width="1920" data-height="1080">
       <!-- 0:00 Title -->
       <div id="title" class="clip center" data-start="0" data-duration="5.5" data-track-index="0">
         <img id="title-mascot" src="assets/mascot.webp" alt="">
@@ -324,7 +328,7 @@
       </div>
 
       <!-- 0:05 The app window stays on screen through every step. -->
-      <div id="stage" class="clip" data-start="5.2" data-duration="57.3" data-track-index="1">
+      <div id="stage" class="clip" data-start="5.2" data-duration="61.3" data-track-index="1">
         <div id="progress">
           <b>HOW IT WORKS</b>
           <div class="pip"><i id="pip-1"></i></div>
@@ -396,7 +400,7 @@
         </div>
       </div>
 
-      <div id="s6" class="clip" data-start="52.5" data-duration="10" data-track-index="2">
+      <div id="s6" class="clip" data-start="52.5" data-duration="14" data-track-index="2">
         <div class="step">
           <div class="step-num">AND MORE</div>
           <div class="more-list">
@@ -407,8 +411,8 @@
         </div>
       </div>
 
-      <!-- 1:02 End card -->
-      <div id="end" class="clip center" data-start="62.5" data-duration="7.5" data-track-index="0">
+      <!-- 1:06 End card -->
+      <div id="end" class="clip center" data-start="66.5" data-duration="7.5" data-track-index="0">
         <img id="end-mascot" src="assets/mascot.webp" alt="">
         <div id="end-head">Health that travels<br>as far as we do.</div>
         <div id="end-points">
@@ -420,7 +424,24 @@
         <div id="end-note">Support and demonstration tool. It does not replace medical evaluation. Vital signs shown are simulated.</div>
       </div>
 
-      <audio id="bgm" class="clip" src="assets/music.mp3" data-start="0" data-duration="70" data-media-start="0.8" data-volume="1.4" data-fade-in="0.8" data-fade-out="3" data-track-index="10"></audio>
+      <div id="captions" class="clip" data-composition-id="captions" data-composition-src="compositions/captions.html" data-start="0" data-duration="74" data-track-index="6" data-track-kind="captions" data-width="1920" data-height="1080"></div>
+
+      <!-- Music bed, kept under the narration. -->
+      <audio id="bgm" class="clip" src="assets/music.mp3" data-start="0" data-duration="74" data-media-start="0.8" data-volume="0.55" data-fade-in="0.8" data-fade-out="3" data-track-index="10"></audio>
+      <!-- A soft whoosh (CC0, "Deep Whoosh #1" by Kinoton) as the app window comes in and as it leaves for the end card. -->
+      <audio id="sfx-window-in" class="clip" src="assets/whoosh.mp3" data-start="5.1" data-duration="2.2" data-volume="0.22" data-fade-out="0.4" data-track-index="12"></audio>
+      <audio id="sfx-window-out" class="clip" src="assets/whoosh.mp3" data-start="65.8" data-duration="2.2" data-volume="0.22" data-fade-out="0.4" data-track-index="12"></audio>
+      <!-- Narration: one synthetic take per scene, placed where its step appears. -->
+      <audio id="vo-0" class="clip" src="voice/vo-0.wav" data-start="0.2" data-duration="5.3" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-1" class="clip" src="voice/vo-1.wav" data-start="6.1" data-duration="7.3" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-2" class="clip" src="voice/vo-2.wav" data-start="14.4" data-duration="6.85" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-3" class="clip" src="voice/vo-3.wav" data-start="24.4" data-duration="7.35" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-4" class="clip" src="voice/vo-4.wav" data-start="34.3" data-duration="8.25" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-5" class="clip" src="voice/vo-5.wav" data-start="43.4" data-duration="7.75" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-6a" class="clip" src="voice/vo-6a.wav" data-start="52.9" data-duration="4.9" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-6b" class="clip" src="voice/vo-6b.wav" data-start="58.1" data-duration="3.35" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-6c" class="clip" src="voice/vo-6c.wav" data-start="61.9" data-duration="4.1" data-volume="1" data-track-index="11"></audio>
+      <audio id="vo-7" class="clip" src="voice/vo-7.wav" data-start="67.1" data-duration="3.95" data-volume="1" data-track-index="11"></audio>
     </div>
 
     <script>
@@ -509,34 +530,34 @@
       stepOut("#s5", 52.05);
       hide("#pg-critical", 52.1);
 
-      // And more (52.5 - 62.5): three short beats
+      // And more (52.5 - 66.5): three beats, each as long as its narration line
       const on = (id, at) => tl.to(id, { opacity: 1, borderColor: "#16294a", duration: 0.35 }, at);
       const off = (id, at) => tl.to(id, { opacity: 0.45, borderColor: "#d9dcd5", duration: 0.35 }, at);
       stepIn("#s6", 52.7);
-      pip(6, 52.5, 10);
+      pip(6, 52.5, 14);
       show("#pg-trainer", 52.5, { x: 360, y: 80, w: 840 });
       on("#more-1", 53.2);
-      move("#pg-trainer", 53.0, { x: 360, y: 250, w: 840 }, 2.6);
-      hide("#pg-trainer", 55.6);
-      off("#more-1", 55.8);
-      show("#pg-log", 55.9, { x: 150, y: 200, w: 960 });
-      on("#more-2", 55.9);
-      move("#pg-log", 56.4, { x: 470, y: 205, w: 960 }, 2.4);
-      hide("#pg-log", 58.9);
-      off("#more-2", 59.1);
-      show("#pg-science", 59.2, { x: 130, y: 370, w: 900 });
-      on("#more-3", 59.2);
-      move("#pg-science", 59.7, { x: 130, y: 1110, w: 900 }, 2.2);
-      stepOut("#s6", 62.0);
-      tl.to("#window", { opacity: 0, x: 80, duration: 0.45, ease: "power2.in" }, 62.0);
-      tl.to("#progress", { opacity: 0, duration: 0.3 }, 62.0);
+      move("#pg-trainer", 53.0, { x: 360, y: 250, w: 840 }, 4.2);
+      hide("#pg-trainer", 57.6);
+      off("#more-1", 57.8);
+      show("#pg-log", 57.9, { x: 150, y: 200, w: 960 });
+      on("#more-2", 57.9);
+      move("#pg-log", 58.4, { x: 470, y: 205, w: 960 }, 2.8);
+      hide("#pg-log", 61.4);
+      off("#more-2", 61.6);
+      show("#pg-science", 61.7, { x: 130, y: 370, w: 900 });
+      on("#more-3", 61.7);
+      move("#pg-science", 62.2, { x: 130, y: 1110, w: 900 }, 3.4);
+      stepOut("#s6", 66.0);
+      tl.to("#window", { opacity: 0, x: 80, duration: 0.45, ease: "power2.in" }, 66.0);
+      tl.to("#progress", { opacity: 0, duration: 0.3 }, 66.0);
 
       // ---- End card ----
-      tl.fromTo("#end-mascot", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.8)" }, 62.7);
-      tl.fromTo("#end-head", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 63.0);
-      tl.fromTo(".end-point", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.15 }, 63.7);
-      tl.fromTo("#end-url", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.8)" }, 64.6);
-      tl.fromTo("#end-note", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 65.2);
+      tl.fromTo("#end-mascot", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.8)" }, 66.7);
+      tl.fromTo("#end-head", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 67.0);
+      tl.fromTo(".end-point", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.15 }, 67.7);
+      tl.fromTo("#end-url", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.8)" }, 68.6);
+      tl.fromTo("#end-note", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 69.2);
 
       window.__timelines["main"] = tl;
     </script>
