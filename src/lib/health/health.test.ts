@@ -230,9 +230,9 @@ describe("demo mode and model fallback", () => {
   });
 
   it("tries smaller browser models after the chosen one", () => {
-    const gemma = BROWSER_MODELS.find((m) => m.id.includes("gemma"))!;
-    expect(fallbackChain(gemma).map((m) => m.label)).toEqual(["Gemma 3 1B", "Qwen 2.5 0.5B"]);
-    const big = BROWSER_MODELS.find((m) => m.id.includes("1.5B"))!;
-    expect(fallbackChain(big).map((m) => m.label)).toEqual(["Qwen 2.5 1.5B", "Gemma 3 1B", "Qwen 2.5 0.5B"]);
+    const big = BROWSER_MODELS.find((m) => m.id.includes("1b"))!;
+    expect(fallbackChain(big).map((m) => m.label)).toEqual(["Granite 4.0 1B", "Granite 4.0 350M"]);
+    const small = BROWSER_MODELS.find((m) => m.id.includes("350m"))!;
+    expect(fallbackChain(small).map((m) => m.label)).toEqual(["Granite 4.0 350M"]);
   });
 });

@@ -13,10 +13,10 @@ export interface BrowserModel {
 }
 
 export const BROWSER_MODELS: BrowserModel[] = [
-  // Default: follows instructions better and writes better Portuguese than the 0.5B model.
-  { id: "onnx-community/gemma-3-1b-it-ONNX", label: "Gemma 3 1B", gpuMb: 730, cpuMb: 820 },
-  { id: "onnx-community/Qwen2.5-0.5B-Instruct", label: "Qwen 2.5 0.5B", gpuMb: 460, cpuMb: 750 },
-  { id: "onnx-community/Qwen2.5-1.5B-Instruct", label: "Qwen 2.5 1.5B", gpuMb: 1170, cpuMb: 1700 },
+  // Both are Apache 2.0 (OSI open source), as Space Apps requires for third-party materials.
+  // Default: follows instructions better and writes better Portuguese than the 350M model.
+  { id: "onnx-community/granite-4.0-1b-ONNX-web", label: "Granite 4.0 1B", gpuMb: 1190, cpuMb: 1700 },
+  { id: "onnx-community/granite-4.0-350m-ONNX-web", label: "Granite 4.0 350M", gpuMb: 330, cpuMb: 550 },
 ];
 
 export const DEFAULT_BROWSER_MODEL = BROWSER_MODELS[0];

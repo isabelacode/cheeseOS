@@ -92,7 +92,7 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       errorHints: {
         auth: "Confira a chave abaixo ou crie uma nova no OpenRouter.",
         credits: "Adicione créditos na sua conta do OpenRouter ou troque para o modelo no navegador.",
-        model: "Confira o nome do modelo abaixo, por exemplo google/gemma-3-27b-it.",
+        model: "Escolha outro modelo abaixo.",
         rate: "Aguarde um minuto e faça um novo relato.",
         network: "Verifique a conexão. Sem internet, use o modelo no navegador.",
         other: "Tente outro modelo ou troque de motor.",
@@ -105,7 +105,7 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       savedKey: "Chave salva. O OpenRouter está em uso.",
       removedKey: "Chave removida deste navegador.",
       keyRequired: "Cole a sua chave do OpenRouter.",
-      modelHint: "Qualquer modelo do catálogo do OpenRouter.",
+      modelHint: "Só modelos de código aberto (Apache 2.0), em servidores dos EUA ou da Europa.",
       useOpenRouter: "Usar o OpenRouter",
     },
     privacy: {
@@ -174,7 +174,7 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       errorHints: {
         auth: "Check the key below or create a new one on OpenRouter.",
         credits: "Add credits to your OpenRouter account or switch to the in-browser model.",
-        model: "Check the model name below, for example google/gemma-3-27b-it.",
+        model: "Choose another model below.",
         rate: "Wait a minute and send a new report.",
         network: "Check the connection. Offline, use the in-browser model.",
         other: "Try another model or switch engines.",
@@ -187,7 +187,7 @@ export const settingsMessages: Record<Locale, SettingsMessages> = {
       savedKey: "Key saved. OpenRouter is in use.",
       removedKey: "Key removed from this browser.",
       keyRequired: "Paste your OpenRouter key.",
-      modelHint: "Any model from the OpenRouter catalog.",
+      modelHint: "Open-source models only (Apache 2.0), on US or EU servers.",
       useOpenRouter: "Use OpenRouter",
     },
     privacy: {

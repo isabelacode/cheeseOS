@@ -439,9 +439,8 @@ const pt: Messages = {
     },
   },
   browserModels: {
-    "onnx-community/Qwen2.5-0.5B-Instruct": "Mais leve e rápido, respostas simples",
-    "onnx-community/gemma-3-1b-it-ONNX": "Recomendado: segue melhor as instruções e escreve bem em português",
-    "onnx-community/Qwen2.5-1.5B-Instruct": "Mais capaz, pede GPU e mais memória",
+    "onnx-community/granite-4.0-350m-ONNX-web": "Mais leve e rápido, respostas simples",
+    "onnx-community/granite-4.0-1b-ONNX-web": "Recomendado: segue melhor as instruções e escreve melhor em português",
   },
   context: {
     crew: (p) => `Tripulante: ${p.name}, ${p.role}, ${p.age} anos${p.sex ? `, sexo ${p.sex.toLowerCase()}` : ""}, ${p.height} m, ${p.weight} kg${p.blood ? `, tipo sanguíneo ${p.blood}` : ""}.`,
@@ -743,9 +742,8 @@ const en: Messages = {
     },
   },
   browserModels: {
-    "onnx-community/Qwen2.5-0.5B-Instruct": "Lightest and fastest, simple answers",
-    "onnx-community/gemma-3-1b-it-ONNX": "Recommended: follows instructions best, good multilingual output",
-    "onnx-community/Qwen2.5-1.5B-Instruct": "Most capable, needs a GPU and more memory",
+    "onnx-community/granite-4.0-350m-ONNX-web": "Lightest and fastest, simple answers",
+    "onnx-community/granite-4.0-1b-ONNX-web": "Recommended: follows instructions best, good multilingual output",
   },
   context: {
     crew: (p) => `Crew member: ${p.name}, ${p.role}, ${p.age} years old${p.sex ? `, ${p.sex.toLowerCase()}` : ""}, ${p.height} m, ${p.weight} kg${p.blood ? `, blood type ${p.blood}` : ""}.`,

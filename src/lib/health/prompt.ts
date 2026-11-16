@@ -1,7 +1,7 @@
 import { normalize } from "./symptoms";
 import { mentionsAllergen } from "./safety";
 
-/** Reasoning models (qwen3, deepseek-r1) may emit their thoughts inline. */
+/** Reasoning models may emit their thoughts inline. */
 export function cleanModelText(text: string): string {
   return text
     .replace(/<think>[\s\S]*?<\/think>/g, "")
@@ -36,7 +36,7 @@ function echoes(sentence: string, said: Set<string>, reportNorm: string): boolea
 
 /**
  * Whether an AI answer adds something safe, and the answer without the
- * sentences that only restate the report. Small models (Qwen 0.5B) often just
+ * sentences that only restate the report. Small models often just
  * repeat the report ("You have a fever and want to take hyoscine."); such
  * answers are hidden, and any answer naming a drug from the allergy list is
  * dropped. The local rules always stand on their own.

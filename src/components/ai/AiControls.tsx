@@ -4,7 +4,7 @@ import { useId, useRef, useState, type RefObject } from "react";
 import { AlertTriangle, CheckCircle2, Cloud, Cpu, ExternalLink, Loader2, PowerOff, type LucideIcon } from "lucide-react";
 import type { EngineId, useLocalAi } from "@/hooks/useLocalAi";
 import { BROWSER_MODELS, formatSize } from "@/lib/llm/browser-models";
-import { DEFAULT_OPENROUTER_MODEL, saveOpenRouterSettings } from "@/lib/llm/openrouter";
+import { OPENROUTER_MODELS, saveOpenRouterSettings } from "@/lib/llm/openrouter";
 import { useLocale, useT } from "@/lib/i18n";
 import { settingsMessages } from "@/lib/i18n/pages/settings";
 
@@ -251,15 +251,19 @@ export function OpenRouterForm({ ai, keyInputRef }: { ai: Ai; keyInputRef?: RefO
       </label>
       <label className="block">
         <span className="mb-1.5 block text-[13px] font-semibold">{e.model}</span>
-        <input
+        <select
           name="model"
-          spellCheck={false}
           value={model}
           onChange={(ev) => setModel(ev.target.value)}
-          placeholder={DEFAULT_OPENROUTER_MODEL}
           aria-describedby={`${ids}-model`}
           className={`${input} border-transparent`}
-        />
+        >
+          {OPENROUTER_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
         <span id={`${ids}-model`} className="mt-1 block text-xs text-ink-2">
           {s.modelHint}
         </span>

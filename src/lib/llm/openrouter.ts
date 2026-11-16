@@ -6,7 +6,31 @@ import { cleanModelText } from "@/lib/health/prompt";
  * localStorage and requests go straight from the browser to OpenRouter, so the
  * public site never sees or stores anyone's key.
  */
-export const DEFAULT_OPENROUTER_MODEL = "google/gemma-3-27b-it";
+/**
+ * The only cloud models offered. Each one is OSI open source (Apache 2.0) and
+ * made outside China, and requests are pinned to US or EU hosts with no
+ * fallback, so OpenRouter never routes a report to a Chinese-owned provider.
+ * Both follow the NASA Space Apps 2026 terms.
+ */
+export interface OpenRouterModel {
+  id: string;
+  label: string;
+  providers: string[];
+}
+
+export const OPENROUTER_MODELS: OpenRouterModel[] = [
+  { id: "mistralai/mistral-small-3.2-24b-instruct", label: "Mistral Small 3.2 24B (Mistral AI)", providers: ["mistral"] },
+  { id: "openai/gpt-oss-120b", label: "gpt-oss-120b (OpenAI)", providers: ["google-vertex", "amazon-bedrock", "groq", "cerebras"] },
+  { id: "openai/gpt-oss-20b", label: "gpt-oss-20b (OpenAI)", providers: ["amazon-bedrock", "groq"] },
+  { id: "ibm-granite/granite-4.2-8b", label: "Granite 4.2 8B (IBM)", providers: ["coreweave", "deepinfra"] },
+];
+
+export const DEFAULT_OPENROUTER_MODEL = OPENROUTER_MODELS[0].id;
+
+/** A saved model outside the approved list (older settings) falls back to the default. */
+export function openRouterModelById(id: string | null | undefined): OpenRouterModel {
+  return OPENROUTER_MODELS.find((m) => m.id === id?.trim()) ?? OPENROUTER_MODELS[0];
+}
 
 export interface OpenRouterSettings {
   apiKey: string;
@@ -32,7 +56,7 @@ function read(): OpenRouterSettings {
     const v = raw ? (JSON.parse(raw) as Partial<OpenRouterSettings>) : {};
     cached = {
       apiKey: typeof v.apiKey === "string" ? v.apiKey : "",
-      model: typeof v.model === "string" && v.model.trim() ? v.model.trim() : DEFAULT_OPENROUTER_MODEL,
+      model: openRouterModelById(typeof v.model === "string" ? v.model : null).id,
     };
   } catch {
     cached = EMPTY;
@@ -56,7 +80,7 @@ export function useOpenRouterSettings(): OpenRouterSettings {
 export function saveOpenRouterSettings(next: OpenRouterSettings) {
   try {
     if (next.apiKey.trim()) {
-      window.localStorage.setItem(KEY, JSON.stringify({ apiKey: next.apiKey.trim(), model: next.model.trim() || DEFAULT_OPENROUTER_MODEL }));
+      window.localStorage.setItem(KEY, JSON.stringify({ apiKey: next.apiKey.trim(), model: openRouterModelById(next.model).id }));
     } else {
       window.localStorage.removeItem(KEY);
     }
@@ -83,6 +107,7 @@ export async function openRouterFeedback(settings: OpenRouterSettings, systemPro
   // A missing key, or one with characters no HTTP header can carry (fetch would
   // throw a TypeError that looks like a network failure), is an auth problem.
   if (!/^[\x21-\x7e]+$/.test(apiKey)) throw new OpenRouterError("auth");
+  const model = openRouterModelById(settings.model);
   let res: Response;
   try {
     res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -94,7 +119,8 @@ export async function openRouterFeedback(settings: OpenRouterSettings, systemPro
     },
     signal: AbortSignal.timeout(45_000),
     body: JSON.stringify({
-      model: settings.model,
+      model: model.id,
+      provider: { only: model.providers, allow_fallbacks: false },
       temperature: 0.2,
       max_tokens: 200,
       messages: [

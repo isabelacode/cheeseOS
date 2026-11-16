@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OpenRouterError, openRouterFeedback } from "./openrouter";
+import { DEFAULT_OPENROUTER_MODEL, OPENROUTER_MODELS, OpenRouterError, openRouterFeedback, openRouterModelById } from "./openrouter";
 
 const settings = { apiKey: "sk-or-v1-abc", model: "m" };
 const call = () => openRouterFeedback(settings, "sys", "ctx");
@@ -42,5 +42,25 @@ describe("openRouterFeedback", () => {
     expect(await code(openRouterFeedback({ apiKey: "  ", model: "m" }, "s", "c"))).toBe("auth");
     expect(await code(openRouterFeedback({ apiKey: "chavé", model: "m" }, "s", "c"))).toBe("auth");
     expect(f).not.toHaveBeenCalled();
+  });
+
+  it("only sends approved models, pinned to their hosts with no fallback", async () => {
+    const f = vi.fn(async () => Response.json({ choices: [{ message: { content: "ok" } }] }));
+    vi.stubGlobal("fetch", f);
+    const body = async (model: string) => {
+      await openRouterFeedback({ apiKey: "sk-or-v1-abc", model }, "s", "c");
+      return JSON.parse((f.mock.lastCall as unknown as [string, RequestInit])[1].body as string);
+    };
+    expect(await body("openai/gpt-oss-20b")).toMatchObject({
+      model: "openai/gpt-oss-20b",
+      provider: { only: ["amazon-bedrock", "groq"], allow_fallbacks: false },
+    });
+    // A model typed in older settings, outside the approved list, is replaced by the default.
+    expect(await body("example/unlisted-model")).toMatchObject({ model: DEFAULT_OPENROUTER_MODEL, provider: { only: ["mistral"] } });
+  });
+
+  it("offers only Apache 2.0 models from non-Chinese makers", () => {
+    expect(OPENROUTER_MODELS.map((m) => m.id.split("/")[0])).toEqual(["mistralai", "openai", "openai", "ibm-granite"]);
+    expect(openRouterModelById("example/unlisted-model").id).toBe(DEFAULT_OPENROUTER_MODEL);
   });
 });
