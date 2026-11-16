@@ -35,6 +35,7 @@ cheeseOS is a health app for crews on long-duration missions. The astronaut says
 - [Tests](#tests)
 - [Videos](#videos)
 - [Sources](#sources)
+- [Use of AI tools](#use-of-ai-tools)
 - [License](#license)
 
 ## How it works
@@ -114,16 +115,15 @@ Speech transcription always runs on the device, with `whisper-small`. For the su
 | Engine | Where it runs | Notes |
 | --- | --- | --- |
 | **Browser** (default) | On the device, in a Web Worker | Works offline after the first download |
-| **OpenRouter** | In the cloud | Uses the user's own key. The default model is `google/gemma-3-27b-it` |
+| **OpenRouter** | In the cloud | Uses the user's own key. Offers only Apache 2.0 models made outside China (Mistral Small 3.2 by default, gpt-oss and Granite 4.2), pinned to US or EU hosts |
 | **Off** | — | Local rules only |
 
 Models available in the browser:
 
 | Model | Download with WebGPU | Download on CPU |
 | --- | --- | --- |
-| Gemma 3 1B (default) | 730 MB | 820 MB |
-| Qwen 2.5 0.5B | 460 MB | 750 MB |
-| Qwen 2.5 1.5B | 1.17 GB | 1.7 GB |
+| Granite 4.0 1B (default) | 1.19 GB | 1.7 GB |
+| Granite 4.0 350M | 330 MB | 550 MB |
 
 If a model fails to load on the device, the app tries the smaller ones next. If the local answer takes longer than 30 seconds, it is dropped and the local rules stand alone.
 
@@ -204,10 +204,24 @@ npm run render   # render
 - NASA HRP: [Human Research Roadmap](https://humanresearchroadmap.nasa.gov/) and [Evidence Report: SANS](https://humanresearchroadmap.nasa.gov/evidence/reports/SANS%20EB%202022%20FINAL_8-15-22.pdf)
 - NASA OCHMO: [NASA-STD-3001 Vol. 1 Rev. C](https://standards.nasa.gov/sites/default/files/standards/NASA/C/nasa-std-3001-vol-1-rev-c-signature.pdf) and [Technical Brief: Radiation Protection](https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf)
 - NIH MedlinePlus: [Vital signs](https://medlineplus.gov/ency/article/002341.htm) and [Pulse Oximetry](https://medlineplus.gov/lab-tests/pulse-oximetry/)
+- NASA: the photo of Earth in the pitch video (public domain)
+
+## Use of AI tools
+
+As the NASA Space Apps rules ask, this is where and how AI tools (SI) were used:
+
+- **Mascot.** The cheeseOS mascot and the app icons made from it were generated with an AI image tool. In the app they carry a visible "AI" badge. The two videos, their thumbnails and the screenshots were made before the badge was added, so the mascot in them has no badge; this note and the video descriptions disclose it instead.
+- **Narration.** The voice in the explainer video is synthetic, generated with OpenAI GPT text-to-speech from our own script.
+- **Code and documentation.** Written with help from Claude (Anthropic), an AI coding assistant. Commits it helped with are marked `Co-Authored-By: Claude`.
+- **Inside the app.** The app itself runs AI models: IBM Granite 4.0 in the browser, OpenAI Whisper for speech-to-text, MediaPipe for pose tracking and, optionally, cloud models through OpenRouter (see [Artificial intelligence](#artificial-intelligence)).
+
+The idea, the health rules, the NASA research behind them and the design decisions are the team's own.
 
 ## License
 
 The code is released under the [MIT License](LICENSE).
+
+The AI models keep their own licenses, all OSI open source: IBM Granite 4.0 1B and 350M (Apache 2.0), OpenAI Whisper Small (Apache 2.0) and MediaPipe Pose Landmarker (Apache 2.0). The OpenRouter models offered (Mistral Small 3.2, OpenAI gpt-oss-120b and gpt-oss-20b, IBM Granite 4.2 8B) are also Apache 2.0.
 
 Third-party media in the videos keeps its own license: the music is "space music ambient" by evanjones4 ([CC0](https://freesound.org/s/243998/)), and the sound effects are credited in [video/.media/audio/sfx/CREDITS.md](video/.media/audio/sfx/CREDITS.md).
 
